@@ -1,0 +1,7 @@
+[project]
+name = "dcp"
+version = "0.1.0"
+description = "aliases docker compose command and arguments"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = []

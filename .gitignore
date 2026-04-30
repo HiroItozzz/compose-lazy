@@ -1,0 +1,16 @@
+# python
+.venv/
+**/__pycache__/
+.mypy_cache/
+*.pyc
+help/
+.pytest_cache
+*.egg-info/
+dist/
+build/
+temp/
+.ipynb_checkpoints/
+
+
+# personal
+.idea/
