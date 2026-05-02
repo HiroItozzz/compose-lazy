@@ -41,8 +41,8 @@ class DockerCmdProcessor:
 
     def _run_subprocess(self) -> int:
         print(f"executing `{' '.join(self.cmd)}`")
-        subprocess.run(self.cmd)
-        return 0
+        result = subprocess.run(self.cmd)
+        return result.returncode
 
     def _create_up_cmd(self) -> None:
         self.cmd += self._create_project_option() \
@@ -78,8 +78,8 @@ class DockerCmdProcessor:
                     + self.args.container_name
 
     def _create_down_cmd(self) -> None:
-        self.cmd += ["down"] \
-                    + self.args.container_name
+        self.cmd += self._create_project_option() \
+                    + ["down"]
 
     def _create_file_option(self) -> list[str]:
         file_args = []

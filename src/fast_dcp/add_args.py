@@ -52,5 +52,5 @@ class ArgDefiner:
         return self
 
     def add_follow_args(self):
-        self.parser.add_argument("-f", "--follow", action="store_true")
+        self.parser.add_argument("-F", "--follow", action="store_true")
         return self

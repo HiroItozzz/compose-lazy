@@ -45,7 +45,7 @@ def main():
     _ps = ArgDefiner(subparsers.add_parser("ps")).set_defaults(func=processor())
 
     _logs = (
-        ArgDefiner(subparsers.add_parser("logs", aliases="l"))
+        ArgDefiner(subparsers.add_parser("logs", aliases=["l"]))
         .add_container_name_subcmd(multiple=True)
         .add_follow_args()
         .set_defaults(func=processor())
@@ -59,7 +59,8 @@ def main():
 
     _down = (
         ArgDefiner(subparsers.add_parser("down"))
-        .add_container_name_subcmd(multiple=True)
+        .add_file_args()
+        .add_project_args()
         .set_defaults(func=processor())
     )
 
