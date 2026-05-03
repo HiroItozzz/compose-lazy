@@ -17,130 +17,124 @@ def main() -> None:
         description="Shorthand aliases for docker compose commands.",
         epilog="See also: `dcpu`, `dcpe`",
     )
-    base_parser.add_argument("--version", action="version", version=f"fast-dcp {VERSION}")
+    base_parser.add_argument(
+        "--version", action="version", version=f"fast-dcp {VERSION}"
+    )
 
     subparsers = base_parser.add_subparsers(dest="subcmd")
-
     # dcp up(u) command
+    _up = subparsers.add_parser(
+        "up",
+        aliases=["u"],
+        usage="dcp up(u) [container_names] [options]",
+        description="Shorthand for `docker compose up`.",
+        help="docker compose `up`",
+    )
     (
-        ArgBuilder(
-            subparsers.add_parser(
-                "up",
-                aliases=["u"],
-                usage="dcp up(u) [container_names] [options]",
-                description="Shorthand for `docker compose up`.",
-                help="docker compose `up`",
-            )
-        )
-        .add_project_args()
-        .add_file_args()
-        .add_build_args()
-        .add_detach_args()
+        ArgBuilder(_up)
         .add_container_name_subcmd(multiple=True)
+        .add_detach_args()
+        .add_build_args()
+        .add_file_args()
+        .add_project_args()
         .set_defaults(func=Processor())
     )
 
     # dcp build(b) command
+    _build = subparsers.add_parser(
+        "build",
+        aliases=["b"],
+        usage="dcp build(b) [container_names] [options]",
+        description="Shorthand for `docker compose build`.",
+        help="docker compose `build`",
+    )
     (
-        ArgBuilder(
-            subparsers.add_parser(
-                "build",
-                aliases=["b"],
-                usage="dcp build(b) [container_names] [options]",
-                description="Shorthand for `docker compose build`.",
-                help="docker compose `build`",
-            )
-        )
-        .add_project_args()
-        .add_file_args()
+        ArgBuilder(_build)
         .add_container_name_subcmd(multiple=True)
+        .add_file_args()
+        .add_project_args()
         .set_defaults(func=Processor())
     )
 
     # dcp exec(e) command
+    _exec = subparsers.add_parser(
+        "exec",
+        aliases=["e"],
+        usage="dcp exec(e) <container_name>  [options] [BASH|cmd]",
+        description="Shorthand for `docker compose exec`.",
+        help="docker compose `exec`",
+    )
     (
-        ArgBuilder(
-            subparsers.add_parser(
-                "exec",
-                aliases=["e"],
-                usage="dcp exec(e) <container_name>  [options] [BASH|cmd]",
-                description="Shorthand for `docker compose exec`.",
-                help="docker compose `exec`",
-            )
-        )
+        ArgBuilder(_exec)
         .add_container_name_subcmd(multiple=False)
         .add_inner_bash_cmd_args()
-        .add_project_args()
         .add_file_args()
+        .add_project_args()
         .set_defaults(func=Processor())
     )
 
     # dcp restart(r) command
+    _restart = subparsers.add_parser(
+        "restart",
+        aliases=["r"],
+        usage="dcp restart(r) [container_names]",
+        description="Shorthand for `docker compose restart`.",
+        help="docker compose `restart`",
+    )
     (
-        ArgBuilder(
-            subparsers.add_parser(
-                "restart",
-                aliases=["r"],
-                usage="dcp restart(r) [container_names]",
-                description="Shorthand for `docker compose restart`.",
-                help="docker compose `restart`",
-            )
-        )
+        ArgBuilder(_restart)
         .add_container_name_subcmd(multiple=True)
         .set_defaults(func=Processor())
     )
 
     # dcp ps command
-    ArgBuilder(
-        subparsers.add_parser(
-            "ps",
-            usage="dcp ps",
-            description="Shorthand for `docker compose ps`.",
-            help="docker compose `ps`",
-        )
-    ).set_defaults(func=Processor())
+    _ps = subparsers.add_parser(
+        "ps",
+        usage="dcp ps",
+        description="Shorthand for `docker compose ps`.",
+        help="docker compose `ps`",
+    )
+    (ArgBuilder(_ps)
+     .set_defaults(func=Processor()))
 
     # dcp logs(l) command
+    _logs = subparsers.add_parser(
+        "logs",
+        aliases=["l"],
+        usage="dcp logs(l) [container_names] [options]",
+        description="Shorthand for `docker compose logs`.",
+        help="docker compose `logs`",
+    )
     (
-        ArgBuilder(
-            subparsers.add_parser(
-                "logs",
-                aliases=["l"],
-                usage="dcp logs(l) [container_names] [options]",
-                description="Shorthand for `docker compose logs`.",
-                help="docker compose `logs`",
-            )
-        )
+        ArgBuilder(_logs)
         .add_container_name_subcmd(multiple=True)
         .add_follow_args()
         .set_defaults(func=Processor())
     )
 
     # dcp stop(s) command
+    _stop = subparsers.add_parser(
+        "stop",
+        aliases=["s"],
+        usage="dcp stop(s) [container_names]",
+        description="Shorthand for `docker compose stop`.",
+        help="docker compose `stop`",
+    )
     (
-        ArgBuilder(
-            subparsers.add_parser(
-                "stop",
-                aliases=["s"],
-                usage="dcp stop(s) [container_names]",
-                description="Shorthand for `docker compose stop`.",
-                help="docker compose `stop`",
-            )
-        )
+        ArgBuilder(_stop)
         .add_container_name_subcmd(multiple=True)
         .set_defaults(func=Processor())
     )
 
     # dcp down command
+    _down = subparsers.add_parser(
+        "down",
+        usage="dcp down [options]",
+        description="Shorthand for `docker compose down`.",
+        help="docker compose `down`",
+    )
     (
-        ArgBuilder(
-            subparsers.add_parser(
-                "down",
-                usage="dcp down [options]",
-                description="Shorthand for `docker compose down`.",
-                help="docker compose `down`",
-            )
-        )
+        ArgBuilder(_down)
         .add_file_args()
         .add_project_args()
         .set_defaults(func=Processor())
@@ -161,17 +155,20 @@ def dcpu_main() -> None:
         description="Shorthand for `docker compose up`.",
         epilog="See also: `dcp`, `dcpe`",
     )
-    parser.add_argument("--version", action="version", version=f"fast-dcp {VERSION}")
 
     # dcpu command
     (
         ArgBuilder(parser)
         .add_container_name_subcmd(multiple=True)
-        .add_build_args()
         .add_detach_args()
+        .add_build_args()
         .add_file_args()
         .add_project_args()
         .set_defaults(func=Processor().call_dcpu)
+    )
+
+    parser.add_argument(
+        "-v", "--version", action="version", version=f"fast-dcp {VERSION}"
     )
 
     args = parser.parse_args()
@@ -186,7 +183,7 @@ def dcpe_main() -> None:
         description="Shorthand for `docker compose exec`.",
         epilog="See also: `dcp`, `dcpu`",
     )
-    parser.add_argument("--version", action="version", version=f"fast-dcp {VERSION}")
+
     # dcpe command
     (
         ArgBuilder(parser)
@@ -195,6 +192,10 @@ def dcpe_main() -> None:
         .add_file_args()
         .add_project_args()
         .set_defaults(func=Processor().call_dcpe)
+    )
+
+    parser.add_argument(
+        "-v", "--version", action="version", version=f"fast-dcp {VERSION}"
     )
 
     args = parser.parse_args()

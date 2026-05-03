@@ -92,13 +92,21 @@ class DockerCmdProcessor:
         self.cmd += ["ps"]
 
     def _create_logs_cmd(self) -> None:
-        self.cmd += ["logs"] + self.args.container_name + (["-f"] if self.args.follow else [])
+        self.cmd += (
+            ["logs"]
+            + self.args.container_name
+            + (["-f"] if self.args.follow else [])
+        )
 
     def _create_stop_cmd(self) -> None:
         self.cmd += ["stop"] + self.args.container_name
 
     def _create_down_cmd(self) -> None:
-        self.cmd += self._create_project_option() + self._create_file_option() + ["down"]
+        self.cmd += (
+            self._create_project_option()
+            + self._create_file_option()
+            + ["down"]
+        )
 
     def _create_file_option(self) -> list[str]:
         file_args = []
