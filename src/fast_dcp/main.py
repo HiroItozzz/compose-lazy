@@ -15,7 +15,7 @@ def main() -> None:
         allow_abbrev=False,
         usage="dcp <command> [options]",
         description="Shorthand aliases for docker compose commands.",
-        epilog="See also: `dcpu`, `dcpe`",
+        epilog="See also: `dcpu -h`, `dcpe -h`",
     )
     base_parser.add_argument(
         "--version", action="version", version=f"fast-dcp {VERSION}"
@@ -153,7 +153,7 @@ def dcpu_main() -> None:
         allow_abbrev=False,
         usage="dcpu [container_names] [options]",
         description="Shorthand for `docker compose up`.",
-        epilog="See also: `dcp`, `dcpe`",
+        epilog="See also: `dcp -h`, `dcpe -h`",
     )
 
     # dcpu command
@@ -181,7 +181,7 @@ def dcpe_main() -> None:
         allow_abbrev=False,
         usage="dcpe <container_name> [options] [BASH|commands]",
         description="Shorthand for `docker compose exec`.",
-        epilog="See also: `dcp`, `dcpu`",
+        epilog="See also: `dcp -h`, `dcpu -h`",
     )
 
     # dcpe command

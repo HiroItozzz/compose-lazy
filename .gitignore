@@ -10,7 +10,7 @@ dist/
 build/
 temp/
 .ipynb_checkpoints/
-
+.coverage
 
 # personal
 .idea/

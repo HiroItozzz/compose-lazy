@@ -21,7 +21,7 @@ class TestSetDefaults(ArgDefinerTestBase):
 
     def test_set_defaults(self):
         self.definer.set_defaults(func=self.test_func)
-        args = self.definer.parser.parse_args()
+        args = self.definer.parser.parse_args([])
 
         self.assertEqual(args.func(args), 1)
 
@@ -29,7 +29,7 @@ class TestSetDefaults(ArgDefinerTestBase):
         from fast_dcp.process import DockerCmdProcessor
 
         self.definer.set_defaults()
-        args = self.definer.parser.parse_args()
+        args = self.definer.parser.parse_args([])
 
         # Default to an instance of `DockerCmdProcessor`.
         self.assertIsInstance(args.func, DockerCmdProcessor)
@@ -71,7 +71,7 @@ class TestAddContainerName(ArgDefinerTestBase):
 
     def test_add_container_name_subcmd_NO_ARGS_FOR_MUTILPLE_OPTION(self):
         self.definer.add_container_name_subcmd(multiple=True)
-        args, unknown = self.definer.parser.parse_known_args()
+        args, unknown = self.definer.parser.parse_known_args([])
 
         # Does not raise an error.
         self.assertEqual(args.container_name, [])
@@ -81,7 +81,7 @@ class TestAddContainerName(ArgDefinerTestBase):
 class TestAddInnerBashCmd(ArgDefinerTestBase):
     def test_inner_bash_cmd_DEFAULT(self):
         self.definer.add_inner_bash_cmd_args()
-        args = self.definer.parser.parse_args()
+        args = self.definer.parser.parse_args([])
 
         # Defaults to `bash`.
         self.assertEqual(args.inner_bash_cmd, ["bash"])
@@ -195,7 +195,7 @@ class TestAddBuildArgs(ArgDefinerTestBase):
 
     def test_add_build_args_NO_ARGS(self):
         self.definer.add_build_args()
-        args = self.definer.parser.parse_args()
+        args = self.definer.parser.parse_args([])
 
         self.assertFalse(args.build)
 
@@ -217,7 +217,7 @@ class TestAddDetachArgs(ArgDefinerTestBase):
 
     def test_add_detach_args_NO_ARGS(self):
         self.definer.add_detach_args()
-        args = self.definer.parser.parse_args()
+        args = self.definer.parser.parse_args([])
 
         self.assertFalse(args.detach)
 
@@ -239,6 +239,6 @@ class TestAddFollowArgs(ArgDefinerTestBase):
 
     def test_add_follow_args_NO_ARGS(self):
         self.definer.add_follow_args()
-        args = self.definer.parser.parse_args()
+        args = self.definer.parser.parse_args([])
 
         self.assertFalse(args.follow)

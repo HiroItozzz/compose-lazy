@@ -2,7 +2,7 @@
 
 from importlib.metadata import version
 
-__version__ = version(__package__)
+__version__ = "0.0.1"
 
 from fast_dcp.main import main, dcpu_main, dcpe_main
 

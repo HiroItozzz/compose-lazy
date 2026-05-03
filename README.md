@@ -1,6 +1,84 @@
-# fast-dcp
+# Fast DCP
+> 🚀 A CLI tool that provides shorthand aliases for common `docker compose` commands.
 
-A CLI tool that provides shorthand aliases for common `docker compose` commands.
+## 🐳 Tired of Typing `docker compose` Every Time?
+
+How many times have you typed `docker compose up --build` today?
+Fast DCP cuts it down to `dcpu -b` — same result, a fraction of the keystrokes.
+
+## Sample Usage
+```bash
+# docker compose up --build
+dcpu -b
+# docker compose -f docker-compose.prod.yml up -d
+dcpu -f docker-compose.prod.yml -d
+# docker compose exec app bash
+dcpe app
+# docker compose exec app uv run pytest
+dcpe app uv run pytest
+# docker compose restart app
+dcp r app
+```
+
+## Install fast-dcp
+### Quick Install (Recommended)
+```bash
+# Using pipx
+pipx install fast-dcp
+# OR using uv
+uv tool install fast-dcp
+```
+### Not familiar with Python tooling?
+
+If you don't have `pipx` or `uv` installed yet:
+
+<details>
+<summary>Windows</summary>
+
+```bash
+python -m pip install --user pipx
+python -m pipx ensurepath
+# Restart terminal, then:
+pipx install fast-dcp
+```
+</details>
+
+<details>
+<summary>macOS</summary>
+
+```bash
+brew install pipx
+pipx ensurepath
+pipx install fast-dcp
+```
+</details>
+
+<details>
+<summary>Linux (Ubuntu/Debian)</summary>
+
+```bash
+pip install pipx
+pipx ensurepath
+pipx install fast-dcp
+```
+</details>
+
+## ✨ Features
+
+- **Short Aliases**: `dcp u`, `dcp b`, `dcp e` — fewer keystrokes for common commands
+- **Dedicated Commands**: `dcpu` and `dcpe` for frequent up/exec workflows
+- **Zero Config**: No configuration files needed — just install and run
+- **Cross-Platform**: Works on Windows, macOS, and Linux
+
+## ❓ FAQ
+### Why use pipx or uv tool instead of pip?
+
+Both `pipx` and `uv tool` install CLI tools in isolated environments, so fast-dcp won't conflict with other Python packages. The commands (`dcp`, `dcpu`, `dcpe`) are available globally without activating a virtual environment. `uv tool` is the faster alternative if you already use uv.
+
+## 🔧 Requirements
+
+- Python 3.11+
+- Docker with Compose V2 (`docker compose` — not `docker-compose`)
 
 ## List of Commands
 
