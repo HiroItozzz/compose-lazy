@@ -4,9 +4,11 @@ from argparse import ArgumentParser
 
 class ArgDefinerTestBase(TestCase):
     def setUp(self):
-        from fast_dcp.args import ArgDefiner
+        from fast_dcp.args import ArgBuilder
+
         parser = ArgumentParser()
-        self.definer = ArgDefiner(parser)
+        self.definer = ArgBuilder(parser)
+
 
 class TestSetDefaults(ArgDefinerTestBase):
     def setUp(self):
@@ -14,6 +16,7 @@ class TestSetDefaults(ArgDefinerTestBase):
 
         def test_func(args):
             return 1
+
         self.test_func = test_func
 
     def test_set_defaults(self):
@@ -24,11 +27,13 @@ class TestSetDefaults(ArgDefinerTestBase):
 
     def test_set_defaults_NO_ATTR(self):
         from fast_dcp.process import DockerCmdProcessor
+
         self.definer.set_defaults()
         args = self.definer.parser.parse_args()
 
         # Default to an instance of `DockerCmdProcessor`.
         self.assertIsInstance(args.func, DockerCmdProcessor)
+
 
 class TestAddContainerName(ArgDefinerTestBase):
     def test_add_container_name_subcmd_SINGLE_ARG(self):
@@ -72,6 +77,7 @@ class TestAddContainerName(ArgDefinerTestBase):
         self.assertEqual(args.container_name, [])
         self.assertEqual(unknown, [])
 
+
 class TestAddInnerBashCmd(ArgDefinerTestBase):
     def test_inner_bash_cmd_DEFAULT(self):
         self.definer.add_inner_bash_cmd_args()
@@ -86,6 +92,7 @@ class TestAddInnerBashCmd(ArgDefinerTestBase):
 
         # Parses multiple args.
         self.assertEqual(args.inner_bash_cmd, ["uv", "run", "pytest"])
+
 
 class TestAddFileArgs(ArgDefinerTestBase):
     def test_file_args_ABRREV(self):
@@ -126,6 +133,7 @@ class TestAddFileArgs(ArgDefinerTestBase):
         # Raises an error.
         self.assertRaises(SystemExit, self.definer.parser.parse_args, ["--file"])
 
+
 class TestAddProjectArgs(ArgDefinerTestBase):
     def test_add_project_args_ABBREV(self):
         self.definer.add_project_args()
@@ -147,7 +155,7 @@ class TestAddProjectArgs(ArgDefinerTestBase):
 
     def test_add_project_args_ABBREV_WITH_MULTIPLE_ARGS(self):
         self.definer.add_project_args()
-        args, unknown = self.definer.parser.parse_known_args( ["-p", "project_1", "project_2"])
+        args, unknown = self.definer.parser.parse_known_args(["-p", "project_1", "project_2"])
 
         # Parses only one arg.
         self.assertEqual(args.project, ["project_1"])
@@ -161,7 +169,9 @@ class TestAddProjectArgs(ArgDefinerTestBase):
 
     def test_add_project_args_LONG_WITH_MULTIPLE_ARGS(self):
         self.definer.add_project_args()
-        args, unknown = self.definer.parser.parse_known_args( ["--project", "project_1", "project_2"])
+        args, unknown = self.definer.parser.parse_known_args(
+            ["--project", "project_1", "project_2"]
+        )
 
         # Parses only one arg.
         self.assertEqual(args.project, ["project_1"])
@@ -175,6 +185,7 @@ class TestAddBuildArgs(ArgDefinerTestBase):
 
         # Stores true
         self.assertTrue(args.build)
+
     def test_add_build_args_LONG(self):
         self.definer.add_build_args()
         args = self.definer.parser.parse_args(["--build"])
@@ -187,6 +198,7 @@ class TestAddBuildArgs(ArgDefinerTestBase):
         args = self.definer.parser.parse_args()
 
         self.assertFalse(args.build)
+
 
 class TestAddDetachArgs(ArgDefinerTestBase):
     def test_add_detach_args_ABBREV(self):
@@ -208,6 +220,7 @@ class TestAddDetachArgs(ArgDefinerTestBase):
         args = self.definer.parser.parse_args()
 
         self.assertFalse(args.detach)
+
 
 class TestAddFollowArgs(ArgDefinerTestBase):
     def test_add_follow_args_ABBREV(self):

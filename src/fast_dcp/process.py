@@ -40,19 +40,19 @@ class DockerCmdProcessor:
                 self._create_stop_cmd()
             case "down":
                 self._create_down_cmd()
-        return self._run_subprocess()
+        return self._run_cmd()
 
     def call_dcpu(self, args: Namespace) -> int:
         self._setup(args)
         self._create_up_cmd()
-        return self._run_subprocess()
+        return self._run_cmd()
 
     def call_dcpe(self, args: Namespace) -> int:
         self._setup(args)
         self._create_exec_cmd()
-        return self._run_subprocess()
+        return self._run_cmd()
 
-    def _run_subprocess(self) -> int:
+    def _run_cmd(self) -> int:
         logger.debug(f"\n----output docker cmd---- \n{self.cmd}")
         print(f"executing `{' '.join(self.cmd)}`")
         result = subprocess.run(self.cmd)
@@ -60,24 +60,30 @@ class DockerCmdProcessor:
 
     def _create_up_cmd(self) -> None:
         self.cmd += (
-                self._create_project_option()
-                + self._create_file_option()
-                + ["up"]
-                + (["--build"] if self.args.build else [])
-                + (["-d"] if self.args.detach else [])
-                + self.args.container_name
+            self._create_project_option()
+            + self._create_file_option()
+            + ["up"]
+            + (["--build"] if self.args.build else [])
+            + (["-d"] if self.args.detach else [])
+            + self.args.container_name
         )
 
     def _create_build_cmd(self) -> None:
         self.cmd += (
-                self._create_project_option()
-                + self._create_file_option()
-                + ["build"]
-                + self.args.container_name
+            self._create_project_option()
+            + self._create_file_option()
+            + ["build"]
+            + self.args.container_name
         )
 
     def _create_exec_cmd(self) -> None:
-        self.cmd += ["exec"] + self.args.container_name + self.args.inner_bash_cmd
+        self.cmd += (
+            self._create_project_option()
+            + self._create_file_option()
+            + ["exec"]
+            + self.args.container_name
+            + self.args.inner_bash_cmd
+        )
 
     def _create_restart_cmd(self) -> None:
         self.cmd += ["restart"] + self.args.container_name
@@ -100,6 +106,7 @@ class DockerCmdProcessor:
             if not (f.rsplit(".", maxsplit=1)[-1] in ["yaml", "yml"]):
                 # prints a warning, does not raise
                 import sys
+
                 print(f"invalid file type: {f}", file=sys.stderr)
             file_args += ["-f", f]
         return file_args

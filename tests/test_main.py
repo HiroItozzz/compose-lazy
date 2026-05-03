@@ -1,8 +1,187 @@
-import unittest
+from unittest.mock import MagicMock, patch
+
+import pytest
+
+from fast_dcp import main, dcpu_main, dcpe_main
 
 
-class MyTestCase(unittest.TestCase): ...
+class TestMain:
+    # fmt:off
+    testcases_DCP_U_SINGLE_OPTION = (
+        ("dcp u", "docker compose up"),
+        ("dcp up", "docker compose up"),
+        ("dcp u test_container", "docker compose up test_container"),
+        ("dcp up test_container", "docker compose up test_container"),
+        ("dcp u test1 test2", "docker compose up test1 test2"),
+        ("dcp up test1 test2", "docker compose up test1 test2"),
+        ("dcp u -b", "docker compose up --build"),
+        ("dcp up -b", "docker compose up --build"),
+        ("dcp u --build", "docker compose up --build"),
+        ("dcp up --build", "docker compose up --build"),
+        ("dcp u -d", "docker compose up -d"),
+        ("dcp up -d", "docker compose up -d"),
+        ("dcp u --detach", "docker compose up -d"),
+        ("dcp up --detach", "docker compose up -d"),
+        ("dcp u -p test", "docker compose -p test up"),
+        ("dcp up -p test", "docker compose -p test up"),
+        ("dcp u --project test", "docker compose -p test up"),
+        ("dcp up --project test", "docker compose -p test up"),
+        ("dcp u -f test.yaml", "docker compose -f test.yaml up"),
+        ("dcp up -f test.yaml", "docker compose -f test.yaml up"),
+        ("dcp u --file test.yaml", "docker compose -f test.yaml up"),
+        ("dcp up --file test.yaml", "docker compose -f test.yaml up"),
+        ("dcp u -f test1.yaml test2.yaml", "docker compose -f test1.yaml -f test2.yaml up"),
+        ("dcp up -f test1.yaml test2.yaml", "docker compose -f test1.yaml -f test2.yaml up"),
+        ("dcp u --file test1.yaml test2.yaml", "docker compose -f test1.yaml -f test2.yaml up"),
+        ("dcp up --file test1.yaml test2.yaml", "docker compose -f test1.yaml -f test2.yaml up"),
+    )
+    testcases_DCP_U_MULTIPLE_OPTIONS = (
+        ("dcp u -f test.yaml -b", "docker compose -f test.yaml up --build"),
+        ("dcp u -f test1.yaml test2.yaml -b", "docker compose -f test1.yaml -f test2.yaml up --build"),
+        ("dcp u -f test.yaml -b test_container", "docker compose -f test.yaml up --build test_container"),
+        ("dcp u -f test.yaml -b test1 test2", "docker compose -f test.yaml up --build test1 test2"),
+        ("dcp u -b -d", "docker compose up --build -d"),
+        ("dcp u -f test.yaml -b -d", "docker compose -f test.yaml up --build -d"),
+    )
+    testcases_DCP_U_MIXED_ALIASES = (
+        ("dcp u -bd", "docker compose up --build -d"),
+        ("dcp u -db", "docker compose up --build -d"),
+        ("dcp u -bdf test.yaml", "docker compose -f test.yaml up --build -d"),
+        ("dcp u -dbf test.yaml", "docker compose -f test.yaml up --build -d"),
+        ("dcp u -bdf test1.yaml test2.yaml", "docker compose -f test1.yaml -f test2.yaml up --build -d"),
+        ("dcp u -bdp testproject", "docker compose -p testproject up --build -d"),
+        ("dcp u -dbp testproject", "docker compose -p testproject up --build -d"),
+    )
+    testcases_DCP_B_SINGLE_OPTION = (
+        ("dcp b", "docker compose build"),
+        ("dcp b -f test.yaml", "docker compose -f test.yaml build"),
+        ("dcp b -f test1.yaml test2.yaml", "docker compose -f test1.yaml -f test2.yaml build"),
+        ("dcp b -p testproject", "docker compose -p testproject build"),
+        ("dcp build", "docker compose build"),
+        ("dcp build -f test.yaml", "docker compose -f test.yaml build"),
+        ("dcp build -f test1.yaml test2.yaml", "docker compose -f test1.yaml -f test2.yaml build"),
+        ("dcp build -p testproject", "docker compose -p testproject build"),
+    )
+    testcases_DCP_E_SINGLE_OPTION = (
+        ("dcp e container", "docker compose exec container bash"),
+        ("dcp e container uv run pytest", "docker compose exec container uv run pytest"),
+        ("dcp e container -f test.yaml", "docker compose -f test.yaml exec container bash"),
+        ("dcp e container uv run pytest -f test.yaml", "docker compose -f test.yaml exec container uv run pytest"),
+        ("dcp e container -p testproject", "docker compose -p testproject exec container bash"),
+        ("dcp e container uv run pytest -p testproject", "docker compose -p testproject exec container uv run pytest"),
+        ("dcp exec container", "docker compose exec container bash"),
+        ("dcp exec container uv run pytest", "docker compose exec container uv run pytest"),
+        ("dcp exec container -f test.yaml", "docker compose -f test.yaml exec container bash"),
+        ("dcp exec container uv run pytest -f test.yaml", "docker compose -f test.yaml exec container uv run pytest"),
+        ("dcp exec container -p testproject", "docker compose -p testproject exec container bash"),
+        ("dcp exec container uv run pytest -p testproject",
+         "docker compose -p testproject exec container uv run pytest"),
+    )
+    testcases_DCP_R_SINGLE_OPTION = (
+        ("dcp r container", "docker compose restart container"),
+        ("dcp r container1 container2", "docker compose restart container1 container2"),
+        ("dcp restart container", "docker compose restart container"),
+        ("dcp restart container1 container2", "docker compose restart container1 container2"),
+    )
+    testcases_DCP_PS_SINGLE_OPTION = (
+        ("dcp ps", "docker compose ps"),
+    )
+    testcases_DCP_L_SINGLE_OPTION = (
+        ("dcp l", "docker compose logs"),
+        ("dcp l --follow", "docker compose logs -f"),
+        ("dcp l -F", "docker compose logs -f"),
+        ("dcp l container", "docker compose logs container"),
+        ("dcp l container1 container2", "docker compose logs container1 container2"),
+        ("dcp l container1 container2 -F", "docker compose logs container1 container2 -f"),
+        ("dcp l container1 container2 --follow", "docker compose logs container1 container2 -f"),
+        ("dcp logs", "docker compose logs"),
+        ("dcp logs --follow", "docker compose logs -f"),
+        ("dcp logs -F", "docker compose logs -f"),
+        ("dcp logs container", "docker compose logs container"),
+        ("dcp logs container1 container2", "docker compose logs container1 container2"),
+        ("dcp logs container1 container2 -F", "docker compose logs container1 container2 -f"),
+        ("dcp logs container1 container2 --follow", "docker compose logs container1 container2 -f"),
+    )
+    testcases_DCP_S_SINGLE_OPTION = (
+        ("dcp s container", "docker compose stop container"),
+        ("dcp s container1 container2", "docker compose stop container1 container2"),
+        ("dcp stop container", "docker compose stop container"),
+        ("dcp stop container1 container2", "docker compose stop container1 container2"),
+    )
+    testcases_DCP_D_SINGLE_OPTION = (
+        ("dcp down", "docker compose down"),
+        ("dcp down -f test.yaml", "docker compose -f test.yaml down"),
+        ("dcp down -f test1.yaml test2.yaml", "docker compose -f test1.yaml -f test2.yaml down"),
+        ("dcp down -p testproject", "docker compose -p testproject down"),
+    )
+    testcases_DCPU_SINGLE_OPTION = (
+        ("dcpu", "docker compose up"),
+        ("dcpu test_container", "docker compose up test_container"),
+        ("dcpu test1 test2", "docker compose up test1 test2"),
+        ("dcpu -b", "docker compose up --build"),
+        ("dcpu --build", "docker compose up --build"),
+        ("dcpu -d", "docker compose up -d"),
+        ("dcpu --detach", "docker compose up -d"),
+        ("dcpu -p test", "docker compose -p test up"),
+        ("dcpu --project test", "docker compose -p test up"),
+        ("dcpu -f test.yaml", "docker compose -f test.yaml up"),
+        ("dcpu --file test.yaml", "docker compose -f test.yaml up"),
+        ("dcpu -f test1.yaml test2.yaml", "docker compose -f test1.yaml -f test2.yaml up"),
+        ("dcpu --file test1.yaml test2.yaml", "docker compose -f test1.yaml -f test2.yaml up"),
+    )
+    testcases_DCPE_SINGLE_OPTION = (
+        ("dcpe container", "docker compose exec container bash"),
+        ("dcpe container -f test.yaml", "docker compose -f test.yaml exec container bash"),
+        ("dcpe container uv run pytest", "docker compose exec container uv run pytest"),
+        ("dcpe container -f test.yaml", "docker compose -f test.yaml exec container bash"),
+        ("dcpe container uv run pytest -f test.yaml", "docker compose -f test.yaml exec container uv run pytest"),
+        ("dcpe container -p testproject", "docker compose -p testproject exec container bash"),
+        ("dcpe container uv run pytest -p testproject", "docker compose -p testproject exec container uv run pytest"),
+    )
 
+    # @fmt:on
 
-if __name__ == "__main__":
-    unittest.main()
+    @pytest.mark.parametrize("input_cmd,expected_cmd", [
+        *testcases_DCP_U_SINGLE_OPTION,
+        *testcases_DCP_U_MULTIPLE_OPTIONS,
+        *testcases_DCP_U_MIXED_ALIASES,
+        *testcases_DCP_B_SINGLE_OPTION,
+        *testcases_DCP_E_SINGLE_OPTION,
+        *testcases_DCP_R_SINGLE_OPTION,
+        *testcases_DCP_PS_SINGLE_OPTION,
+        *testcases_DCP_L_SINGLE_OPTION,
+        *testcases_DCP_S_SINGLE_OPTION,
+        *testcases_DCP_D_SINGLE_OPTION,
+    ])
+    def test_run_dcp(self, input_cmd, expected_cmd):
+        with patch("fast_dcp.process.subprocess.run") as mock_run:
+            mock_run.return_value = MagicMock(returncode=0)
+            with patch("sys.argv", input_cmd.split()):
+                with pytest.raises(SystemExit) as exc_info:
+                    main()
+                mock_run.assert_called_once_with(expected_cmd.split())
+                assert exc_info.value.code == 0
+
+    @pytest.mark.parametrize("input_cmd,expected_cmd", [
+        *testcases_DCPU_SINGLE_OPTION,
+    ])
+    def test_run_dcpu(self, input_cmd, expected_cmd):
+        with patch("fast_dcp.process.subprocess.run") as mock_run:
+            mock_run.return_value = MagicMock(returncode=0)
+            with patch("sys.argv", input_cmd.split()):
+                with pytest.raises(SystemExit) as exc_info:
+                    dcpu_main()
+                mock_run.assert_called_once_with(expected_cmd.split())
+                assert exc_info.value.code == 0
+
+    @pytest.mark.parametrize("input_cmd,expected_cmd", [
+        *testcases_DCPE_SINGLE_OPTION,
+    ])
+    def test_run_dcpe(self, input_cmd, expected_cmd):
+        with patch("fast_dcp.process.subprocess.run") as mock_run:
+            mock_run.return_value = MagicMock(returncode=0)
+            with patch("sys.argv", input_cmd.split()):
+                with pytest.raises(SystemExit) as exc_info:
+                    dcpe_main()
+                mock_run.assert_called_once_with(expected_cmd.split())
+                assert exc_info.value.code == 0
