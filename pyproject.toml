@@ -28,7 +28,14 @@ line-length=100
 
 [dependency-groups]
 dev = [
-    "mypy>=1.20.2",
     "pytest>=9.0.3",
     "ruff>=0.15.12",
+    "ty>=0.0.34",
 ]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.ty.src]
+include= ["src/"]

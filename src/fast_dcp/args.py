@@ -4,7 +4,7 @@ import logging
 from argparse import ArgumentParser, Namespace
 from typing import Callable
 
-from .set_cmd import DockerCmdProcessor
+from .process import DockerCmdProcessor
 
 logger = logging.getLogger(__name__)
 
@@ -17,15 +17,15 @@ class ArgDefiner:
         self.parser.set_defaults(func=func)
         return self
 
-    def add_container_name_subcmd(self, multiple: bool = False):
+    def add_container_name_subcmd(self, multiple: bool = False) -> ArgDefiner:
         """add positional argument of container name(s) to command definition."""
         if multiple:
-            self.parser.add_argument("container_name", nargs="*", default=[])
+            self.parser.add_argument("container_name", action="extend", nargs="*", default=[])
         else:
-            self.parser.add_argument("container_name", nargs=1)
+            self.parser.add_argument("container_name", action="extend", nargs=1, default=[])
         return self
 
-    def add_inner_bash_cmd_args(self):
+    def add_inner_bash_cmd_args(self) -> ArgDefiner:
         self.parser.add_argument("inner_bash_cmd", nargs="*", default=["bash"])
         return self
 
@@ -33,7 +33,7 @@ class ArgDefiner:
         self.parser.add_argument(
             "-f",
             "--file",
-            nargs="*",
+            nargs="+",
             default=[],
             help="docker compose `-f FILE_1 [-f FILE_2 ...]` ...",
         )
@@ -43,14 +43,25 @@ class ArgDefiner:
         self.parser.add_argument(
             "-p",
             "--project",
+            nargs=1,
+            default=[],
             help="docker compose `-p PROJECT_NAME` ...",
         )
         return self
 
     def add_build_args(self) -> ArgDefiner:
-        self.parser.add_argument("-b", "--build", action="store_true", help="docker compose up `--build`...")
+        self.parser.add_argument(
+            "-b", "--build", action="store_true", help="docker compose up `--build`..."
+        )
         return self
 
-    def add_follow_args(self):
+    def add_detach_args(self) -> ArgDefiner:
+        """add optional argument `-d` to `docker compose up` command."""
+        self.parser.add_argument("-d", "--detach", action="store_true")
+        return self
+
+
+    def add_follow_args(self) -> ArgDefiner:
+        """add optional argument `-f` to `docker compose logs` command."""
         self.parser.add_argument("-F", "--follow", action="store_true")
         return self
