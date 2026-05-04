@@ -55,8 +55,12 @@ class DockerCmdProcessor:
     def _run_cmd(self) -> int:
         logger.debug(f"\n----output docker cmd---- \n{self.cmd}")
         print(f"executing `{' '.join(self.cmd)}`")
-        result = subprocess.run(self.cmd)
-        return result.returncode
+
+        try:
+            result = subprocess.run(self.cmd)
+            return result.returncode
+        except KeyboardInterrupt:
+            return 130  # SIGINT の慣習的な終了コード
 
     def _create_up_cmd(self) -> None:
         self.cmd += (
