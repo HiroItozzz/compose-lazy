@@ -1,9 +1,21 @@
 from argparse import ArgumentParser
 from unittest import TestCase
 
+import pytest
 
+
+# unittest
 class ArgBuilderTestBase(TestCase):
     def setUp(self):
+        from fast_dcp.args import ArgBuilder
+
+        parser = ArgumentParser()
+        self.builder = ArgBuilder(parser)
+
+
+# pytest
+class PytestArgBuilderBase:
+    def setup_method(self):
         from fast_dcp.args import ArgBuilder
 
         parser = ArgumentParser()
@@ -278,3 +290,41 @@ class TestAddAllArgs(ArgBuilderTestBase):
         args = self.builder.parser.parse_args([])
 
         self.assertFalse(args.all)
+
+
+class TestAddStatusArgs(PytestArgBuilderBase):
+    STATUS_CHOICES = (
+        "created",
+        "restarting",
+        "running",
+        "removing",
+        "paused",
+        "exited",
+        "dead",
+    )
+
+    @pytest.mark.parametrize("input_status", [*STATUS_CHOICES])
+    def test_add_status_args(self, input_status):
+        self.builder.add_status_args()
+        args = self.builder.parser.parse_args(["--status", input_status])
+
+        assert args.status == input_status
+
+    def test_add_status_args_WITH_MULTIPLE_ARGS(self):
+        self.builder.add_status_args()
+        args, unknown = self.builder.parser.parse_known_args(
+            ["--status", "created", "running"]
+        )
+
+        # Parses only one arg.
+        assert args.status == "created"
+        assert unknown == ["running"]
+
+    @pytest.mark.parametrize("input_status", ["", "invalid_status"])
+    def test_add_status_args_ERROR(self, input_status):
+        self.builder.add_status_args()
+
+        # Raises an error.
+        with pytest.raises(SystemExit) as exc_info:
+            self.builder.parser.parse_args(["--status", input_status])
+        exc_info.value.code != 0

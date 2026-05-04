@@ -95,7 +95,7 @@ def main() -> None:
     _ps = subparsers.add_parser(
         "ps",
         allow_abbrev=False,
-        usage="dcp ps",
+        usage="dcp ps [options]",
         description="Shorthand for `docker compose ps`.",
         help="docker compose `ps`",
     )
@@ -103,6 +103,7 @@ def main() -> None:
         ArgBuilder(_ps)
         .add_container_name_subcmd(multiple=True)
         .add_all_args()
+        .add_status_args()
         .set_defaults(func=Processor())
     )
 

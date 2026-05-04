@@ -87,9 +87,20 @@ class TestMain:
         ("dcp ps", "docker compose ps"),
         ("dcp ps -a", "docker compose ps --all"),
         ("dcp ps --all", "docker compose ps --all"),
-        ("dcp ps name1 name2", "docker compose ps name1 name2"),
-        ("dcp ps name1 name2 -a", "docker compose ps name1 name2 --all"),        
-        ("dcp ps -a name1 name2", "docker compose ps name1 name2 --all"),
+        ("dcp ps --status running", "docker compose ps --status running"),
+        ("dcp ps --status created", "docker compose ps --status created"),
+        ("dcp ps --status restarting", "docker compose ps --status restarting"),
+        ("dcp ps --status removing", "docker compose ps --status removing"),
+        ("dcp ps --status paused", "docker compose ps --status paused"),
+        ("dcp ps --status exited", "docker compose ps --status exited"),
+        ("dcp ps --status dead", "docker compose ps --status dead"),
+        ("dcp ps --status dead container1", "docker compose ps container1 --status dead"),
+        ("dcp ps container1 container2", "docker compose ps container1 container2"),
+        ("dcp ps container1 container2 -a", "docker compose ps container1 container2 --all"),        
+        ("dcp ps -a container1 container2", "docker compose ps container1 container2 --all"),
+        ("dcp ps -a container1 container2 --status exited", "docker compose ps container1 container2 --all --status exited"),
+        ("dcp ps --status running -a container1 container2", "docker compose ps container1 container2 --all --status running"),
+
     )
     testcases_DCP_L_SINGLE_OPTION = (
         ("dcp l", "docker compose logs"),
@@ -166,6 +177,19 @@ class TestMain:
                     main()
                 mock_run.assert_called_once_with(expected_cmd.split())
                 assert exc_info.value.code == 0
+
+    @pytest.mark.parametrize("input_cmd",[
+        "dcp ps --status",
+        "dcp ps --status invalid_status",
+        "dcp ps --status container1",
+    ])
+    def test_run_dcp_ERROR(self, input_cmd):
+        with patch("fast_dcp.process.subprocess.run") as mock_run:
+            mock_run.return_value = MagicMock(returncode=0)
+            with patch("sys.argv", input_cmd.split()):
+                with pytest.raises(SystemExit) as exc_info:
+                    main()
+                assert exc_info.value.code != 0
 
     @pytest.mark.parametrize("input_cmd", ["dcp"])
     def test_run_dcp_SUBCMD_IS_NONE(self, input_cmd):

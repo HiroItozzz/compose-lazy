@@ -93,6 +93,7 @@ class DockerCmdProcessor:
             ["ps"]
             + self.args.container_name
             + (["--all"] if self.args.all else [])
+            + self._create_status_option()
         )
 
     def _create_logs_cmd(self) -> None:
@@ -127,3 +128,8 @@ class DockerCmdProcessor:
         if not self.args.project:
             return []
         return ["-p"] + self.args.project
+
+    def _create_status_option(self) -> list[str]:
+        if not self.args.status:
+            return []
+        return ["--status", self.args.status]
