@@ -84,3 +84,10 @@ class ArgBuilder:
             "-F", "--follow", action="store_true", help="docker compose logs -f"
         )
         return self
+    
+    def add_all_args(self) -> ArgBuilder:
+        """add optional argument `--all(-a)` to `docker compose ps` command."""
+        self.parser.add_argument(
+            "-a", "--all", action="store_true", help="docker compose ps -a(--all)"
+        )
+        return self

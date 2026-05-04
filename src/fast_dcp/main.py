@@ -1,9 +1,9 @@
 from argparse import ArgumentParser
+from importlib.metadata import version
 
 from . import config
 from .args import ArgBuilder
 from .process import DockerCmdProcessor as Processor
-from importlib.metadata import version
 
 VERSION = version(__package__)
 
@@ -26,6 +26,7 @@ def main() -> None:
     _up = subparsers.add_parser(
         "up",
         aliases=["u"],
+        allow_abbrev=False,
         usage="dcp up(u) [container_names] [options]",
         description="Shorthand for `docker compose up`.",
         help="docker compose `up`",
@@ -44,6 +45,7 @@ def main() -> None:
     _build = subparsers.add_parser(
         "build",
         aliases=["b"],
+        allow_abbrev=False,
         usage="dcp build(b) [container_names] [options]",
         description="Shorthand for `docker compose build`.",
         help="docker compose `build`",
@@ -60,6 +62,7 @@ def main() -> None:
     _exec = subparsers.add_parser(
         "exec",
         aliases=["e"],
+        allow_abbrev=False,
         usage="dcp exec(e) <container_name>  [options] [BASH|cmd]",
         description="Shorthand for `docker compose exec`.",
         help="docker compose `exec`",
@@ -77,6 +80,7 @@ def main() -> None:
     _restart = subparsers.add_parser(
         "restart",
         aliases=["r"],
+        allow_abbrev=False,
         usage="dcp restart(r) [container_names]",
         description="Shorthand for `docker compose restart`.",
         help="docker compose `restart`",
@@ -90,17 +94,23 @@ def main() -> None:
     # dcp ps command
     _ps = subparsers.add_parser(
         "ps",
+        allow_abbrev=False,
         usage="dcp ps",
         description="Shorthand for `docker compose ps`.",
         help="docker compose `ps`",
     )
-    (ArgBuilder(_ps)
-     .set_defaults(func=Processor()))
+    (
+        ArgBuilder(_ps)
+        .add_container_name_subcmd(multiple=True)
+        .add_all_args()
+        .set_defaults(func=Processor())
+    )
 
     # dcp logs(l) command
     _logs = subparsers.add_parser(
         "logs",
         aliases=["l"],
+        allow_abbrev=False,
         usage="dcp logs(l) [container_names] [options]",
         description="Shorthand for `docker compose logs`.",
         help="docker compose `logs`",
@@ -116,6 +126,7 @@ def main() -> None:
     _stop = subparsers.add_parser(
         "stop",
         aliases=["s"],
+        allow_abbrev=False,
         usage="dcp stop(s) [container_names]",
         description="Shorthand for `docker compose stop`.",
         help="docker compose `stop`",
@@ -129,6 +140,7 @@ def main() -> None:
     # dcp down command
     _down = subparsers.add_parser(
         "down",
+        allow_abbrev=False,
         usage="dcp down [options]",
         description="Shorthand for `docker compose down`.",
         help="docker compose `down`",

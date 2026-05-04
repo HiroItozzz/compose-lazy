@@ -89,7 +89,11 @@ class DockerCmdProcessor:
         self.cmd += ["restart"] + self.args.container_name
 
     def _create_ps_cmd(self) -> None:
-        self.cmd += ["ps"]
+        self.cmd += (
+            ["ps"]
+            + self.args.container_name
+            + (["--all"] if self.args.all else [])
+        )
 
     def _create_logs_cmd(self) -> None:
         self.cmd += (

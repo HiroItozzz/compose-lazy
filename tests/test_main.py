@@ -2,7 +2,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from fast_dcp import main, dcpu_main, dcpe_main
+from fast_dcp import dcpe_main, dcpu_main, main
 
 
 class TestMain:
@@ -85,6 +85,11 @@ class TestMain:
     )
     testcases_DCP_PS_SINGLE_OPTION = (
         ("dcp ps", "docker compose ps"),
+        ("dcp ps -a", "docker compose ps --all"),
+        ("dcp ps --all", "docker compose ps --all"),
+        ("dcp ps name1 name2", "docker compose ps name1 name2"),
+        ("dcp ps name1 name2 -a", "docker compose ps name1 name2 --all"),        
+        ("dcp ps -a name1 name2", "docker compose ps name1 name2 --all"),
     )
     testcases_DCP_L_SINGLE_OPTION = (
         ("dcp l", "docker compose logs"),
