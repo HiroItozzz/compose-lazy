@@ -1,8 +1,8 @@
 import subprocess
 from argparse import Namespace
+from unittest.mock import MagicMock
 
 import pytest
-from unittest.mock import MagicMock
 
 from fast_dcp.process import DockerCmdProcessor
 
@@ -97,6 +97,16 @@ class TestRunSubprocess(TestDCPBase):
         subprocess.run.assert_called_once_with(test_cmd)
         assert self.processor._run_cmd() == 1
 
+    def test_run_subprocess_KEYBOARD_INTERRUPT(self):
+        subprocess.run = MagicMock(side_effect=KeyboardInterrupt())
+
+        test_cmd = ["docker", "compose", "up"]
+        self.processor.cmd = test_cmd
+        code = self.processor._run_cmd()
+
+        assert code == 130
+        subprocess.run.assert_called_once_with(test_cmd)
+
 
 class TestCreateOptions(TestDCPBase):
     def setup_method(self):
@@ -109,8 +119,14 @@ class TestCreateOptions(TestDCPBase):
             ([], []),
             (["compose.yaml"], ["-f", "compose.yaml"]),
             (["compose.yml"], ["-f", "compose.yml"]),
-            (["compose.yaml", "compose_2.yaml"], ["-f", "compose.yaml", "-f", "compose_2.yaml"]),
-            (["compose.yml", "compose_2.yml"], ["-f", "compose.yml", "-f", "compose_2.yml"]),
+            (
+                ["compose.yaml", "compose_2.yaml"],
+                ["-f", "compose.yaml", "-f", "compose_2.yaml"],
+            ),
+            (
+                ["compose.yml", "compose_2.yml"],
+                ["-f", "compose.yml", "-f", "compose_2.yml"],
+            ),
         ],
     )
     def test_create_file_option_VALID_TYPE(self, file_values, expected_value):
@@ -123,10 +139,15 @@ class TestCreateOptions(TestDCPBase):
         "file_values,expected_value",
         [
             (["compose.txt"], ["-f", "compose.txt"]),
-            (["compose.txt", "compose_2.txt"], ["-f", "compose.txt", "-f", "compose_2.txt"]),
+            (
+                ["compose.txt", "compose_2.txt"],
+                ["-f", "compose.txt", "-f", "compose_2.txt"],
+            ),
         ],
     )
-    def test_create_file_option_INVALID_TYPE(self, file_values, expected_value, capsys):
+    def test_create_file_option_INVALID_TYPE(
+        self, file_values, expected_value, capsys
+    ):
         """test for invalid file extensions: warns to stderr but still processes the file"""
         self.processor._args.file = file_values
 

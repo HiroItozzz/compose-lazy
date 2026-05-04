@@ -1,9 +1,9 @@
 from argparse import ArgumentParser
+from importlib.metadata import version
 
 from . import config
 from .args import ArgBuilder
 from .process import DockerCmdProcessor as Processor
-from importlib.metadata import version
 
 VERSION = version(__package__)
 
@@ -26,7 +26,8 @@ def main() -> None:
     _up = subparsers.add_parser(
         "up",
         aliases=["u"],
-        usage="dcp up(u) [container_names] [options]",
+        allow_abbrev=False,
+        usage="dcp up(u) [CONTAINER_NAME ...] [options]",
         description="Shorthand for `docker compose up`.",
         help="docker compose `up`",
     )
@@ -44,7 +45,8 @@ def main() -> None:
     _build = subparsers.add_parser(
         "build",
         aliases=["b"],
-        usage="dcp build(b) [container_names] [options]",
+        allow_abbrev=False,
+        usage="dcp build(b) [CONTAINER_NAME ...] [options]",
         description="Shorthand for `docker compose build`.",
         help="docker compose `build`",
     )
@@ -60,7 +62,8 @@ def main() -> None:
     _exec = subparsers.add_parser(
         "exec",
         aliases=["e"],
-        usage="dcp exec(e) <container_name>  [options] [BASH|cmd]",
+        allow_abbrev=False,
+        usage="dcp exec(e) <CONTAINER_NAME> [BASH|commands] [options]",
         description="Shorthand for `docker compose exec`.",
         help="docker compose `exec`",
     )
@@ -77,7 +80,8 @@ def main() -> None:
     _restart = subparsers.add_parser(
         "restart",
         aliases=["r"],
-        usage="dcp restart(r) [container_names]",
+        allow_abbrev=False,
+        usage="dcp restart(r) [CONTAINER_NAME ...]",
         description="Shorthand for `docker compose restart`.",
         help="docker compose `restart`",
     )
@@ -90,18 +94,25 @@ def main() -> None:
     # dcp ps command
     _ps = subparsers.add_parser(
         "ps",
-        usage="dcp ps",
+        allow_abbrev=False,
+        usage="dcp ps [CONTAINER_NAME ...] [-a] [--status STATUS]",
         description="Shorthand for `docker compose ps`.",
         help="docker compose `ps`",
     )
-    (ArgBuilder(_ps)
-     .set_defaults(func=Processor()))
+    (
+        ArgBuilder(_ps)
+        .add_container_name_subcmd(multiple=True)
+        .add_all_args()
+        .add_status_args()
+        .set_defaults(func=Processor())
+    )
 
     # dcp logs(l) command
     _logs = subparsers.add_parser(
         "logs",
         aliases=["l"],
-        usage="dcp logs(l) [container_names] [options]",
+        allow_abbrev=False,
+        usage="dcp logs(l) [CONTAINER_NAME ...] [-f]",
         description="Shorthand for `docker compose logs`.",
         help="docker compose `logs`",
     )
@@ -116,7 +127,8 @@ def main() -> None:
     _stop = subparsers.add_parser(
         "stop",
         aliases=["s"],
-        usage="dcp stop(s) [container_names]",
+        allow_abbrev=False,
+        usage="dcp stop(s) [CONTAINER_NAME ...]",
         description="Shorthand for `docker compose stop`.",
         help="docker compose `stop`",
     )
@@ -129,7 +141,8 @@ def main() -> None:
     # dcp down command
     _down = subparsers.add_parser(
         "down",
-        usage="dcp down [options]",
+        allow_abbrev=False,
+        usage="dcp down [-f FILE_NAME ...] [-p PROJECT_NAME] ",
         description="Shorthand for `docker compose down`.",
         help="docker compose `down`",
     )
@@ -151,7 +164,7 @@ def main() -> None:
 def dcpu_main() -> None:
     parser = ArgumentParser(
         allow_abbrev=False,
-        usage="dcpu [container_names] [options]",
+        usage="dcpu [CONTAINER_NAME] [options]",
         description="Shorthand for `docker compose up`.",
         epilog="See also: `dcp -h`, `dcpe -h`",
     )
@@ -179,7 +192,7 @@ def dcpu_main() -> None:
 def dcpe_main() -> None:
     parser = ArgumentParser(
         allow_abbrev=False,
-        usage="dcpe <container_name> [options] [BASH|commands]",
+        usage="dcpe <CONTAINER_NAME> [BASH|commands] [options]",
         description="Shorthand for `docker compose exec`.",
         epilog="See also: `dcp -h`, `dcpu -h`",
     )

@@ -13,7 +13,9 @@ class ArgBuilder:
     def __init__(self, parser: ArgumentParser):
         self.parser = parser
 
-    def set_defaults(self, func: Callable[[Namespace], int] | None = None) -> ArgBuilder:
+    def set_defaults(
+        self, func: Callable[[Namespace], int] | None = None
+    ) -> ArgBuilder:
         func = func or DockerCmdProcessor()
         self.parser.set_defaults(func=func)
         return self
@@ -69,18 +71,49 @@ class ArgBuilder:
 
     def add_build_args(self) -> ArgBuilder:
         self.parser.add_argument(
-            "-b", "--build", action="store_true", help="docker compose up --build"
+            "-b",
+            "--build",
+            action="store_true",
+            help="docker compose up --build",
         )
         return self
 
     def add_detach_args(self) -> ArgBuilder:
         """add optional argument `-d` to `docker compose up` command."""
-        self.parser.add_argument("-d", "--detach", action="store_true", help="docker compose up -d")
+        self.parser.add_argument(
+            "-d", "--detach", action="store_true", help="docker compose up -d"
+        )
         return self
 
     def add_follow_args(self) -> ArgBuilder:
         """add optional argument `-f` to `docker compose logs` command."""
         self.parser.add_argument(
             "-F", "--follow", action="store_true", help="docker compose logs -f"
+        )
+        return self
+
+    def add_all_args(self) -> ArgBuilder:
+        """add optional argument `--all(-a)` to `docker compose ps` command."""
+        self.parser.add_argument(
+            "-a",
+            "--all",
+            action="store_true",
+            help="docker compose ps -a(--all)",
+        )
+        return self
+
+    def add_status_args(self) -> ArgBuilder:
+        self.parser.add_argument(
+            "--status",
+            choices=[
+                "created",
+                "restarting",
+                "running",
+                "removing",
+                "paused",
+                "exited",
+                "dead",
+            ],
+            help="docker compose ps --status <STATUS>",
         )
         return self

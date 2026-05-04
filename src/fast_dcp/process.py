@@ -55,8 +55,12 @@ class DockerCmdProcessor:
     def _run_cmd(self) -> int:
         logger.debug(f"\n----output docker cmd---- \n{self.cmd}")
         print(f"executing `{' '.join(self.cmd)}`")
-        result = subprocess.run(self.cmd)
-        return result.returncode
+
+        try:
+            result = subprocess.run(self.cmd)
+            return result.returncode
+        except KeyboardInterrupt:
+            return 130  # SIGINT の慣習的な終了コード
 
     def _create_up_cmd(self) -> None:
         self.cmd += (
@@ -89,7 +93,12 @@ class DockerCmdProcessor:
         self.cmd += ["restart"] + self.args.container_name
 
     def _create_ps_cmd(self) -> None:
-        self.cmd += ["ps"]
+        self.cmd += (
+            ["ps"]
+            + self.args.container_name
+            + (["--all"] if self.args.all else [])
+            + self._create_status_option()
+        )
 
     def _create_logs_cmd(self) -> None:
         self.cmd += (
@@ -123,3 +132,8 @@ class DockerCmdProcessor:
         if not self.args.project:
             return []
         return ["-p"] + self.args.project
+
+    def _create_status_option(self) -> list[str]:
+        if not self.args.status:
+            return []
+        return ["--status", self.args.status]
