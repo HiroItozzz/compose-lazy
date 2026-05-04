@@ -1,8 +1,6 @@
 """A CLI tool that provides shorthand aliases for common docker compose commands."""
 
-from importlib.metadata import version
-
-__version__ = "0.0.1"
+__version__ = "0.0.2"
 
 from fast_dcp.main import main, dcpu_main, dcpe_main
 
