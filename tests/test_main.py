@@ -2,7 +2,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from fast_dcp import dcpe_main, dcpu_main, main
+from fast_dcp.main import dcpe_main, dcpu_main, main
 
 
 class TestMain:

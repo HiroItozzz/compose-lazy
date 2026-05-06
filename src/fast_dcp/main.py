@@ -1,3 +1,4 @@
+import logging
 from argparse import ArgumentParser
 from importlib.metadata import version
 
@@ -7,10 +8,12 @@ from .process import DockerCmdProcessor as Processor
 
 VERSION = version(__package__)
 
-logger = config.setup_logger("fast_dcp")
+logger = logging.getLogger(__name__)
 
 
 def main() -> None:
+    config.setup_logger("fast_dcp")
+
     base_parser = ArgumentParser(
         allow_abbrev=False,
         usage="dcp <command> [options]",
@@ -162,6 +165,8 @@ def main() -> None:
 
 
 def dcpu_main() -> None:
+    config.setup_logger("fast_dcp")
+
     parser = ArgumentParser(
         allow_abbrev=False,
         usage="dcpu [CONTAINER_NAME] [options]",
@@ -190,6 +195,8 @@ def dcpu_main() -> None:
 
 
 def dcpe_main() -> None:
+    config.setup_logger("fast_dcp")
+
     parser = ArgumentParser(
         allow_abbrev=False,
         usage="dcpe <CONTAINER_NAME> [BASH|commands] [options]",

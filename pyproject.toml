@@ -26,9 +26,9 @@ classifiers = [
 dependencies = []
 
 [project.scripts]
-dcp = "fast_dcp:main"
-dcpu = "fast_dcp:dcpu_main"
-dcpe = "fast_dcp:dcpe_main"
+dcp = "fast_dcp.main:main"
+dcpu = "fast_dcp.main:dcpu_main"
+dcpe = "fast_dcp.main:dcpe_main"
 
 [project.urls]
 Repository = "https://github.com/HiroItozzz/fast-dcp"
@@ -37,9 +37,13 @@ Repository = "https://github.com/HiroItozzz/fast-dcp"
 dev = [
     "pytest>=9.0.3",
     "pytest-cov>=7.1.0",
+    "python-dotenv>=1.2.2",
     "ruff>=0.15.12",
     "ty>=0.0.34",
 ]
+
+[tool.flit.sdist]
+include = ["tests/"]
 
 [tool.uv]
 package = true
