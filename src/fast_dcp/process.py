@@ -31,6 +31,8 @@ class DockerCmdProcessor:
                 self._create_build_cmd()
             case "exec" | "e":
                 self._create_exec_cmd()
+            case "run" | "R":
+                self._create_run_cmd()
             case "restart" | "r":
                 self._create_restart_cmd()
             case "ps":
@@ -88,6 +90,11 @@ class DockerCmdProcessor:
             + ["exec"]
             + self.args.container_name
             + self.args.inner_bash_cmd
+        )
+
+    def _create_run_cmd(self) -> None:
+        self.cmd += (
+            ["run"] + self.args.container_name + self.args.inner_bash_cmd
         )
 
     def _create_restart_cmd(self) -> None:

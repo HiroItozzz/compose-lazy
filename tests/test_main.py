@@ -77,6 +77,12 @@ class TestMain:
         ("dcp exec container uv run pytest -p testproject",
          "docker compose -p testproject exec container uv run pytest"),
     )
+    testcases_DCP_RUN_SINGLE_OPTION = (
+        ("dcp R container", "docker compose exec container bash"),
+        ("dcp R container uv run pytest", "docker compose exec container uv run pytest"),
+        ("dcp run container", "docker compose exec container bash"),
+        ("dcp run container uv run pytest", "docker compose exec container uv run pytest"),
+    )
     testcases_DCP_R_SINGLE_OPTION = (
         ("dcp r container", "docker compose restart container"),
         ("dcp r container1 container2", "docker compose restart container1 container2"),

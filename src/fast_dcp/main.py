@@ -79,6 +79,22 @@ def main() -> None:
         .set_defaults(func=Processor())
     )
 
+    # dcp run(R) command
+    _run = subparsers.add_parser(
+        "run",
+        aliases=["R"],
+        allow_abbrev=False,
+        usage="dcp run <CONTAINER_NAME> [BASH|commands]",
+        description="Shorthand for `docker compose run`.",
+        help="docker compose `run`",
+    )
+    (
+        ArgBuilder(_run)
+        .add_container_name_subcmd(multiple=False)
+        .add_inner_bash_cmd_args()
+        .set_defaults(func=Processor())
+    )
+
     # dcp restart(r) command
     _restart = subparsers.add_parser(
         "restart",
