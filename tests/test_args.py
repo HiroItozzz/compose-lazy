@@ -304,6 +304,23 @@ class TestAddStatusArgs(PytestArgBuilderBase):
     )
 
     @pytest.mark.parametrize("input_status", [*STATUS_CHOICES])
+    def test_add_status_args_ABBREV(self, input_status):
+        self.builder.add_status_args()
+        args = self.builder.parser.parse_args(["-st", input_status])
+
+        assert args.status == input_status
+
+    def test_add_status_args_ABBREV_WITH_MULTIPLE_ARGS(self):
+        self.builder.add_status_args()
+        args, unknown = self.builder.parser.parse_known_args(
+            ["-st", "created", "running"]
+        )
+
+        # Parses only one arg.
+        assert args.status == "created"
+        assert unknown == ["running"]
+
+    @pytest.mark.parametrize("input_status", [*STATUS_CHOICES])
     def test_add_status_args(self, input_status):
         self.builder.add_status_args()
         args = self.builder.parser.parse_args(["--status", input_status])
@@ -328,3 +345,27 @@ class TestAddStatusArgs(PytestArgBuilderBase):
         with pytest.raises(SystemExit) as exc_info:
             self.builder.parser.parse_args(["--status", input_status])
         exc_info.value.code != 0
+
+
+class TestAddRemoveOrphansArgs(ArgBuilderTestBase):
+    """Test cases for ArgBuilder.add_remove_orphans_args()"""
+
+    def test_add_all_args_ABBREV(self):
+        self.builder.add_remove_orphans_args()
+        args = self.builder.parser.parse_args(["-ro"])
+
+        # Stores true
+        self.assertTrue(args.remove_orphans)
+
+    def test_add_remove_orphans_args_LONG(self):
+        self.builder.add_remove_orphans_args()
+        args = self.builder.parser.parse_args(["--remove-orphans"])
+
+        # Stores true
+        self.assertTrue(args.remove_orphans)
+
+    def test_add_remove_orphans_args_NO_ARGS(self):
+        self.builder.add_remove_orphans_args()
+        args = self.builder.parser.parse_args([])
+
+        self.assertFalse(args.remove_orphans)

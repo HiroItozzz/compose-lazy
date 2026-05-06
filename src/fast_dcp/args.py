@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from argparse import ArgumentParser, Namespace
-from typing import Callable
+from typing import Callable, Self
 
 from .process import DockerCmdProcessor
 
@@ -104,6 +104,7 @@ class ArgBuilder:
 
     def add_status_args(self) -> ArgBuilder:
         self.parser.add_argument(
+            "-st",
             "--status",
             choices=[
                 "created",
@@ -114,6 +115,15 @@ class ArgBuilder:
                 "exited",
                 "dead",
             ],
-            help="docker compose ps --status <STATUS>",
+            help="docker compose ps -st(--status) <STATUS>",
+        )
+        return self
+
+    def add_remove_orphans_args(self) -> Self:
+        self.parser.add_argument(
+            "-ro",
+            "--remove-orphans",
+            action="store_true",
+            help="docker compose down `--remove-orphans`",
         )
         return self

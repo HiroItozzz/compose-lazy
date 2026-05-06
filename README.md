@@ -11,11 +11,11 @@ Fast DCP cuts it down to `dcpu -b` — same result, a fraction of the keystrokes
 # docker compose up --build
 dcpu -b
 # docker compose -f docker-compose.prod.yml up -d
-dcpu -f docker-compose.prod.yml -d
+dcpu -df docker-compose.prod.yml
 # docker compose exec app bash
 dcpe app
-# docker compose exec app uv run pytest
-dcpe app uv run pytest
+# docker compose exec db psql -U user -d mydb
+dcpe db -- psql -U user -d mydb
 # docker compose restart app
 dcp r app
 ```
@@ -97,15 +97,20 @@ Both `pipx` and `uv tool` install CLI tools in isolated environments, so fast-dc
 | dcp exec(e) container_name                | docker compose exec container_name bash           |
 | dcp exec(e) container_name bash           | docker compose exec container_name bash           |
 | dcp exec(e) container_name args1 args2... | docker compose exec container_name args1 args2... |
+| dcp run(R) container_name bash            | docker compose run container_name bash            |
+| dcp run(R) container_name args1 args2...  | docker compose run container_name args1 args2...  |
 | dcp restart(r)                            | docker compose restart                            |
 | dcp restart(r) container_name             | docker compose restart container_name             |
 | dcp ps                                    | docker compose ps                                 |
+| dcp ps -a                                 | docker compose ps --all                           |
+| dcp ps -st running                        | docker compose ps --status running                |
 | dcp logs(l)                               | docker compose logs                               |
 | dcp logs(l) container_name                | docker compose logs container_name                |
 | dcp logs(l) container_name -F             | docker compose logs container_name -f             |
 | dcp stop                                  | docker compose stop                               |
 | dcp stop container_name                   | docker compose stop container_name                | 
 | dcp down                                  | docker compose down                               |
+| dcp down -ro                              | docker compose down --remove_orphans              |
 | dcpu                                      | docker compose up                                 |
 | dcpu -f path1 path2...                    | docker compose -f path1 -f path2... up            |
 | dcpu -p project_name...                   | docker compose -p project_name up                 |

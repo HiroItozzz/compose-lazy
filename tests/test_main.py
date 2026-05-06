@@ -78,12 +78,12 @@ class TestMain:
          "docker compose -p testproject exec container uv run pytest"),
     )
     testcases_DCP_RUN_SINGLE_OPTION = (
-        ("dcp R container", "docker compose exec container bash"),
-        ("dcp R container uv run pytest", "docker compose exec container uv run pytest"),
-        ("dcp run container", "docker compose exec container bash"),
-        ("dcp run container uv run pytest", "docker compose exec container uv run pytest"),
+        ("dcp R container", "docker compose run container bash"),
+        ("dcp R container uv run pytest", "docker compose run container uv run pytest"),
+        ("dcp run container", "docker compose run container bash"),
+        ("dcp run container uv run pytest", "docker compose run container uv run pytest"),
     )
-    testcases_DCP_R_SINGLE_OPTION = (
+    testcases_DCP_RESTART_SINGLE_OPTION = (
         ("dcp r container", "docker compose restart container"),
         ("dcp r container1 container2", "docker compose restart container1 container2"),
         ("dcp restart container", "docker compose restart container"),
@@ -93,6 +93,7 @@ class TestMain:
         ("dcp ps", "docker compose ps"),
         ("dcp ps -a", "docker compose ps --all"),
         ("dcp ps --all", "docker compose ps --all"),
+        ("dcp ps -st running", "docker compose ps --status running"),
         ("dcp ps --status running", "docker compose ps --status running"),
         ("dcp ps --status created", "docker compose ps --status created"),
         ("dcp ps --status restarting", "docker compose ps --status restarting"),
@@ -132,6 +133,8 @@ class TestMain:
     )
     testcases_DCP_D_SINGLE_OPTION = (
         ("dcp down", "docker compose down"),
+        ("dcp down -ro", "docker compose down --remove-orphans"),
+        ("dcp down --remove-orphans", "docker compose down --remove-orphans"),
         ("dcp down -f test.yaml", "docker compose -f test.yaml down"),
         ("dcp down -f test1.yaml test2.yaml", "docker compose -f test1.yaml -f test2.yaml down"),
         ("dcp down -p testproject", "docker compose -p testproject down"),
@@ -169,7 +172,8 @@ class TestMain:
         *testcases_DCP_U_MIXED_ALIASES,
         *testcases_DCP_B_SINGLE_OPTION,
         *testcases_DCP_E_SINGLE_OPTION,
-        *testcases_DCP_R_SINGLE_OPTION,
+        *testcases_DCP_RUN_SINGLE_OPTION,
+        *testcases_DCP_RESTART_SINGLE_OPTION,
         *testcases_DCP_PS_SINGLE_OPTION,
         *testcases_DCP_L_SINGLE_OPTION,
         *testcases_DCP_S_SINGLE_OPTION,

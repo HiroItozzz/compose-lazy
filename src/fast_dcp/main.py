@@ -114,7 +114,7 @@ def main() -> None:
     _ps = subparsers.add_parser(
         "ps",
         allow_abbrev=False,
-        usage="dcp ps [CONTAINER_NAME ...] [-a] [--status STATUS]",
+        usage="dcp ps [CONTAINER_NAME ...] [-a] [-st STATUS]",
         description="Shorthand for `docker compose ps`.",
         help="docker compose `ps`",
     )
@@ -161,12 +161,13 @@ def main() -> None:
     _down = subparsers.add_parser(
         "down",
         allow_abbrev=False,
-        usage="dcp down [-f FILE_NAME ...] [-p PROJECT_NAME] ",
+        usage="dcp down [-f FILE_NAME ...] [-p PROJECT_NAME] [-ro]",
         description="Shorthand for `docker compose down`.",
         help="docker compose `down`",
     )
     (
         ArgBuilder(_down)
+        .add_remove_orphans_args()
         .add_file_args()
         .add_project_args()
         .set_defaults(func=Processor())

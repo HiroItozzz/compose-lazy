@@ -123,6 +123,7 @@ class DockerCmdProcessor:
             self._create_project_option()
             + self._create_file_option()
             + ["down"]
+            + (["--remove-orphans"] if self.args.remove_orphans else [])
         )
 
     def _create_file_option(self) -> list[str]:
