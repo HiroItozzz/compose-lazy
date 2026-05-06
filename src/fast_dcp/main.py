@@ -6,7 +6,7 @@ from . import config
 from .args import ArgBuilder
 from .process import DockerCmdProcessor as Processor
 
-VERSION = version(__package__)
+VERSION = version(__package__ or "fast_dcp")
 
 logger = logging.getLogger(__name__)
 

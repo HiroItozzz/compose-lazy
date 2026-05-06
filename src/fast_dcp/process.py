@@ -1,5 +1,6 @@
 import logging
 import subprocess
+import sys
 from argparse import Namespace
 
 logger = logging.getLogger(__name__)
@@ -60,7 +61,7 @@ class DockerCmdProcessor:
             result = subprocess.run(self.cmd)
             return result.returncode
         except KeyboardInterrupt:
-            return 130  # SIGINT の慣習的な終了コード
+            return 130
 
     def _create_up_cmd(self) -> None:
         self.cmd += (
@@ -120,10 +121,8 @@ class DockerCmdProcessor:
     def _create_file_option(self) -> list[str]:
         file_args = []
         for f in self.args.file:
-            if not (f.rsplit(".", maxsplit=1)[-1] in ["yaml", "yml"]):
+            if not (f.rsplit(".", maxsplit=1)[-1] in ["yaml", "yml"]):  # noqa: E713
                 # prints a warning, does not raise
-                import sys
-
                 print(f"invalid file type: {f}", file=sys.stderr)
             file_args += ["-f", f]
         return file_args
