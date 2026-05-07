@@ -49,7 +49,7 @@ include = ["tests/"]
 package = true
 
 [tool.ruff]
-line-length = 80
+line-length = 90
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
