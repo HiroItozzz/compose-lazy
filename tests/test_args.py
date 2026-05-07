@@ -132,9 +132,9 @@ class TestAddFileArgs(ArgBuilderTestBase):
 
     def test_file_args_ABRREV_WITH_NO_ARGS(self):
         self.builder.add_file_args()
+        args = self.builder.parser.parse_args(["-f"])
 
-        # Raises an error.
-        self.assertRaises(SystemExit, self.builder.parser.parse_args, ["-f"])
+        self.assertEqual(args.file, [])
 
     def test_file_args_LONG_WITH_MULTIPLE_ARGS(self):
         self.builder.add_file_args()
@@ -147,11 +147,9 @@ class TestAddFileArgs(ArgBuilderTestBase):
 
     def test_file_args_LONG_WITH_NO_ARGS(self):
         self.builder.add_file_args()
+        args = self.builder.parser.parse_args(["--file"])
 
-        # Raises an error.
-        self.assertRaises(
-            SystemExit, self.builder.parser.parse_args, ["--file"]
-        )
+        self.assertEqual(args.file, [])
 
 
 class TestAddProjectArgs(ArgBuilderTestBase):

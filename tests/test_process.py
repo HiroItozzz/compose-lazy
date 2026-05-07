@@ -1,4 +1,5 @@
 import subprocess
+import tempfile
 from argparse import Namespace
 from unittest.mock import MagicMock
 
@@ -116,7 +117,6 @@ class TestCreateOptions(TestDCPBase):
     @pytest.mark.parametrize(
         "file_values,expected_value",
         [
-            ([], []),
             (["compose.yaml"], ["-f", "compose.yaml"]),
             (["compose.yml"], ["-f", "compose.yml"]),
             (
@@ -166,3 +166,10 @@ class TestCreateOptions(TestDCPBase):
         self.processor._args.project = project_value
 
         assert self.processor._create_project_option() == expected_value
+
+
+class TestFileChoices(TestDCPBase):
+    def test_show_file_choices_NONE(self): ...
+    def test_show_file_choices_EMPTY(self): ...
+    def test_show_file_choices_SINGLE(self): ...
+    def test_show_file_choices_MULTIPLE(self): ...

@@ -13,9 +13,7 @@ class ArgBuilder:
     def __init__(self, parser: ArgumentParser):
         self.parser = parser
 
-    def set_defaults(
-        self, func: Callable[[Namespace], int] | None = None
-    ) -> ArgBuilder:
+    def set_defaults(self, func: Callable[[Namespace], int] | None = None) -> ArgBuilder:
         func = func or DockerCmdProcessor()
         self.parser.set_defaults(func=func)
         return self
@@ -53,8 +51,7 @@ class ArgBuilder:
         self.parser.add_argument(
             "-f",
             "--file",
-            nargs="+",
-            default=[],
+            nargs="*",
             help="docker compose `-f FILE -f FILE ...`",
         )
         return self
