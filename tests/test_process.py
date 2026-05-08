@@ -170,8 +170,8 @@ class TestCreateOptions(TestDCPBase):
     @pytest.mark.parametrize(
         "project_value,expected_value",
         [
-            ([], []),
-            (["fast-dcp"], ["-p", "fast-dcp"]),
+            ("", []),
+            ("fast-dcp", ["-p", "fast-dcp"]),
         ],
     )
     def test_create_project_option(self, project_value, expected_value):
@@ -191,7 +191,7 @@ class TestFileChoices(TestDCPBase):
                 self.processor._show_file_choices()
 
             captured = capsys.readouterr()
-            assert "docker-compose file not found." in captured.err
+            assert "docker-compose files haven't found." in captured.err
 
     def test_show_file_choices_SINGLE(self, capsys):
         file_name = "docker-compose.yml"

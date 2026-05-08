@@ -60,8 +60,7 @@ class ArgBuilder:
         self.parser.add_argument(
             "-p",
             "--project",
-            nargs=1,
-            default=[],
+            default="",
             help="docker compose `-p PROJECT_NAME`",
         )
         return self

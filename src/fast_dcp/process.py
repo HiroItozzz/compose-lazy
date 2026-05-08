@@ -148,7 +148,7 @@ class DockerCmdProcessor:
     def _create_project_option(self) -> list[str]:
         if not self.args.project:
             return []
-        return ["-p"] + self.args.project
+        return ["-p", self.args.project]
 
     def _create_status_option(self) -> list[str]:
         if not self.args.status:

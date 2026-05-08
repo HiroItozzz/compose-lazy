@@ -69,9 +69,7 @@ class TestAddContainerName(ArgBuilderTestBase):
 
     def test_add_container_name_subcmd_MULTIPLE_ARGS_FOR_SINGLE_OPTION(self):
         self.builder.add_container_name_subcmd(multiple=False)
-        args, unknown = self.builder.parser.parse_known_args(
-            ["container1", "container2"]
-        )
+        args, unknown = self.builder.parser.parse_known_args(["container1", "container2"])
 
         # Parses only 1 arg.
         self.assertEqual(args.container_name, ["container1"])
@@ -123,9 +121,7 @@ class TestAddFileArgs(ArgBuilderTestBase):
 
     def test_file_args_ABRREV_WITH_MULTIPLE_ARGS(self):
         self.builder.add_file_args()
-        args = self.builder.parser.parse_args(
-            ["-f", "test_file_1", "test_file_2"]
-        )
+        args = self.builder.parser.parse_args(["-f", "test_file_1", "test_file_2"])
 
         # Parses multiple args.
         self.assertEqual(args.file, ["test_file_1", "test_file_2"])
@@ -138,9 +134,7 @@ class TestAddFileArgs(ArgBuilderTestBase):
 
     def test_file_args_LONG_WITH_MULTIPLE_ARGS(self):
         self.builder.add_file_args()
-        args = self.builder.parser.parse_args(
-            ["--file", "test_file_1", "test_file_2"]
-        )
+        args = self.builder.parser.parse_args(["--file", "test_file_1", "test_file_2"])
 
         # Parses multiple args.
         self.assertEqual(args.file, ["test_file_1", "test_file_2"])
@@ -157,13 +151,13 @@ class TestAddProjectArgs(ArgBuilderTestBase):
         self.builder.add_project_args()
         args = self.builder.parser.parse_args(["-p", "fast-dcp"])
 
-        self.assertEqual(args.project, ["fast-dcp"])
+        self.assertEqual(args.project, "fast-dcp")
 
     def test_add_project_args_LONG(self):
         self.builder.add_project_args()
         args = self.builder.parser.parse_args(["--project", "fast-dcp"])
 
-        self.assertEqual(args.project, ["fast-dcp"])
+        self.assertEqual(args.project, "fast-dcp")
 
     def test_add_project_args_ABBREV_WITH_NO_ARGS(self):
         self.builder.add_project_args()
@@ -178,16 +172,14 @@ class TestAddProjectArgs(ArgBuilderTestBase):
         )
 
         # Parses only one arg.
-        self.assertEqual(args.project, ["project_1"])
+        self.assertEqual(args.project, "project_1")
         self.assertEqual(unknown, ["project_2"])
 
     def test_add_project_args_LONG_WITH_NO_ARGS(self):
         self.builder.add_project_args()
 
         # Raises an error.
-        self.assertRaises(
-            SystemExit, self.builder.parser.parse_args, ["--project"]
-        )
+        self.assertRaises(SystemExit, self.builder.parser.parse_args, ["--project"])
 
     def test_add_project_args_LONG_WITH_MULTIPLE_ARGS(self):
         self.builder.add_project_args()
@@ -196,7 +188,7 @@ class TestAddProjectArgs(ArgBuilderTestBase):
         )
 
         # Parses only one arg.
-        self.assertEqual(args.project, ["project_1"])
+        self.assertEqual(args.project, "project_1")
         self.assertEqual(unknown, ["project_2"])
 
 
