@@ -6,6 +6,20 @@
 How many times have you typed `docker compose up --build` today?
 Fast DCP cuts it down to `dcpu -b` — same result, a fraction of the keystrokes.
 
+## 🆕 What's New in v0.2.0
+
+**Interactive file selection for `--file` option**
+
+Running `dcpu -f` now auto-detects docker-compose files in your project and lets you choose interactively.
+
+```bash
+$ dcpu -f
+☑ Found 2 docker-compose files!
+    1. docker-compose.yml
+    2. docker-compose.prod.yml
+Enter your choices (e.g., 1,3,4) or 'Q' to quit:
+```
+
 ## Sample Usage
 ```bash
 # docker compose up --build
