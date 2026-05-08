@@ -59,7 +59,7 @@ class DockerCmdProcessor:
 
     def _run_cmd(self) -> int:
         logger.debug(f"\n----output docker cmd---- \n{self.cmd}")
-        print(f"🚀 Executing `{' '.join(self.cmd)}`.")
+        print(f"▷ Executing `{' '.join(self.cmd)}`.")
 
         try:
             result = subprocess.run(self.cmd)
@@ -159,18 +159,18 @@ class DockerCmdProcessor:
         """Execute interactive session to create docker-compose file args."""
 
         # List up docker-compose files
-        file_dirs: list[str] = glob.glob("*compose*.yml") + glob.glob("*compose*.yaml")
+        file_dirs: list[str] = self._get_compose_file_paths()
         file_count = len(file_dirs)
 
         if file_count == 0:
-            print("❌ docker-compose file not found.")
+            print("❌ docker-compose files haven't found.", file=sys.stderr)
             raise SystemExit
 
         if file_count == 1:
-            print(f"✅ docker-compose file found: {file_dirs[0]}")
+            print(f"☑ docker-compose file found: {file_dirs[0]}")
             return ["-f"] + file_dirs
 
-        print(f"\n✅ Found {file_count} docker-compose files!")
+        print(f"\n☑ Found {file_count} docker-compose files!")
 
         # Show choices
         for idx, filedir in enumerate(file_dirs, start=1):
@@ -193,7 +193,7 @@ class DockerCmdProcessor:
                 for idx in file_index:
                     args += ["-f", file_dirs[idx]]
             except (ValueError, IndexError):
-                print("❌ Invalid selection. Please use valid numbers.")
+                print("☓ Invalid selection. Please use valid numbers.", file=sys.stderr)
             except KeyboardInterrupt as e:
                 print("\nCancelled.")
                 raise e
@@ -201,3 +201,7 @@ class DockerCmdProcessor:
                 print()
                 break
         return args
+
+    @staticmethod
+    def _get_compose_file_paths() -> list[str]:
+        return glob.glob("*compose*.yml") + glob.glob("*compose*.yaml")
