@@ -6,7 +6,7 @@ from . import config
 from .args import ArgBuilder
 from .process import DockerCmdProcessor as Processor
 
-VERSION = version(__package__ or "fast_dcp")
+VERSION = version("fast_dcp")
 
 logger = logging.getLogger(__name__)
 
@@ -20,9 +20,7 @@ def main() -> None:
         description="Shorthand aliases for docker compose commands.",
         epilog="See also: `dcpu -h`, `dcpe -h`",
     )
-    base_parser.add_argument(
-        "--version", action="version", version=f"fast-dcp {VERSION}"
-    )
+    base_parser.add_argument("--version", action="version", version=f"fast-dcp {VERSION}")
 
     subparsers = base_parser.add_subparsers(dest="subcmd")
     # dcp up(u) command

@@ -1,6 +1,7 @@
+import io
 import subprocess
 from argparse import Namespace
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -116,7 +117,7 @@ class TestCreateOptions(TestDCPBase):
     @pytest.mark.parametrize(
         "file_values,expected_value",
         [
-            ([], []),
+            (None, []),
             (["compose.yaml"], ["-f", "compose.yaml"]),
             (["compose.yml"], ["-f", "compose.yml"]),
             (
@@ -145,9 +146,7 @@ class TestCreateOptions(TestDCPBase):
             ),
         ],
     )
-    def test_create_file_option_INVALID_TYPE(
-        self, file_values, expected_value, capsys
-    ):
+    def test_create_file_option_INVALID_TYPE(self, file_values, expected_value, capsys):
         """test for invalid file extensions: warns to stderr but still processes the file"""
         self.processor._args.file = file_values
 
@@ -156,13 +155,111 @@ class TestCreateOptions(TestDCPBase):
         assert "invalid file type" in captured.err
 
     @pytest.mark.parametrize(
+        "exception",
+        [KeyboardInterrupt, SystemExit],
+    )
+    def test_create_file_option_ERROR_RAISED(self, exception):
+        self.processor._args.file = []
+        with patch(
+            "fast_dcp.process.DockerCmdProcessor._show_file_choices",
+            MagicMock(side_effect=exception),
+        ):
+            with pytest.raises(SystemExit):
+                self.processor._create_file_option()
+
+    @pytest.mark.parametrize(
         "project_value,expected_value",
         [
-            ([], []),
-            (["fast-dcp"], ["-p", "fast-dcp"]),
+            ("", []),
+            ("fast-dcp", ["-p", "fast-dcp"]),
         ],
     )
     def test_create_project_option(self, project_value, expected_value):
         self.processor._args.project = project_value
 
         assert self.processor._create_project_option() == expected_value
+
+
+class TestFileChoices(TestDCPBase):
+    def test_show_file_choices_EMPTY(self, capsys):
+        with patch(
+            "fast_dcp.process.DockerCmdProcessor._get_compose_file_paths"
+        ) as mock_paths:
+            mock_paths.return_value = []
+
+            with pytest.raises(SystemExit):
+                self.processor._show_file_choices()
+
+            captured = capsys.readouterr()
+            assert "docker-compose files haven't found." in captured.err
+
+    def test_show_file_choices_SINGLE(self, capsys):
+        file_name = "docker-compose.yml"
+        with patch(
+            "fast_dcp.process.DockerCmdProcessor._get_compose_file_paths"
+        ) as mock_paths:
+            mock_paths.return_value = [file_name]
+
+            result = self.processor._show_file_choices()
+            captured = capsys.readouterr()
+
+            assert result == ["-f", file_name]
+            assert f"docker-compose file found: {file_name}" in captured.out
+
+    @pytest.mark.parametrize(
+        "values,expected",
+        [
+            ("1\n", ["-f", "docker-compose.yml"]),
+            ("2\n", ["-f", "docker-compose.prod.yml"]),
+            ("1,2\n", ["-f", "docker-compose.yml", "-f", "docker-compose.prod.yml"]),
+            (
+                "  1 , 2  \n",
+                ["-f", "docker-compose.yml", "-f", "docker-compose.prod.yml"],
+            ),
+            ("3\n1\n", ["-f", "docker-compose.yml"]),
+        ],
+    )
+    def test_show_file_choices_MULTIPLE(self, values, expected, monkeypatch):
+        monkeypatch.setattr("sys.stdin", io.StringIO(values))
+        file_names = ("docker-compose.yml", "docker-compose.prod.yml")
+        with patch(
+            "fast_dcp.process.DockerCmdProcessor._get_compose_file_paths"
+        ) as mock_paths:
+            mock_paths.return_value = [*file_names]
+            result = self.processor._show_file_choices()
+
+            assert result == expected
+
+    def test_show_file_choices_MULTIPLE_KEYBOARD_INTERRUPT(self, capsys, monkeypatch):
+        monkeypatch.setattr("builtins.input", MagicMock(side_effect=KeyboardInterrupt))
+
+        file_names = ("docker-compose.yml", "docker-compose.prod.yml")
+        with patch(
+            "fast_dcp.process.DockerCmdProcessor._get_compose_file_paths"
+        ) as mock_paths:
+            mock_paths.return_value = [*file_names]
+            with pytest.raises(KeyboardInterrupt):
+                self.processor._show_file_choices()
+
+            captured = capsys.readouterr()
+
+            assert "\nCancelled." in captured.out
+
+    @pytest.mark.parametrize(
+        "values",
+        ["q\n", "Q\n"],
+    )
+    def test_show_file_choices_MULTIPLE_Q(self, values, capsys, monkeypatch):
+        monkeypatch.setattr("sys.stdin", io.StringIO(values))
+
+        file_names = ("docker-compose.yml", "docker-compose.prod.yml")
+        with patch(
+            "fast_dcp.process.DockerCmdProcessor._get_compose_file_paths"
+        ) as mock_paths:
+            mock_paths.return_value = [*file_names]
+            with pytest.raises(SystemExit):
+                self.processor._show_file_choices()
+
+            captured = capsys.readouterr()
+
+            assert "\nCancelled." in captured.out

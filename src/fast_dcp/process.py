@@ -1,7 +1,9 @@
+import glob
 import logging
 import subprocess
 import sys
 from argparse import Namespace
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +59,7 @@ class DockerCmdProcessor:
 
     def _run_cmd(self) -> int:
         logger.debug(f"\n----output docker cmd---- \n{self.cmd}")
-        print(f"executing `{' '.join(self.cmd)}`")
+        print(f"▷ Executing `{' '.join(self.cmd)}`.")
 
         try:
             result = subprocess.run(self.cmd)
@@ -93,9 +95,7 @@ class DockerCmdProcessor:
         )
 
     def _create_run_cmd(self) -> None:
-        self.cmd += (
-            ["run"] + self.args.container_name + self.args.inner_bash_cmd
-        )
+        self.cmd += ["run"] + self.args.container_name + self.args.inner_bash_cmd
 
     def _create_restart_cmd(self) -> None:
         self.cmd += ["restart"] + self.args.container_name
@@ -110,9 +110,7 @@ class DockerCmdProcessor:
 
     def _create_logs_cmd(self) -> None:
         self.cmd += (
-            ["logs"]
-            + self.args.container_name
-            + (["-f"] if self.args.follow else [])
+            ["logs"] + self.args.container_name + (["-f"] if self.args.follow else [])
         )
 
     def _create_stop_cmd(self) -> None:
@@ -128,19 +126,82 @@ class DockerCmdProcessor:
 
     def _create_file_option(self) -> list[str]:
         file_args = []
-        for f in self.args.file:
-            if not (f.rsplit(".", maxsplit=1)[-1] in ["yaml", "yml"]):  # noqa: E713
-                # prints a warning, does not raise
-                print(f"invalid file type: {f}", file=sys.stderr)
-            file_args += ["-f", f]
+        input_args: list[str] | None = self.args.file
+        if input_args is None:
+            return []  # Do nothing
+        elif len(input_args) == 0:
+            try:
+                file_args += self._show_file_choices()
+            except KeyboardInterrupt:
+                sys.exit(130)
+            except SystemExit:
+                sys.exit(0)
+        else:
+            for f in self.args.file:
+                if not (Path(f).suffix in [".yaml", ".yml"]):  # noqa: E713
+                    # prints a warning, does not raise
+                    print(f"invalid file type: {f}", file=sys.stderr)
+                file_args += ["-f", f]
+
         return file_args
 
     def _create_project_option(self) -> list[str]:
         if not self.args.project:
             return []
-        return ["-p"] + self.args.project
+        return ["-p", self.args.project]
 
     def _create_status_option(self) -> list[str]:
         if not self.args.status:
             return []
         return ["--status", self.args.status]
+
+    def _show_file_choices(self) -> list[str]:
+        """Execute interactive session to create docker-compose file args."""
+
+        # List up docker-compose files
+        file_dirs: list[str] = self._get_compose_file_paths()
+        file_count = len(file_dirs)
+
+        if file_count == 0:
+            print("❌ docker-compose files haven't found.", file=sys.stderr)
+            raise SystemExit
+
+        if file_count == 1:
+            print(f"☑ docker-compose file found: {file_dirs[0]}")
+            return ["-f"] + file_dirs
+
+        print(f"\n☑ Found {file_count} docker-compose files!")
+
+        # Show choices
+        for idx, filedir in enumerate(file_dirs, start=1):
+            print(f"{idx:>5}. {filedir}")
+
+        # Interactive session: select number(s) to get file args or press "Q" to quit.
+        args = []
+        while True:
+            try:
+                file_index_str = input(
+                    "\nEnter your choices (e.g., 1,3,4) or 'Q' to quit: "
+                )
+                if file_index_str in ["Q", "q"]:
+                    print("\nCancelled.")
+                    raise SystemExit
+                file_index = map(
+                    lambda i: int(i) - 1,
+                    (i.strip() for i in file_index_str.split(",") if i),
+                )
+                for idx in file_index:
+                    args += ["-f", file_dirs[idx]]
+            except (ValueError, IndexError):
+                print("☓ Invalid selection. Please use valid numbers.", file=sys.stderr)
+            except KeyboardInterrupt as e:
+                print("\nCancelled.")
+                raise e
+            else:
+                print()
+                break
+        return args
+
+    @staticmethod
+    def _get_compose_file_paths() -> list[str]:
+        return glob.glob("*compose*.yml") + glob.glob("*compose*.yaml")
