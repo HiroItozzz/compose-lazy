@@ -12,15 +12,18 @@ dynamic = ["version", "description"]
 license = "MIT"
 license-files = ["LICENSE"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 3 - Beta",
     "Intended Audience :: Developers",
     "Natural Language :: English",
     "Topic :: Utilities",
     "Environment :: Console",
     "Operating System :: Microsoft :: Windows :: Windows 11",
+    "Operating System :: MacOS",
     "Operating System :: POSIX :: Linux",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14"
 ]
 dependencies = []
