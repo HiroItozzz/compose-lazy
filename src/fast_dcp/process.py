@@ -33,9 +33,9 @@ class DockerCmdProcessor:
                 self._create_build_cmd()
             case "exec" | "e":
                 self._create_exec_cmd()
-            case "run" | "R":
+            case "run":
                 self._create_run_cmd()
-            case "restart" | "r":
+            case "restart" | "re":
                 self._create_restart_cmd()
             case "ps":
                 self._create_ps_cmd()
@@ -45,19 +45,19 @@ class DockerCmdProcessor:
                 self._create_stop_cmd()
             case "down":
                 self._create_down_cmd()
-        return self._run_cmd()
+        return self._execute_command()
 
     def call_dcpu(self, args: Namespace) -> int:
         self._setup(args)
         self._create_up_cmd()
-        return self._run_cmd()
+        return self._execute_command()
 
     def call_dcpe(self, args: Namespace) -> int:
         self._setup(args)
         self._create_exec_cmd()
-        return self._run_cmd()
+        return self._execute_command()
 
-    def _run_cmd(self) -> int:
+    def _execute_command(self) -> int:
         logger.debug(f"\n----output docker cmd---- \n{self.cmd}")
         print(f"▷ Executing `{' '.join(self.cmd)}`.")
 
@@ -95,7 +95,13 @@ class DockerCmdProcessor:
         )
 
     def _create_run_cmd(self) -> None:
-        self.cmd += ["run"] + self.args.container_name + self.args.inner_bash_cmd
+        self.cmd += (
+            self._create_project_option()
+            + self._create_file_option()
+            + ["run"]
+            + self.args.container_name
+            + self.args.inner_bash_cmd
+        )
 
     def _create_restart_cmd(self) -> None:
         self.cmd += ["restart"] + self.args.container_name

@@ -78,14 +78,17 @@ class TestMain:
          "docker compose -p testproject exec container uv run pytest"),
     )
     testcases_DCP_RUN_SINGLE_OPTION = (
-        ("dcp R container", "docker compose run container bash"),
-        ("dcp R container uv run pytest", "docker compose run container uv run pytest"),
         ("dcp run container", "docker compose run container bash"),
         ("dcp run container uv run pytest", "docker compose run container uv run pytest"),
+        ("dcp run container -f test.yaml", "docker compose -f test.yaml run container bash"),
+        ("dcp run container uv run pytest -f test.yaml", "docker compose -f test.yaml run container uv run pytest"),
+        ("dcp run container -p testproject", "docker compose -p testproject run container bash"),
+        ("dcp run container uv run pytest -p testproject",
+         "docker compose -p testproject run container uv run pytest"),
     )
     testcases_DCP_RESTART_SINGLE_OPTION = (
-        ("dcp r container", "docker compose restart container"),
-        ("dcp r container1 container2", "docker compose restart container1 container2"),
+        ("dcp re container", "docker compose restart container"),
+        ("dcp re container1 container2", "docker compose restart container1 container2"),
         ("dcp restart container", "docker compose restart container"),
         ("dcp restart container1 container2", "docker compose restart container1 container2"),
     )

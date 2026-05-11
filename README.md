@@ -31,7 +31,7 @@ dcpe app
 # docker compose exec db psql -U user -d mydb
 dcpe db -- psql -U user -d mydb
 # docker compose restart app
-dcp r app
+dcp re app
 ```
 
 ## Install fast-dcp
@@ -109,20 +109,19 @@ Both `pipx` and `uv tool` install CLI tools in isolated environments, so fast-dc
 | dcp build(b) -f path1 path2...            | docker compose -f path1 -f path2... build         |
 | dcp build(b) -p project_name...           | docker compose -p project_name build              |
 | dcp exec(e) container_name                | docker compose exec container_name bash           |
-| dcp exec(e) container_name bash           | docker compose exec container_name bash           |
 | dcp exec(e) container_name args1 args2... | docker compose exec container_name args1 args2... |
-| dcp run(R) container_name bash            | docker compose run container_name bash            |
-| dcp run(R) container_name args1 args2...  | docker compose run container_name args1 args2...  |
-| dcp restart(r)                            | docker compose restart                            |
-| dcp restart(r) container_name             | docker compose restart container_name             |
+| dcp run container_name                    | docker compose run container_name bash            |
+| dcp run container_name args1 args2...     | docker compose run container_name args1 args2...  |
+| dcp restart(re)                           | docker compose restart                            |
+| dcp restart(re) container_name            | docker compose restart container_name             |
 | dcp ps                                    | docker compose ps                                 |
 | dcp ps -a                                 | docker compose ps --all                           |
 | dcp ps -st running                        | docker compose ps --status running                |
 | dcp logs(l)                               | docker compose logs                               |
 | dcp logs(l) container_name                | docker compose logs container_name                |
 | dcp logs(l) container_name -F             | docker compose logs container_name -f             |
-| dcp stop                                  | docker compose stop                               |
-| dcp stop container_name                   | docker compose stop container_name                | 
+| dcp stop(s)                               | docker compose stop                               |
+| dcp stop(s) container_name                | docker compose stop container_name                | 
 | dcp down                                  | docker compose down                               |
 | dcp down -ro                              | docker compose down --remove_orphans              |
 | dcpu                                      | docker compose up                                 |

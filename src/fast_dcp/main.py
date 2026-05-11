@@ -80,9 +80,8 @@ def main() -> None:
     # dcp run(R) command
     _run = subparsers.add_parser(
         "run",
-        aliases=["R"],
         allow_abbrev=False,
-        usage="dcp run <CONTAINER_NAME> [BASH|commands]",
+        usage="dcp run) <CONTAINER_NAME> [BASH|commands]",
         description="Shorthand for `docker compose run`.",
         help="docker compose `run`",
     )
@@ -90,15 +89,17 @@ def main() -> None:
         ArgBuilder(_run)
         .add_container_name_subcmd(multiple=False)
         .add_inner_bash_cmd_args()
+        .add_file_args()
+        .add_project_args()
         .set_defaults(func=Processor())
     )
 
     # dcp restart(r) command
     _restart = subparsers.add_parser(
         "restart",
-        aliases=["r"],
+        aliases=["re"],
         allow_abbrev=False,
-        usage="dcp restart(r) [CONTAINER_NAME ...]",
+        usage="dcp restart(re) [CONTAINER_NAME ...]",
         description="Shorthand for `docker compose restart`.",
         help="docker compose `restart`",
     )

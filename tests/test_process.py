@@ -28,11 +28,12 @@ class TestDockerCmdProcessorCall(TestDCPBase):
     def setup_method(self):
         super().setup_method()
         self.processor._setup = MagicMock()
-        self.processor._run_cmd = MagicMock()
+        self.processor._execute_command = MagicMock()
 
         self.processor._create_up_cmd = MagicMock()
         self.processor._create_build_cmd = MagicMock()
         self.processor._create_exec_cmd = MagicMock()
+        self.processor._create_run_cmd = MagicMock()
         self.processor._create_restart_cmd = MagicMock()
         self.processor._create_ps_cmd = MagicMock()
         self.processor._create_logs_cmd = MagicMock()
@@ -48,8 +49,9 @@ class TestDockerCmdProcessorCall(TestDCPBase):
             ("b", "_create_build_cmd"),
             ("exec", "_create_exec_cmd"),
             ("e", "_create_exec_cmd"),
+            ("run", "_create_run_cmd"),
             ("restart", "_create_restart_cmd"),
-            ("r", "_create_restart_cmd"),
+            ("re", "_create_restart_cmd"),
             ("ps", "_create_ps_cmd"),
             ("logs", "_create_logs_cmd"),
             ("l", "_create_logs_cmd"),
@@ -66,7 +68,7 @@ class TestDockerCmdProcessorCall(TestDCPBase):
 
         getattr(self.processor, "_setup").assert_called_once()
         getattr(self.processor, expected_method).assert_called_once()
-        getattr(self.processor, "_run_cmd").assert_called_once()
+        getattr(self.processor, "_execute_command").assert_called_once()
 
     def test_call_dcpu(self):
         args = Namespace()
@@ -74,7 +76,7 @@ class TestDockerCmdProcessorCall(TestDCPBase):
 
         self.processor._setup.assert_called_once()
         self.processor._create_up_cmd.assert_called_once()
-        self.processor._run_cmd.assert_called_once()
+        self.processor._execute_command.assert_called_once()
 
     def test_call_dcpe(self):
         args = Namespace()
@@ -82,7 +84,7 @@ class TestDockerCmdProcessorCall(TestDCPBase):
 
         self.processor._setup.assert_called_once()
         self.processor._create_exec_cmd.assert_called_once()
-        self.processor._run_cmd.assert_called_once()
+        self.processor._execute_command.assert_called_once()
 
 
 class TestRunSubprocess(TestDCPBase):
@@ -93,17 +95,17 @@ class TestRunSubprocess(TestDCPBase):
 
         test_cmd = ["docker", "compose up"]
         self.processor.cmd = test_cmd
-        self.processor._run_cmd()
+        self.processor._execute_command()
 
         subprocess.run.assert_called_once_with(test_cmd)
-        assert self.processor._run_cmd() == 1
+        assert self.processor._execute_command() == 1
 
     def test_run_subprocess_KEYBOARD_INTERRUPT(self):
         subprocess.run = MagicMock(side_effect=KeyboardInterrupt())
 
         test_cmd = ["docker", "compose", "up"]
         self.processor.cmd = test_cmd
-        code = self.processor._run_cmd()
+        code = self.processor._execute_command()
 
         assert code == 130
         subprocess.run.assert_called_once_with(test_cmd)
