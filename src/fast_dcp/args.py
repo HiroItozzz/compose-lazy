@@ -50,7 +50,7 @@ class ArgBuilder:
             "-f",
             "--file",
             nargs="*",
-            help="docker compose `-f FILE -f FILE ...`",
+            help="specify compose file(s). if omitted with -f, select interactively",
         )
         return self
 
@@ -68,7 +68,7 @@ class ArgBuilder:
             "-pf",
             "--profile",
             nargs="*",
-            help="docker compose `--profile PROFILE_NAME --profile PROFILE_NAME ...`",
+            help="specify profile(s). if omitted with -pf, select interactively",
         )
         return self
 
@@ -77,21 +77,21 @@ class ArgBuilder:
             "-b",
             "--build",
             action="store_true",
-            help="docker compose up --build",
+            help="docker compose up `--build`",
         )
         return self
 
     def add_detach_args(self) -> Self:
         """add optional argument `-d` to `docker compose up` command."""
         self.parser.add_argument(
-            "-d", "--detach", action="store_true", help="docker compose up -d"
+            "-d", "--detach", action="store_true", help="docker compose up `-d`"
         )
         return self
 
     def add_follow_args(self) -> Self:
         """add optional argument `-f` to `docker compose logs` command."""
         self.parser.add_argument(
-            "-F", "--follow", action="store_true", help="docker compose logs -f"
+            "-f", "--follow", action="store_true", help="docker compose logs `-f`"
         )
         return self
 
@@ -101,7 +101,7 @@ class ArgBuilder:
             "-a",
             "--all",
             action="store_true",
-            help="docker compose ps -a(--all)",
+            help="docker compose ps `-a`",
         )
         return self
 
@@ -118,7 +118,7 @@ class ArgBuilder:
                 "exited",
                 "dead",
             ],
-            help="docker compose ps -st(--status) <STATUS>",
+            help="docker compose ps `--status` <STATUS>",
         )
         return self
 
@@ -128,5 +128,14 @@ class ArgBuilder:
             "--remove-orphans",
             action="store_true",
             help="docker compose down `--remove-orphans`",
+        )
+        return self
+
+    def add_wait_args(self) -> Self:
+        self.parser.add_argument(
+            "-w",
+            "--wait",
+            action="store_true",
+            help="docker compose up `--wait`",
         )
         return self

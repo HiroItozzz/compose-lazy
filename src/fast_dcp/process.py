@@ -77,6 +77,7 @@ class DockerCmdProcessor:
             + ["up"]
             + (["--build"] if self.args.build else [])
             + (["-d"] if self.args.detach else [])
+            + (["--wait"] if self.args.wait else [])
             + self.args.container_name
         )
 

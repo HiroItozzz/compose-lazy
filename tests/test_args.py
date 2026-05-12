@@ -279,7 +279,7 @@ class TestAddDetachArgs(ArgBuilderTestBase):
 class TestAddFollowArgs(ArgBuilderTestBase):
     def test_add_follow_args_ABBREV(self):
         self.builder.add_follow_args()
-        args = self.builder.parser.parse_args(["-F"])
+        args = self.builder.parser.parse_args(["-f"])
 
         # Stores true
         self.assertTrue(args.follow)
@@ -399,3 +399,25 @@ class TestAddRemoveOrphansArgs(ArgBuilderTestBase):
         args = self.builder.parser.parse_args([])
 
         self.assertFalse(args.remove_orphans)
+
+
+class TestAddWaitArgs(ArgBuilderTestBase):
+    def test_add_wait_args_ABBREV(self):
+        self.builder.add_wait_args()
+        args = self.builder.parser.parse_args(["-w"])
+
+        # Stores true
+        self.assertTrue(args.wait)
+
+    def test_add_wait_args_LONG(self):
+        self.builder.add_wait_args()
+        args = self.builder.parser.parse_args(["--wait"])
+
+        # Stores true
+        self.assertTrue(args.wait)
+
+    def test_add_wait_args_NO_ARGS(self):
+        self.builder.add_wait_args()
+        args = self.builder.parser.parse_args([])
+
+        self.assertFalse(args.wait)
