@@ -233,7 +233,57 @@ class DockerCmdProcessor:
                 break
         return args
 
-    def _show_profile_choices(self): ...
+    def _show_profile_choices(self) -> list[str]:
+        file_dirs = self._get_compose_file_paths()
+
+        profiles = set()
+        for dir in file_dirs:
+            with open(dir) as f:
+                data = yaml.safe_load(f)
+            for service in (data or {}).get("services", {}).values():
+                for p in (service or {}).get("profiles", []):
+                    profiles.add(p)
+
+        if not profiles:
+            print("❌ No profiles found.", file=sys.stderr)
+            raise SystemExit
+
+        if len(profiles) == 1:
+            p = profiles.pop()
+            print(f"☑ Profile found: {p}")
+            return ["--profile", p]
+
+        # Interactive session: select number(s) to get file args or press "Q" to quit.
+        print(f"\n☑ Found {len(profiles)} profiles!")
+
+        args = []
+        prof_list = sorted(profiles)
+
+        # Show choices
+        for idx, profile in enumerate(prof_list, start=1):
+            print(f"{idx:>5}. {profile}")
+        while True:
+            try:
+                choices_str = input("\nEnter your choices (e.g., 1,3,4) or 'Q' to quit: ")
+                if choices_str in ["Q", "q"]:
+                    print("\nCancelled.")
+                    raise SystemExit
+                choices = map(
+                    lambda i: int(i) - 1,
+                    (i.strip() for i in choices_str.split(",") if i),
+                )
+                for idx in choices:
+                    args += ["--profile", prof_list[idx]]
+            except (ValueError, IndexError):
+                print("☓ Invalid selection. Please use valid numbers.", file=sys.stderr)
+            except KeyboardInterrupt as e:
+                print("\nCancelled.")
+                raise e
+            else:
+                print()
+                break
+
+        return args
 
     @staticmethod
     def _get_compose_file_paths() -> list[str]:
