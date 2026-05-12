@@ -80,7 +80,7 @@ def main() -> None:
         .set_defaults(func=Processor())
     )
 
-    # dcp run(R) command
+    # dcp run command
     _run = subparsers.add_parser(
         "run",
         allow_abbrev=False,
@@ -98,7 +98,7 @@ def main() -> None:
         .set_defaults(func=Processor())
     )
 
-    # dcp restart(r) command
+    # dcp restart(re) command
     _restart = subparsers.add_parser(
         "restart",
         aliases=["re"],
