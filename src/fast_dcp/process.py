@@ -5,6 +5,8 @@ import sys
 from argparse import Namespace
 from pathlib import Path
 
+import yaml
+
 logger = logging.getLogger(__name__)
 
 _BASE_CMD = "docker", "compose"
@@ -71,6 +73,7 @@ class DockerCmdProcessor:
         self.cmd += (
             self._create_project_option()
             + self._create_file_option()
+            + self._create_profile_option()
             + ["up"]
             + (["--build"] if self.args.build else [])
             + (["-d"] if self.args.detach else [])
@@ -81,6 +84,7 @@ class DockerCmdProcessor:
         self.cmd += (
             self._create_project_option()
             + self._create_file_option()
+            + self._create_profile_option()
             + ["build"]
             + self.args.container_name
         )
@@ -89,6 +93,7 @@ class DockerCmdProcessor:
         self.cmd += (
             self._create_project_option()
             + self._create_file_option()
+            + self._create_profile_option()
             + ["exec"]
             + self.args.container_name
             + self.args.inner_bash_cmd
@@ -98,6 +103,7 @@ class DockerCmdProcessor:
         self.cmd += (
             self._create_project_option()
             + self._create_file_option()
+            + self._create_profile_option()
             + ["run"]
             + self.args.container_name
             + self.args.inner_bash_cmd
@@ -126,6 +132,7 @@ class DockerCmdProcessor:
         self.cmd += (
             self._create_project_option()
             + self._create_file_option()
+            + self._create_profile_option()
             + ["down"]
             + (["--remove-orphans"] if self.args.remove_orphans else [])
         )
@@ -150,6 +157,24 @@ class DockerCmdProcessor:
                 file_args += ["-f", f]
 
         return file_args
+
+    def _create_profile_option(self) -> list[str]:
+        profile_args = []
+        input_args: list[str] | None = self.args.profile
+        if input_args is None:
+            return []  # Do nothing
+        elif len(input_args) == 0:
+            try:
+                profile_args += self._show_profile_choices()
+            except KeyboardInterrupt:
+                sys.exit(130)
+            except SystemExit:
+                sys.exit(0)
+        else:
+            for pf in input_args:
+                profile_args += ["--profile", pf]
+
+        return profile_args
 
     def _create_project_option(self) -> list[str]:
         if not self.args.project:
@@ -207,6 +232,8 @@ class DockerCmdProcessor:
                 print()
                 break
         return args
+
+    def _show_profile_choices(self): ...
 
     @staticmethod
     def _get_compose_file_paths() -> list[str]:
