@@ -5,26 +5,33 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from fast_dcp.process import DockerCmdProcessor
+from fast_dcp.process import DockerCmdProcessor as Processor
 
 
 class TestDCPBase:
     def setup_method(self):
-        self.processor = DockerCmdProcessor()
+        self.processor = Processor()
 
 
 class TestDCPSetup(TestDCPBase):
-    def test_dcp_setup(self):
+    def test_dcp_setup(self, monkeypatch):
+        monkeypatch.setattr(
+            Processor,
+            "_create_common_compose_options",
+            MagicMock(return_value=["test"]),
+        )
+
         from fast_dcp.process import _BASE_CMD
 
-        args = Namespace(test="result")
+        args = Namespace(test="result", project="", file="", profile="")
         self.processor._setup(args)
 
-        assert self.processor.cmd == list(_BASE_CMD)
         assert self.processor.args == args
+        assert self.processor.cmd == list(_BASE_CMD) + ["test"]
+        Processor._create_common_compose_options.assert_called_once()
 
 
-class TestDockerCmdProcessorCall(TestDCPBase):
+class TestProcessorCall(TestDCPBase):
     def setup_method(self):
         super().setup_method()
         self.processor._setup = MagicMock()
@@ -115,6 +122,18 @@ class TestCreateOptions(TestDCPBase):
     def setup_method(self):
         super().setup_method()
         self.processor._args = MagicMock()
+
+    def test_create_common_compose_options(self, monkeypatch):
+
+        monkeypatch.setattr(Processor, "_create_project_option", MagicMock())
+        monkeypatch.setattr(Processor, "_create_file_option", MagicMock())
+        monkeypatch.setattr(Processor, "_create_profile_option", MagicMock())
+
+        self.processor._create_common_compose_options()
+
+        Processor._create_project_option.assert_called_once()
+        Processor._create_file_option.assert_called_once()
+        Processor._create_profile_option.assert_called_once()
 
     # File Option
     @pytest.mark.parametrize(
@@ -398,5 +417,5 @@ def test_get_compose_file_paths(tmp_path, monkeypatch):
     (tmp_path / "docker-compose.yml").touch()
     (tmp_path / "docker-compose.prod.yaml").touch()
 
-    result = DockerCmdProcessor._get_compose_file_paths()
+    result = Processor._get_compose_file_paths()
     assert len(result) == 2

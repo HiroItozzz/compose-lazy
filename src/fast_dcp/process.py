@@ -23,8 +23,8 @@ class DockerCmdProcessor:
 
     def _setup(self, args: Namespace) -> None:
         logger.debug(f"\n----input args----\n{args}")
-        self.cmd = list(_BASE_CMD)
         self._args = args
+        self.cmd = list(_BASE_CMD) + self._create_common_compose_options()
 
     def __call__(self, args: Namespace) -> int:
         self._setup(args)
@@ -71,10 +71,7 @@ class DockerCmdProcessor:
 
     def _create_up_cmd(self) -> None:
         self.cmd += (
-            self._create_project_option()
-            + self._create_file_option()
-            + self._create_profile_option()
-            + ["up"]
+            ["up"]
             + (["--build"] if self.args.build else [])
             + (["-d"] if self.args.detach else [])
             + (["--wait"] if self.args.wait else [])
@@ -82,33 +79,13 @@ class DockerCmdProcessor:
         )
 
     def _create_build_cmd(self) -> None:
-        self.cmd += (
-            self._create_project_option()
-            + self._create_file_option()
-            + self._create_profile_option()
-            + ["build"]
-            + self.args.container_name
-        )
+        self.cmd += ["build"] + self.args.container_name
 
     def _create_exec_cmd(self) -> None:
-        self.cmd += (
-            self._create_project_option()
-            + self._create_file_option()
-            + self._create_profile_option()
-            + ["exec"]
-            + self.args.container_name
-            + self.args.inner_bash_cmd
-        )
+        self.cmd += ["exec"] + self.args.container_name + self.args.inner_bash_cmd
 
     def _create_run_cmd(self) -> None:
-        self.cmd += (
-            self._create_project_option()
-            + self._create_file_option()
-            + self._create_profile_option()
-            + ["run"]
-            + self.args.container_name
-            + self.args.inner_bash_cmd
-        )
+        self.cmd += ["run"] + self.args.container_name + self.args.inner_bash_cmd
 
     def _create_restart_cmd(self) -> None:
         self.cmd += ["restart"] + self.args.container_name
@@ -130,13 +107,19 @@ class DockerCmdProcessor:
         self.cmd += ["stop"] + self.args.container_name
 
     def _create_down_cmd(self) -> None:
-        self.cmd += (
+        self.cmd += ["down"] + (["--remove-orphans"] if self.args.remove_orphans else [])
+
+    def _create_common_compose_options(self) -> list[str]:
+        return (
             self._create_project_option()
             + self._create_file_option()
             + self._create_profile_option()
-            + ["down"]
-            + (["--remove-orphans"] if self.args.remove_orphans else [])
         )
+
+    def _create_status_option(self) -> list[str]:
+        if not self.args.status:
+            return []
+        return ["--status", self.args.status]
 
     def _create_file_option(self) -> list[str]:
         file_args = []
@@ -181,11 +164,6 @@ class DockerCmdProcessor:
         if not self.args.project:
             return []
         return ["-p", self.args.project]
-
-    def _create_status_option(self) -> list[str]:
-        if not self.args.status:
-            return []
-        return ["--status", self.args.status]
 
     def _show_file_choices(self) -> list[str]:
         """Execute interactive session to create -f args."""

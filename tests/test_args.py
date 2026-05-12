@@ -3,11 +3,12 @@ from unittest import TestCase
 
 import pytest
 
+from fast_dcp.args import ArgBuilder
+
 
 # unittest
 class ArgBuilderTestBase(TestCase):
     def setUp(self):
-        from fast_dcp.args import ArgBuilder
 
         parser = ArgumentParser()
         self.builder = ArgBuilder(parser)
@@ -45,6 +46,23 @@ class TestSetDefaults(ArgBuilderTestBase):
 
         # Default to an instance of `DockerCmdProcessor`.
         self.assertIsInstance(args.func, DockerCmdProcessor)
+
+
+class TestAddCommonComposeOptions(ArgBuilderTestBase):
+    def test_add_common_compose_options_ADD_CORRECT_ARGUMENTS(self):
+
+        self.builder.add_common_compose_options()
+
+        actions = [a.dest for a in self.builder.parser._actions]
+
+        assert "file" in actions
+        assert "profile" in actions
+        assert "project" in actions
+
+    def test_METHOD_CHAINING(self):
+        result = self.builder.add_common_compose_options()
+
+        self.assertIs(result, self.builder)
 
 
 class TestAddContainerName(ArgBuilderTestBase):
@@ -108,39 +126,39 @@ class TestAddInnerBashCmd(ArgBuilderTestBase):
 
 class TestAddFileArgs(ArgBuilderTestBase):
     def test_file_args_ABRREV(self):
-        self.builder.add_file_args()
+        self.builder._add_file_args()
         args = self.builder.parser.parse_args(["-f", "test_file"])
 
         self.assertEqual(args.file, ["test_file"])
 
     def test_file_args_LONG(self):
-        self.builder.add_file_args()
+        self.builder._add_file_args()
         args = self.builder.parser.parse_args(["--file", "test_file"])
 
         self.assertEqual(args.file, ["test_file"])
 
     def test_file_args_ABRREV_WITH_MULTIPLE_ARGS(self):
-        self.builder.add_file_args()
+        self.builder._add_file_args()
         args = self.builder.parser.parse_args(["-f", "test_file_1", "test_file_2"])
 
         # Parses multiple args.
         self.assertEqual(args.file, ["test_file_1", "test_file_2"])
 
     def test_file_args_ABRREV_WITH_NO_ARGS(self):
-        self.builder.add_file_args()
+        self.builder._add_file_args()
         args = self.builder.parser.parse_args(["-f"])
 
         self.assertEqual(args.file, [])
 
     def test_file_args_LONG_WITH_MULTIPLE_ARGS(self):
-        self.builder.add_file_args()
+        self.builder._add_file_args()
         args = self.builder.parser.parse_args(["--file", "test_file_1", "test_file_2"])
 
         # Parses multiple args.
         self.assertEqual(args.file, ["test_file_1", "test_file_2"])
 
     def test_file_args_LONG_WITH_NO_ARGS(self):
-        self.builder.add_file_args()
+        self.builder._add_file_args()
         args = self.builder.parser.parse_args(["--file"])
 
         self.assertEqual(args.file, [])
@@ -148,39 +166,39 @@ class TestAddFileArgs(ArgBuilderTestBase):
 
 class TestAddProfileArgs(ArgBuilderTestBase):
     def test_profile_args_ABRREV(self):
-        self.builder.add_profile_args()
+        self.builder._add_profile_args()
         args = self.builder.parser.parse_args(["-pf", "profile"])
 
         self.assertEqual(args.profile, ["profile"])
 
     def test_profile_args_LONG(self):
-        self.builder.add_profile_args()
+        self.builder._add_profile_args()
         args = self.builder.parser.parse_args(["--profile", "profile"])
 
         self.assertEqual(args.profile, ["profile"])
 
     def test_profile_args_ABRREV_WITH_MULTIPLE_ARGS(self):
-        self.builder.add_profile_args()
+        self.builder._add_profile_args()
         args = self.builder.parser.parse_args(["-pf", "profile_1", "profile_2"])
 
         # Parses multiple args.
         self.assertEqual(args.profile, ["profile_1", "profile_2"])
 
     def test_profile_args_ABRREV_WITH_NO_ARGS(self):
-        self.builder.add_profile_args()
+        self.builder._add_profile_args()
         args = self.builder.parser.parse_args(["-pf"])
 
         self.assertEqual(args.profile, [])
 
     def test_profile_args_LONG_WITH_MULTIPLE_ARGS(self):
-        self.builder.add_profile_args()
+        self.builder._add_profile_args()
         args = self.builder.parser.parse_args(["--profile", "profile_1", "profile_2"])
 
         # Parses multiple args.
         self.assertEqual(args.profile, ["profile_1", "profile_2"])
 
     def test_profile_args_LONG_WITH_NO_ARGS(self):
-        self.builder.add_profile_args()
+        self.builder._add_profile_args()
         args = self.builder.parser.parse_args(["--profile"])
 
         self.assertEqual(args.profile, [])
@@ -188,25 +206,25 @@ class TestAddProfileArgs(ArgBuilderTestBase):
 
 class TestAddProjectArgs(ArgBuilderTestBase):
     def test_add_project_args_ABBREV(self):
-        self.builder.add_project_args()
+        self.builder._add_project_args()
         args = self.builder.parser.parse_args(["-p", "fast-dcp"])
 
         self.assertEqual(args.project, "fast-dcp")
 
     def test_add_project_args_LONG(self):
-        self.builder.add_project_args()
+        self.builder._add_project_args()
         args = self.builder.parser.parse_args(["--project", "fast-dcp"])
 
         self.assertEqual(args.project, "fast-dcp")
 
     def test_add_project_args_ABBREV_WITH_NO_ARGS(self):
-        self.builder.add_project_args()
+        self.builder._add_project_args()
 
         # Raises an error.
         self.assertRaises(SystemExit, self.builder.parser.parse_args, ["-p"])
 
     def test_add_project_args_ABBREV_WITH_MULTIPLE_ARGS(self):
-        self.builder.add_project_args()
+        self.builder._add_project_args()
         args, unknown = self.builder.parser.parse_known_args(
             ["-p", "project_1", "project_2"]
         )
@@ -216,13 +234,13 @@ class TestAddProjectArgs(ArgBuilderTestBase):
         self.assertEqual(unknown, ["project_2"])
 
     def test_add_project_args_LONG_WITH_NO_ARGS(self):
-        self.builder.add_project_args()
+        self.builder._add_project_args()
 
         # Raises an error.
         self.assertRaises(SystemExit, self.builder.parser.parse_args, ["--project"])
 
     def test_add_project_args_LONG_WITH_MULTIPLE_ARGS(self):
-        self.builder.add_project_args()
+        self.builder._add_project_args()
         args, unknown = self.builder.parser.parse_known_args(
             ["--project", "project_1", "project_2"]
         )

@@ -103,6 +103,10 @@ class TestMain:
     testcases_DCP_RESTART_SINGLE_OPTION = (
         ("dcp re container", "docker compose restart container"),
         ("dcp re container1 container2", "docker compose restart container1 container2"),
+        ("dcp re container1 -f test.yaml", "docker compose -f test.yaml restart container1"),
+        ("dcp re container1 -f test1.yaml test2.yaml", "docker compose -f test1.yaml -f test2.yaml restart container1"),
+        ("dcp re container1 -p testproject", "docker compose -p testproject restart container1"),
+        ("dcp re container1 -pf profile", "docker compose --profile profile restart container1"),
         ("dcp restart container", "docker compose restart container"),
         ("dcp restart container1 container2", "docker compose restart container1 container2"),
     )
@@ -110,6 +114,9 @@ class TestMain:
         ("dcp ps", "docker compose ps"),
         ("dcp ps -a", "docker compose ps --all"),
         ("dcp ps --all", "docker compose ps --all"),
+        ("dcp ps -f test.yaml", "docker compose -f test.yaml ps"),
+        ("dcp ps -p testproject", "docker compose -p testproject ps"),
+        ("dcp ps -pf profile", "docker compose --profile profile  ps"),
         ("dcp ps -st running", "docker compose ps --status running"),
         ("dcp ps --status running", "docker compose ps --status running"),
         ("dcp ps --status created", "docker compose ps --status created"),
@@ -128,28 +135,37 @@ class TestMain:
     )
     testcases_DCP_L_SINGLE_OPTION = (
         ("dcp l", "docker compose logs"),
+        ("dcp l -f test.yaml", "docker compose -f test.yaml logs"),
+        ("dcp l -p testproject", "docker compose -p testproject logs"),
+        ("dcp l -pf profile", "docker compose --profile profile logs"),
         ("dcp l --follow", "docker compose logs -f"),
-        ("dcp l -f", "docker compose logs -f"),
+        ("dcp l -fo", "docker compose logs -f"),
         ("dcp l container", "docker compose logs container"),
         ("dcp l container1 container2", "docker compose logs container1 container2"),
-        ("dcp l container1 container2 -f", "docker compose logs container1 container2 -f"),
+        ("dcp l container1 container2 -fo", "docker compose logs container1 container2 -f"),
         ("dcp l container1 container2 --follow", "docker compose logs container1 container2 -f"),
         ("dcp logs", "docker compose logs"),
         ("dcp logs --follow", "docker compose logs -f"),
-        ("dcp logs -f", "docker compose logs -f"),
+        ("dcp logs -fo", "docker compose logs -f"),
         ("dcp logs container", "docker compose logs container"),
         ("dcp logs container1 container2", "docker compose logs container1 container2"),
-        ("dcp logs container1 container2 -f", "docker compose logs container1 container2 -f"),
+        ("dcp logs container1 container2 -fo", "docker compose logs container1 container2 -f"),
         ("dcp logs container1 container2 --follow", "docker compose logs container1 container2 -f"),
     )
     testcases_DCP_S_SINGLE_OPTION = (
         ("dcp s container", "docker compose stop container"),
         ("dcp s container1 container2", "docker compose stop container1 container2"),
+        ("dcp s container -f test.yaml", "docker compose -f test.yaml stop container"),
+        ("dcp s container -p testproject", "docker compose -p testproject stop container"),
+        ("dcp s container -pf profile", "docker compose --profile profile stop container"),
         ("dcp stop container", "docker compose stop container"),
         ("dcp stop container1 container2", "docker compose stop container1 container2"),
     )
     testcases_DCP_DOWN_SINGLE_OPTION = (
         ("dcp down", "docker compose down"),
+        ("dcp down -f test.yaml", "docker compose -f test.yaml down"),
+        ("dcp down -p testproject", "docker compose -p testproject down"),
+        ("dcp down -pf profile", "docker compose --profile profile  down"),
         ("dcp down -ro", "docker compose down --remove-orphans"),
         ("dcp down --remove-orphans", "docker compose down --remove-orphans"),
         ("dcp down -f test.yaml", "docker compose -f test.yaml down"),
@@ -186,6 +202,7 @@ class TestMain:
         ("dcpe container -p testproject", "docker compose -p testproject exec container bash"),
         ("dcpe container uv run pytest -p testproject", "docker compose -p testproject exec container uv run pytest"),
         ("dcpe container -pf dev", "docker compose --profile dev exec container bash"),
+        ("dcpe container -pf dev prod", "docker compose --profile dev --profile prod exec container bash"),
     )
 
     # @fmt:on

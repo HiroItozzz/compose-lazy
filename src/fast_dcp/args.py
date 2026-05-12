@@ -16,6 +16,9 @@ class ArgBuilder:
         self.parser.set_defaults(func=func)
         return self
 
+    def add_common_compose_options(self) -> Self:
+        return self._add_file_args()._add_profile_args()._add_project_args()
+
     def add_container_name_subcmd(self, multiple: bool = False) -> Self:
         """add positional argument of container name(s) to command definition."""
         if multiple:
@@ -45,33 +48,6 @@ class ArgBuilder:
         )
         return self
 
-    def add_file_args(self) -> Self:
-        self.parser.add_argument(
-            "-f",
-            "--file",
-            nargs="*",
-            help="specify compose file(s). if omitted with -f, select interactively",
-        )
-        return self
-
-    def add_project_args(self) -> Self:
-        self.parser.add_argument(
-            "-p",
-            "--project",
-            default="",
-            help="docker compose `-p PROJECT_NAME`",
-        )
-        return self
-
-    def add_profile_args(self) -> Self:
-        self.parser.add_argument(
-            "-pf",
-            "--profile",
-            nargs="*",
-            help="specify profile(s). if omitted with -pf, select interactively",
-        )
-        return self
-
     def add_build_args(self) -> Self:
         self.parser.add_argument(
             "-b",
@@ -91,7 +67,7 @@ class ArgBuilder:
     def add_follow_args(self) -> Self:
         """add optional argument `-f` to `docker compose logs` command."""
         self.parser.add_argument(
-            "-f", "--follow", action="store_true", help="docker compose logs `-f`"
+            "-fo", "--follow", action="store_true", help="docker compose logs `-f`"
         )
         return self
 
@@ -137,5 +113,32 @@ class ArgBuilder:
             "--wait",
             action="store_true",
             help="docker compose up `--wait`",
+        )
+        return self
+
+    def _add_file_args(self) -> Self:
+        self.parser.add_argument(
+            "-f",
+            "--file",
+            nargs="*",
+            help="specify compose file(s). if omitted with -f, select interactively",
+        )
+        return self
+
+    def _add_project_args(self) -> Self:
+        self.parser.add_argument(
+            "-p",
+            "--project",
+            default="",
+            help="docker compose `-p PROJECT_NAME`",
+        )
+        return self
+
+    def _add_profile_args(self) -> Self:
+        self.parser.add_argument(
+            "-pf",
+            "--profile",
+            nargs="*",
+            help="specify profile(s). if omitted with -pf, select interactively",
         )
         return self

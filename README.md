@@ -107,46 +107,31 @@ Both `pipx` and `uv tool` install CLI tools in isolated environments, so fast-dc
 - Python 3.11+
 - Docker with Compose V2 (`docker compose` — not `docker-compose`)
 
+
 ## List of Commands
 
-| Bash Command                              | Executed Docker Command                           |
-|-------------------------------------------|---------------------------------------------------|
-| dcp                                       | -                                                 |
-| dcp up(u)                                 | docker compose up                                 |
-| dcp up(u) container_name                  | docker compose up container_name                  |
-| dcp up(u) -f path1 path2...               | docker compose -f path1 -f path2 up               |
-| dcp up(u) -pf dev prod                     | docker compose --profile dev --profile prod up   |
-| dcp up(u) -p project_name...              | docker compose -p project_name up                 |
-| dcp up(u) -d                              | docker compose up -d                              |
-| dcp build(b)                              | docker compose build                              |
-| dcp build(b) container_name               | docker compose build container_name               |
-| dcp build(b) -f path1 path2...            | docker compose -f path1 -f path2... build         |
-| dcp build(b) -p project_name...           | docker compose -p project_name build              |
-| dcp exec(e) container_name                | docker compose exec container_name bash           |
-| dcp exec(e) container_name args1 args2... | docker compose exec container_name args1 args2... |
-| dcp run container_name                    | docker compose run container_name bash            |
-| dcp run container_name args1 args2...     | docker compose run container_name args1 args2...  |
-| dcp restart(re)                           | docker compose restart                            |
-| dcp restart(re) container_name            | docker compose restart container_name             |
-| dcp ps                                    | docker compose ps                                 |
-| dcp ps -a                                 | docker compose ps --all                           |
-| dcp ps -st running                        | docker compose ps --status running                |
-| dcp logs(l)                               | docker compose logs                               |
-| dcp logs(l) container_name                | docker compose logs container_name                |
-| dcp logs(l) container_name -f             | docker compose logs container_name -f             |
-| dcp stop(s)                               | docker compose stop                               |
-| dcp stop(s) container_name                | docker compose stop container_name                | 
-| dcp down                                  | docker compose down                               |
-| dcp down -ro                              | docker compose down --remove_orphans              |
-| dcpu                                      | docker compose up                                 |
-| dcpu -f path1 path2...                    | docker compose -f path1 -f path2... up            |
-| dcpu -p project_name...                   | docker compose -p project_name up                 |
-| dcpu --build(-b)                          | docker compose up --build                         |
-| dcpu --build(-b) -f path1 path2...        | docker compose -f path1 -f path2... up --build    |
-| dcpu --detach(-d)                         | docker compose up -d                              |
-| dcpe container_name                       | docker compose exec container_name bash           |
-| dcpe container_name bash                  | docker compose exec container_name bash           |
-| dcpe container_name args1 args2 ...       | docker compose exec container_name args1 args2... |
+> **Common options** (available for all commands): `-f FILE...`, `-pf PROFILE...`, `-p PROJECT`
+>
+> ⚠️ Note: `-f`, `-pf`, `-p` are passed before the subcommand in the actual docker compose syntax,  
+> but in fast-dcp they are specified after the subcommand (e.g. `dcp up -f FILE`).
+
+| Bash Command                              | Executed Docker Command                                  |
+|-------------------------------------------|----------------------------------------------------------|
+| dcp                                       | - (Show help)                                            |
+| dcp up(u) [CONTAINER...]                  | docker compose up [CONTAINER...]                         |
+| dcp up(u) -d                              | docker compose up -d                                     |
+| dcp up(u) -b                              | docker compose up --build                                |
+| dcp up(u) -w                              | docker compose up --wait                                 |
+| dcp build(b) [CONTAINER...]               | docker compose build [CONTAINER...]                      |
+| dcp exec(e) CONTAINER [CMD...]            | docker compose exec CONTAINER [CMD...]                   |
+| dcp run CONTAINER [CMD...]                | docker compose run CONTAINER [CMD...]                    |
+| dcp restart(re) [CONTAINER...]            | docker compose restart [CONTAINER...]                    |
+| dcp ps [CONTAINER...] [-a] [-st STATUS]   | docker compose ps [CONTAINER...] [--all] [--status ...]  |
+| dcp logs(l) [CONTAINER...] [-fo]           | docker compose logs [CONTAINER...] [-f]                  |
+| dcp stop(s) [CONTAINER...]                | docker compose stop [CONTAINER...]                       |
+| dcp down [-ro]                            | docker compose down [--remove-orphans]                   |
+| dcpu [CONTAINER...] [-d] [-b] [-w]        | docker compose up [CONTAINER...]                         |
+| dcpe CONTAINER [CMD...]                   | docker compose exec CONTAINER [CMD...]                   |
 
 ## License
 

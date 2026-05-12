@@ -38,9 +38,7 @@ def main() -> None:
         .add_detach_args()
         .add_build_args()
         .add_wait_args()
-        .add_file_args()
-        .add_profile_args()
-        .add_project_args()
+        .add_common_compose_options()
         .set_defaults(func=Processor())
     )
 
@@ -56,9 +54,7 @@ def main() -> None:
     (
         ArgBuilder(_build)
         .add_container_name_subcmd(multiple=True)
-        .add_file_args()
-        .add_profile_args()
-        .add_project_args()
+        .add_common_compose_options()
         .set_defaults(func=Processor())
     )
 
@@ -75,9 +71,7 @@ def main() -> None:
         ArgBuilder(_exec)
         .add_container_name_subcmd(multiple=False)
         .add_inner_bash_cmd_args()
-        .add_file_args()
-        .add_profile_args()
-        .add_project_args()
+        .add_common_compose_options()
         .set_defaults(func=Processor())
     )
 
@@ -85,7 +79,7 @@ def main() -> None:
     _run = subparsers.add_parser(
         "run",
         allow_abbrev=False,
-        usage="dcp run) <CONTAINER_NAME> [BASH|commands]",
+        usage="dcp run <CONTAINER_NAME> [BASH|commands]",
         description="Shorthand for `docker compose run`.",
         help="docker compose `run`",
     )
@@ -93,9 +87,7 @@ def main() -> None:
         ArgBuilder(_run)
         .add_container_name_subcmd(multiple=False)
         .add_inner_bash_cmd_args()
-        .add_file_args()
-        .add_profile_args()
-        .add_project_args()
+        .add_common_compose_options()
         .set_defaults(func=Processor())
     )
 
@@ -111,6 +103,7 @@ def main() -> None:
     (
         ArgBuilder(_restart)
         .add_container_name_subcmd(multiple=True)
+        .add_common_compose_options()
         .set_defaults(func=Processor())
     )
 
@@ -127,6 +120,7 @@ def main() -> None:
         .add_container_name_subcmd(multiple=True)
         .add_all_args()
         .add_status_args()
+        .add_common_compose_options()
         .set_defaults(func=Processor())
     )
 
@@ -143,6 +137,7 @@ def main() -> None:
         ArgBuilder(_logs)
         .add_container_name_subcmd(multiple=True)
         .add_follow_args()
+        .add_common_compose_options()
         .set_defaults(func=Processor())
     )
 
@@ -158,6 +153,7 @@ def main() -> None:
     (
         ArgBuilder(_stop)
         .add_container_name_subcmd(multiple=True)
+        .add_common_compose_options()
         .set_defaults(func=Processor())
     )
 
@@ -172,9 +168,7 @@ def main() -> None:
     (
         ArgBuilder(_down)
         .add_remove_orphans_args()
-        .add_file_args()
-        .add_profile_args()
-        .add_project_args()
+        .add_common_compose_options()
         .set_defaults(func=Processor())
     )
 
@@ -203,9 +197,7 @@ def dcpu_main() -> None:
         .add_detach_args()
         .add_build_args()
         .add_wait_args()
-        .add_file_args()
-        .add_profile_args()
-        .add_project_args()
+        .add_common_compose_options()
         .set_defaults(func=Processor().call_dcpu)
     )
 
@@ -233,9 +225,7 @@ def dcpe_main() -> None:
         ArgBuilder(parser)
         .add_container_name_subcmd(multiple=False)
         .add_inner_bash_cmd_args()
-        .add_file_args()
-        .add_profile_args()
-        .add_project_args()
+        .add_common_compose_options()
         .set_defaults(func=Processor().call_dcpe)
     )
 
