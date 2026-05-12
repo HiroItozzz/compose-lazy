@@ -270,7 +270,7 @@ class TestFileChoices(TestDCPBase):
             ) as mock_select:
                 self.processor._show_file_choices()
 
-        mock_select.assert_called_once_with("-f", file_names)
+        mock_select.assert_called_once_with(file_names, "-f")
 
 
 class TestShowProfileChoices(TestDCPBase):
@@ -338,7 +338,7 @@ services:
 
         captured = capsys.readouterr()
         assert f"☑ Found {len(profiles)} profiles!" in captured.out
-        mock_select.assert_called_once_with("--profile", profiles)
+        mock_select.assert_called_once_with(profiles, "--profile")
 
 
 class TestInteraciveSelect(TestDCPBase):
@@ -372,7 +372,7 @@ class TestInteraciveSelect(TestDCPBase):
     def test_interactive_select(self, keys, flag, expected, monkeypatch):
         monkeypatch.setattr("sys.stdin", io.StringIO(keys))
         choices = ["choice_1", "choice_2"]
-        result = self.processor._interactive_select(flag, choices)
+        result = self.processor._interactive_select(choices, flag)
 
         assert result == expected
 
@@ -380,7 +380,7 @@ class TestInteraciveSelect(TestDCPBase):
     def test_interactive_select_VALUE_ERROR(self, keys, capsys, monkeypatch):
         monkeypatch.setattr("sys.stdin", io.StringIO(keys))
         choices = ["choice_1", "choice_2"]
-        self.processor._interactive_select("-test", choices)
+        self.processor._interactive_select(choices, "--test")
 
         _, err = capsys.readouterr()
         assert "☓ Invalid selection. Please use valid numbers." in err

@@ -95,9 +95,9 @@ class TestAddContainerName(ArgBuilderTestBase):
 
     def test_add_container_name_subcmd_NO_ARGS_FOR_SINGLE_OPTION(self):
         self.builder.add_container_name_subcmd(multiple=False)
-
+        args = self.builder.parser.parse_args([])
         # Raises an error.
-        self.assertRaises(SystemExit, self.builder.parser.parse_args, [])
+        self.assertEqual(args.container_name, [])
 
     def test_add_container_name_subcmd_NO_ARGS_FOR_MUTILPLE_OPTION(self):
         self.builder.add_container_name_subcmd(multiple=True)

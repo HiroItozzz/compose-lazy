@@ -19,12 +19,26 @@ class ArgBuilder:
     def add_common_compose_options(self) -> Self:
         return self._add_file_args()._add_profile_args()._add_project_args()
 
+    def add_optional_container_name_choices(self) -> Self:
+        return self.add_container_name_subcmd(
+            multiple=True
+        )._add_container_name_selection()
+
+    def _add_container_name_selection(self) -> Self:
+        """add positional argument of container name(s) to command definition."""
+        self.parser.add_argument(
+            "-c",
+            "--container",
+            action="store_true",
+            help="show container name candidates, select interactively",
+        )
+        return self
+
     def add_container_name_subcmd(self, multiple: bool = False) -> Self:
         """add positional argument of container name(s) to command definition."""
         if multiple:
             self.parser.add_argument(
                 "container_name",
-                action="extend",
                 nargs="*",
                 default=[],
                 help="(optional) target container names",
@@ -32,8 +46,8 @@ class ArgBuilder:
         else:
             self.parser.add_argument(
                 "container_name",
-                action="extend",
-                nargs=1,
+                nargs="?",
+                type=lambda x: [x],
                 default=[],
                 help="(required) target container name",
             )

@@ -75,36 +75,46 @@ class DockerCmdProcessor:
             + (["--build"] if self.args.build else [])
             + (["-d"] if self.args.detach else [])
             + (["--wait"] if self.args.wait else [])
-            + self.args.container_name
+            + self._create_optional_container_name_selection()
         )
 
     def _create_build_cmd(self) -> None:
-        self.cmd += ["build"] + self.args.container_name
+        self.cmd += ["build"] + self._create_optional_container_name_selection()
 
     def _create_exec_cmd(self) -> None:
-        self.cmd += ["exec"] + self.args.container_name + self.args.inner_bash_cmd
+        self.cmd += (
+            ["exec"]
+            + self._create_container_option(multiple=False)
+            + self.args.inner_bash_cmd
+        )
 
     def _create_run_cmd(self) -> None:
-        self.cmd += ["run"] + self.args.container_name + self.args.inner_bash_cmd
+        self.cmd += (
+            ["run"]
+            + self._create_container_option(multiple=False)
+            + self.args.inner_bash_cmd
+        )
 
     def _create_restart_cmd(self) -> None:
-        self.cmd += ["restart"] + self.args.container_name
+        self.cmd += ["restart"] + self._create_optional_container_name_selection()
 
     def _create_ps_cmd(self) -> None:
         self.cmd += (
             ["ps"]
-            + self.args.container_name
+            + self._create_optional_container_name_selection()
             + (["--all"] if self.args.all else [])
             + self._create_status_option()
         )
 
     def _create_logs_cmd(self) -> None:
         self.cmd += (
-            ["logs"] + self.args.container_name + (["-f"] if self.args.follow else [])
+            ["logs"]
+            + self._create_optional_container_name_selection()
+            + (["-f"] if self.args.follow else [])
         )
 
     def _create_stop_cmd(self) -> None:
-        self.cmd += ["stop"] + self.args.container_name
+        self.cmd += ["stop"] + self._create_optional_container_name_selection()
 
     def _create_down_cmd(self) -> None:
         self.cmd += ["down"] + (["--remove-orphans"] if self.args.remove_orphans else [])
@@ -121,6 +131,61 @@ class DockerCmdProcessor:
             return []
         return ["--status", self.args.status]
 
+    def _create_project_option(self) -> list[str]:
+        if not self.args.project:
+            return []
+        return ["-p", self.args.project]
+
+    # Container option
+    def _create_optional_container_name_selection(self) -> list[str]:
+        """Execute interactive selection if --container option is active"""
+        if self.args.container:
+            return self._create_container_option()
+        else:
+            return self.args.container_name
+
+    def _create_container_option(self, multiple=True) -> list[str]:
+        output_args = []
+        input_args: list[str] = self.args.container_name
+
+        if len(input_args) == 0:
+            try:
+                output_args += self._show_container_choices(multiple=multiple)
+            except KeyboardInterrupt:
+                sys.exit(130)
+            except SystemExit:
+                sys.exit(0)
+        else:
+            output_args += input_args
+
+        return output_args
+
+    def _show_container_choices(self, multiple=True) -> list[str]:
+        """Execute interactive session to get container names."""
+        file_paths = self._get_compose_file_paths()
+
+        containers = set()
+        for path in file_paths:
+            with open(path) as f:
+                data = yaml.safe_load(f)
+            for container_name in (data or {}).get("services", {}).keys():
+                containers.add(container_name)
+
+        if not containers:
+            print("❌ No services found.", file=sys.stderr)
+            raise SystemExit
+
+        if len(containers) == 1:
+            c = containers.pop()
+            print(f"☑ Service found: {c}")
+            return [c]
+
+        # Interactive session: select number(s) to get file args or press "Q" to quit.
+        print(f"\n☑ Found {len(containers)} services!")
+
+        return self._interactive_select(sorted(containers), multiple=multiple)
+
+    # File option
     def _create_file_option(self) -> list[str]:
         file_args = []
         input_args: list[str] | None = self.args.file
@@ -142,29 +207,6 @@ class DockerCmdProcessor:
 
         return file_args
 
-    def _create_profile_option(self) -> list[str]:
-        profile_args = []
-        input_args: list[str] | None = self.args.profile
-        if input_args is None:
-            return []  # Do nothing
-        elif len(input_args) == 0:
-            try:
-                profile_args += self._show_profile_choices()
-            except KeyboardInterrupt:
-                sys.exit(130)
-            except SystemExit:
-                sys.exit(0)
-        else:
-            for pf in input_args:
-                profile_args += ["--profile", pf]
-
-        return profile_args
-
-    def _create_project_option(self) -> list[str]:
-        if not self.args.project:
-            return []
-        return ["-p", self.args.project]
-
     def _show_file_choices(self) -> list[str]:
         """Execute interactive session to create -f args."""
 
@@ -182,7 +224,26 @@ class DockerCmdProcessor:
 
         print(f"\n☑ Found {file_count} docker-compose files!")
 
-        return self._interactive_select("-f", file_dirs)
+        return self._interactive_select(file_dirs, "-f")
+
+    # Profile option
+    def _create_profile_option(self) -> list[str]:
+        profile_args = []
+        input_args: list[str] | None = self.args.profile
+        if input_args is None:
+            return []  # Do nothing
+        elif len(input_args) == 0:
+            try:
+                profile_args += self._show_profile_choices()
+            except KeyboardInterrupt:
+                sys.exit(130)
+            except SystemExit:
+                sys.exit(0)
+        else:
+            for pf in input_args:
+                profile_args += ["--profile", pf]
+
+        return profile_args
 
     def _show_profile_choices(self) -> list[str]:
         """Execute interactive session to create --profile args."""
@@ -208,9 +269,11 @@ class DockerCmdProcessor:
         # Interactive session: select number(s) to get file args or press "Q" to quit.
         print(f"\n☑ Found {len(profiles)} profiles!")
 
-        return self._interactive_select("--profile", sorted(profiles))
+        return self._interactive_select(sorted(profiles), "--profile")
 
-    def _interactive_select(self, flag: str, choice_list: list[str]) -> list[str]:
+    def _interactive_select(
+        self, choice_list: list[str], flag: str | None = None, multiple=True
+    ) -> list[str]:
         args = []
 
         # Show choices
@@ -220,25 +283,41 @@ class DockerCmdProcessor:
         # User input
         while True:
             try:
-                choices_str = input("\nEnter your choices (e.g., 1,3,4) or 'Q' to quit: ")
+                choices_str = input(
+                    f"\nEnter your choice{'s (e.g., 1,3,4)' if multiple else ''} or 'Q' to quit: "
+                )
                 if choices_str in ["Q", "q"]:
                     print("\nCancelled.")
                     raise SystemExit
-                choices = map(
-                    lambda i: int(i) - 1,
-                    (i.strip() for i in choices_str.split(",") if i),
+
+                choices = list(
+                    map(
+                        lambda i: int(i) - 1,
+                        (i.strip() for i in choices_str.split(",") if i),
+                    )
                 )
+
+                if not multiple and len(set(choices)) > 1:
+                    raise ValueError
+
                 for idx in choices:
-                    args += [flag, choice_list[idx]]
+                    chosen = choice_list[idx]
+                    if flag is None:
+                        args += [chosen]
+                    else:
+                        args += [flag, chosen]
+
             except (ValueError, IndexError):
-                print("☓ Invalid selection. Please use valid numbers.", file=sys.stderr)
+                print(
+                    f"☓ Invalid selection. Please use valid number{'s' if multiple else ''}.",
+                    file=sys.stderr,
+                )
             except KeyboardInterrupt as e:
                 print("\nCancelled.")
                 raise e
             else:
                 print()
                 break
-
         return args
 
     @staticmethod

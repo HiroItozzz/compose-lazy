@@ -34,7 +34,7 @@ def main() -> None:
     )
     (
         ArgBuilder(_up)
-        .add_container_name_subcmd(multiple=True)
+        .add_optional_container_name_choices()
         .add_detach_args()
         .add_build_args()
         .add_wait_args()
@@ -53,7 +53,7 @@ def main() -> None:
     )
     (
         ArgBuilder(_build)
-        .add_container_name_subcmd(multiple=True)
+        .add_optional_container_name_choices()
         .add_common_compose_options()
         .set_defaults(func=Processor())
     )
@@ -102,7 +102,7 @@ def main() -> None:
     )
     (
         ArgBuilder(_restart)
-        .add_container_name_subcmd(multiple=True)
+        .add_optional_container_name_choices()
         .add_common_compose_options()
         .set_defaults(func=Processor())
     )
@@ -117,7 +117,7 @@ def main() -> None:
     )
     (
         ArgBuilder(_ps)
-        .add_container_name_subcmd(multiple=True)
+        .add_optional_container_name_choices()
         .add_all_args()
         .add_status_args()
         .add_common_compose_options()
@@ -135,7 +135,7 @@ def main() -> None:
     )
     (
         ArgBuilder(_logs)
-        .add_container_name_subcmd(multiple=True)
+        .add_optional_container_name_choices()
         .add_follow_args()
         .add_common_compose_options()
         .set_defaults(func=Processor())
@@ -152,7 +152,7 @@ def main() -> None:
     )
     (
         ArgBuilder(_stop)
-        .add_container_name_subcmd(multiple=True)
+        .add_optional_container_name_choices()
         .add_common_compose_options()
         .set_defaults(func=Processor())
     )
@@ -193,7 +193,7 @@ def dcpu_main() -> None:
     # dcpu command
     (
         ArgBuilder(parser)
-        .add_container_name_subcmd(multiple=True)
+        .add_optional_container_name_choices()
         .add_detach_args()
         .add_build_args()
         .add_wait_args()
