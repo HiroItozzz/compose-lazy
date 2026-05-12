@@ -187,7 +187,7 @@ class DockerCmdProcessor:
         return ["--status", self.args.status]
 
     def _show_file_choices(self) -> list[str]:
-        """Execute interactive session to create docker-compose file args."""
+        """Execute interactive session to create -f args."""
 
         # List up docker-compose files
         file_dirs: list[str] = self._get_compose_file_paths()
@@ -203,42 +203,15 @@ class DockerCmdProcessor:
 
         print(f"\n☑ Found {file_count} docker-compose files!")
 
-        # Show choices
-        for idx, filedir in enumerate(file_dirs, start=1):
-            print(f"{idx:>5}. {filedir}")
-
-        # Interactive session: select number(s) to get file args or press "Q" to quit.
-        args = []
-        while True:
-            try:
-                file_index_str = input(
-                    "\nEnter your choices (e.g., 1,3,4) or 'Q' to quit: "
-                )
-                if file_index_str in ["Q", "q"]:
-                    print("\nCancelled.")
-                    raise SystemExit
-                file_index = map(
-                    lambda i: int(i) - 1,
-                    (i.strip() for i in file_index_str.split(",") if i),
-                )
-                for idx in file_index:
-                    args += ["-f", file_dirs[idx]]
-            except (ValueError, IndexError):
-                print("☓ Invalid selection. Please use valid numbers.", file=sys.stderr)
-            except KeyboardInterrupt as e:
-                print("\nCancelled.")
-                raise e
-            else:
-                print()
-                break
-        return args
+        return self._interactive_select("-f", file_dirs)
 
     def _show_profile_choices(self) -> list[str]:
-        file_dirs = self._get_compose_file_paths()
+        """Execute interactive session to create --profile args."""
+        file_paths = self._get_compose_file_paths()
 
         profiles = set()
-        for dir in file_dirs:
-            with open(dir) as f:
+        for path in file_paths:
+            with open(path) as f:
                 data = yaml.safe_load(f)
             for service in (data or {}).get("services", {}).values():
                 for p in (service or {}).get("profiles", []):
@@ -256,12 +229,16 @@ class DockerCmdProcessor:
         # Interactive session: select number(s) to get file args or press "Q" to quit.
         print(f"\n☑ Found {len(profiles)} profiles!")
 
+        return self._interactive_select("--profile", sorted(profiles))
+
+    def _interactive_select(self, flag: str, choice_list: list[str]) -> list[str]:
         args = []
-        prof_list = sorted(profiles)
 
         # Show choices
-        for idx, profile in enumerate(prof_list, start=1):
-            print(f"{idx:>5}. {profile}")
+        for idx, choice in enumerate(choice_list, start=1):
+            print(f"{idx:>5}. {choice}")
+
+        # User input
         while True:
             try:
                 choices_str = input("\nEnter your choices (e.g., 1,3,4) or 'Q' to quit: ")
@@ -273,7 +250,7 @@ class DockerCmdProcessor:
                     (i.strip() for i in choices_str.split(",") if i),
                 )
                 for idx in choices:
-                    args += ["--profile", prof_list[idx]]
+                    args += [flag, choice_list[idx]]
             except (ValueError, IndexError):
                 print("☓ Invalid selection. Please use valid numbers.", file=sys.stderr)
             except KeyboardInterrupt as e:
