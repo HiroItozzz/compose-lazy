@@ -146,6 +146,46 @@ class TestAddFileArgs(ArgBuilderTestBase):
         self.assertEqual(args.file, [])
 
 
+class TestAddProfileArgs(ArgBuilderTestBase):
+    def test_profile_args_ABRREV(self):
+        self.builder.add_profile_args()
+        args = self.builder.parser.parse_args(["-pf", "profile"])
+
+        self.assertEqual(args.profile, ["profile"])
+
+    def test_profile_args_LONG(self):
+        self.builder.add_profile_args()
+        args = self.builder.parser.parse_args(["--profile", "profile"])
+
+        self.assertEqual(args.profile, ["profile"])
+
+    def test_profile_args_ABRREV_WITH_MULTIPLE_ARGS(self):
+        self.builder.add_profile_args()
+        args = self.builder.parser.parse_args(["-pf", "profile_1", "profile_2"])
+
+        # Parses multiple args.
+        self.assertEqual(args.profile, ["profile_1", "profile_2"])
+
+    def test_profile_args_ABRREV_WITH_NO_ARGS(self):
+        self.builder.add_profile_args()
+        args = self.builder.parser.parse_args(["-pf"])
+
+        self.assertEqual(args.profile, [])
+
+    def test_profile_args_LONG_WITH_MULTIPLE_ARGS(self):
+        self.builder.add_profile_args()
+        args = self.builder.parser.parse_args(["--profile", "profile_1", "profile_2"])
+
+        # Parses multiple args.
+        self.assertEqual(args.profile, ["profile_1", "profile_2"])
+
+    def test_profile_args_LONG_WITH_NO_ARGS(self):
+        self.builder.add_profile_args()
+        args = self.builder.parser.parse_args(["--profile"])
+
+        self.assertEqual(args.profile, [])
+
+
 class TestAddProjectArgs(ArgBuilderTestBase):
     def test_add_project_args_ABBREV(self):
         self.builder.add_project_args()

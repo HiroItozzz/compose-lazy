@@ -12,7 +12,11 @@ dist/
 build/
 temp/
 .ipynb_checkpoints/
-.coverage
 
 # personal
 .idea/
+
+# tests
+.coverage
+*compose*.yml
+*compose*.yaml

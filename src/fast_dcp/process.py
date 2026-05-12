@@ -5,6 +5,8 @@ import sys
 from argparse import Namespace
 from pathlib import Path
 
+import yaml
+
 logger = logging.getLogger(__name__)
 
 _BASE_CMD = "docker", "compose"
@@ -71,6 +73,7 @@ class DockerCmdProcessor:
         self.cmd += (
             self._create_project_option()
             + self._create_file_option()
+            + self._create_profile_option()
             + ["up"]
             + (["--build"] if self.args.build else [])
             + (["-d"] if self.args.detach else [])
@@ -81,6 +84,7 @@ class DockerCmdProcessor:
         self.cmd += (
             self._create_project_option()
             + self._create_file_option()
+            + self._create_profile_option()
             + ["build"]
             + self.args.container_name
         )
@@ -89,6 +93,7 @@ class DockerCmdProcessor:
         self.cmd += (
             self._create_project_option()
             + self._create_file_option()
+            + self._create_profile_option()
             + ["exec"]
             + self.args.container_name
             + self.args.inner_bash_cmd
@@ -98,6 +103,7 @@ class DockerCmdProcessor:
         self.cmd += (
             self._create_project_option()
             + self._create_file_option()
+            + self._create_profile_option()
             + ["run"]
             + self.args.container_name
             + self.args.inner_bash_cmd
@@ -126,6 +132,7 @@ class DockerCmdProcessor:
         self.cmd += (
             self._create_project_option()
             + self._create_file_option()
+            + self._create_profile_option()
             + ["down"]
             + (["--remove-orphans"] if self.args.remove_orphans else [])
         )
@@ -151,6 +158,24 @@ class DockerCmdProcessor:
 
         return file_args
 
+    def _create_profile_option(self) -> list[str]:
+        profile_args = []
+        input_args: list[str] | None = self.args.profile
+        if input_args is None:
+            return []  # Do nothing
+        elif len(input_args) == 0:
+            try:
+                profile_args += self._show_profile_choices()
+            except KeyboardInterrupt:
+                sys.exit(130)
+            except SystemExit:
+                sys.exit(0)
+        else:
+            for pf in input_args:
+                profile_args += ["--profile", pf]
+
+        return profile_args
+
     def _create_project_option(self) -> list[str]:
         if not self.args.project:
             return []
@@ -162,7 +187,7 @@ class DockerCmdProcessor:
         return ["--status", self.args.status]
 
     def _show_file_choices(self) -> list[str]:
-        """Execute interactive session to create docker-compose file args."""
+        """Execute interactive session to create -f args."""
 
         # List up docker-compose files
         file_dirs: list[str] = self._get_compose_file_paths()
@@ -178,26 +203,54 @@ class DockerCmdProcessor:
 
         print(f"\n☑ Found {file_count} docker-compose files!")
 
-        # Show choices
-        for idx, filedir in enumerate(file_dirs, start=1):
-            print(f"{idx:>5}. {filedir}")
+        return self._interactive_select("-f", file_dirs)
+
+    def _show_profile_choices(self) -> list[str]:
+        """Execute interactive session to create --profile args."""
+        file_paths = self._get_compose_file_paths()
+
+        profiles = set()
+        for path in file_paths:
+            with open(path) as f:
+                data = yaml.safe_load(f)
+            for service in (data or {}).get("services", {}).values():
+                for p in (service or {}).get("profiles", []):
+                    profiles.add(p)
+
+        if not profiles:
+            print("❌ No profiles found.", file=sys.stderr)
+            raise SystemExit
+
+        if len(profiles) == 1:
+            p = profiles.pop()
+            print(f"☑ Profile found: {p}")
+            return ["--profile", p]
 
         # Interactive session: select number(s) to get file args or press "Q" to quit.
+        print(f"\n☑ Found {len(profiles)} profiles!")
+
+        return self._interactive_select("--profile", sorted(profiles))
+
+    def _interactive_select(self, flag: str, choice_list: list[str]) -> list[str]:
         args = []
+
+        # Show choices
+        for idx, choice in enumerate(choice_list, start=1):
+            print(f"{idx:>5}. {choice}")
+
+        # User input
         while True:
             try:
-                file_index_str = input(
-                    "\nEnter your choices (e.g., 1,3,4) or 'Q' to quit: "
-                )
-                if file_index_str in ["Q", "q"]:
+                choices_str = input("\nEnter your choices (e.g., 1,3,4) or 'Q' to quit: ")
+                if choices_str in ["Q", "q"]:
                     print("\nCancelled.")
                     raise SystemExit
-                file_index = map(
+                choices = map(
                     lambda i: int(i) - 1,
-                    (i.strip() for i in file_index_str.split(",") if i),
+                    (i.strip() for i in choices_str.split(",") if i),
                 )
-                for idx in file_index:
-                    args += ["-f", file_dirs[idx]]
+                for idx in choices:
+                    args += [flag, choice_list[idx]]
             except (ValueError, IndexError):
                 print("☓ Invalid selection. Please use valid numbers.", file=sys.stderr)
             except KeyboardInterrupt as e:
@@ -206,6 +259,7 @@ class DockerCmdProcessor:
             else:
                 print()
                 break
+
         return args
 
     @staticmethod

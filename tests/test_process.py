@@ -116,6 +116,7 @@ class TestCreateOptions(TestDCPBase):
         super().setup_method()
         self.processor._args = MagicMock()
 
+    # File Option
     @pytest.mark.parametrize(
         "file_values,expected_value",
         [
@@ -169,6 +170,37 @@ class TestCreateOptions(TestDCPBase):
             with pytest.raises(SystemExit):
                 self.processor._create_file_option()
 
+    # Profile Option
+    @pytest.mark.parametrize(
+        "profile_values,expected_value",
+        [
+            (None, []),
+            (["test"], ["--profile", "test"]),
+            (
+                ["test", "test_2"],
+                ["--profile", "test", "--profile", "test_2"],
+            ),
+        ],
+    )
+    def test_create_profile_option_VALID_TYPE(self, profile_values, expected_value):
+        self.processor._args.profile = profile_values
+
+        assert self.processor._create_profile_option() == expected_value
+
+    @pytest.mark.parametrize(
+        "exception",
+        [KeyboardInterrupt, SystemExit],
+    )
+    def test_create_profile_option_ERROR_RAISED(self, exception):
+        self.processor._args.profile = []
+        with patch(
+            "fast_dcp.process.DockerCmdProcessor._show_profile_choices",
+            MagicMock(side_effect=exception),
+        ):
+            with pytest.raises(SystemExit):
+                self.processor._create_profile_option()
+
+    # Project Option
     @pytest.mark.parametrize(
         "project_value,expected_value",
         [
@@ -205,63 +237,166 @@ class TestFileChoices(TestDCPBase):
             result = self.processor._show_file_choices()
             captured = capsys.readouterr()
 
-            assert result == ["-f", file_name]
-            assert f"docker-compose file found: {file_name}" in captured.out
+        assert result == ["-f", file_name]
+        assert f"docker-compose file found: {file_name}" in captured.out
 
-    @pytest.mark.parametrize(
-        "values,expected",
-        [
-            ("1\n", ["-f", "docker-compose.yml"]),
-            ("2\n", ["-f", "docker-compose.prod.yml"]),
-            ("1,2\n", ["-f", "docker-compose.yml", "-f", "docker-compose.prod.yml"]),
-            (
-                "  1 , 2  \n",
-                ["-f", "docker-compose.yml", "-f", "docker-compose.prod.yml"],
-            ),
-            ("3\n1\n", ["-f", "docker-compose.yml"]),
-        ],
-    )
-    def test_show_file_choices_MULTIPLE(self, values, expected, monkeypatch):
-        monkeypatch.setattr("sys.stdin", io.StringIO(values))
-        file_names = ("docker-compose.yml", "docker-compose.prod.yml")
+    def test_show_file_choices_MULTIPLE(self):
+        file_names = ["docker-compose.yml", "docker-compose.prod.yml"]
         with patch(
             "fast_dcp.process.DockerCmdProcessor._get_compose_file_paths"
         ) as mock_paths:
-            mock_paths.return_value = [*file_names]
-            result = self.processor._show_file_choices()
-
-            assert result == expected
-
-    def test_show_file_choices_MULTIPLE_KEYBOARD_INTERRUPT(self, capsys, monkeypatch):
-        monkeypatch.setattr("builtins.input", MagicMock(side_effect=KeyboardInterrupt))
-
-        file_names = ("docker-compose.yml", "docker-compose.prod.yml")
-        with patch(
-            "fast_dcp.process.DockerCmdProcessor._get_compose_file_paths"
-        ) as mock_paths:
-            mock_paths.return_value = [*file_names]
-            with pytest.raises(KeyboardInterrupt):
+            mock_paths.return_value = file_names
+            with patch(
+                "fast_dcp.process.DockerCmdProcessor._interactive_select"
+            ) as mock_select:
                 self.processor._show_file_choices()
 
-            captured = capsys.readouterr()
+        mock_select.assert_called_once_with("-f", file_names)
 
-            assert "\nCancelled." in captured.out
+
+class TestShowProfileChoices(TestDCPBase):
+    def test_show_profile_choices_EMPTY(self, capsys):
+        with patch(
+            "fast_dcp.process.DockerCmdProcessor._get_compose_file_paths"
+        ) as mock_paths:
+            mock_paths.return_value = []
+
+            with pytest.raises(SystemExit):
+                self.processor._show_profile_choices()
+
+            captured = capsys.readouterr()
+            assert "❌ No profiles found." in captured.err
+
+    def test_show_profile_choices_SINGLE(self, capsys, tmp_path, monkeypatch):
+        file_name = "docker-compose.yml"
+        content = """
+services:
+  app:
+    profiles:
+      - prod
+  db:
+    profiles:
+      - prod
+"""
+        profile_name = "prod"
+
+        monkeypatch.chdir(tmp_path)
+        (tmp_path / file_name).write_text(content)
+        with patch(
+            "fast_dcp.process.DockerCmdProcessor._get_compose_file_paths"
+        ) as mock_paths:
+            mock_paths.return_value = [file_name]
+            result = self.processor._show_profile_choices()
+
+        captured = capsys.readouterr()
+        assert f"☑ Profile found: {profile_name}" in captured.out
+        assert result == ["--profile", profile_name]
+
+    def test_show_profile_choices_MULTIPLE(self, capsys, tmp_path, monkeypatch):
+        file_name = "docker-compose.yml"
+        content = """
+services:
+  app:
+    profiles:
+      - prod
+  db:
+    profiles:
+      - prod
+      - dev
+"""
+        profiles = sorted(["prod", "dev"])
+
+        monkeypatch.chdir(tmp_path)
+        (tmp_path / file_name).write_text(content)
+        with patch(
+            "fast_dcp.process.DockerCmdProcessor._get_compose_file_paths"
+        ) as mock_paths:
+            mock_paths.return_value = [file_name]
+            with patch(
+                "fast_dcp.process.DockerCmdProcessor._interactive_select"
+            ) as mock_select:
+                self.processor._show_profile_choices()
+
+        captured = capsys.readouterr()
+        assert f"☑ Found {len(profiles)} profiles!" in captured.out
+        mock_select.assert_called_once_with("--profile", profiles)
+
+
+class TestInteraciveSelect(TestDCPBase):
+    cases_f = (
+        ("1\n", "-f", ["-f", "choice_1"]),
+        ("2\n", "-f", ["-f", "choice_2"]),
+        ("1,2\n", "-f", ["-f", "choice_1", "-f", "choice_2"]),
+        (
+            "  1 , 2  \n",
+            "-f",
+            ["-f", "choice_1", "-f", "choice_2"],
+        ),
+        ("3\n1\n", "-f", ["-f", "choice_1"]),
+    )
+    cases_pf = (
+        ("1\n", "-pf", ["-pf", "choice_1"]),
+        ("2\n", "-pf", ["-pf", "choice_2"]),
+        ("1,2\n", "-pf", ["-pf", "choice_1", "-pf", "choice_2"]),
+        (
+            "  1 , 2  \n",
+            "-pf",
+            ["-pf", "choice_1", "-pf", "choice_2"],
+        ),
+        ("3\n1\n", "-pf", ["-pf", "choice_1"]),
+    )
+
+    @pytest.mark.parametrize(
+        "keys,flag,expected",
+        [*cases_f, *cases_pf],
+    )
+    def test_interactive_select(self, keys, flag, expected, monkeypatch):
+        monkeypatch.setattr("sys.stdin", io.StringIO(keys))
+        choices = ["choice_1", "choice_2"]
+        result = self.processor._interactive_select(flag, choices)
+
+        assert result == expected
+
+    @pytest.mark.parametrize("keys", ["3\n1\n", "abc\n1\n"])
+    def test_interactive_select_VALUE_ERROR(self, keys, capsys, monkeypatch):
+        monkeypatch.setattr("sys.stdin", io.StringIO(keys))
+        choices = ["choice_1", "choice_2"]
+        self.processor._interactive_select("-test", choices)
+
+        _, err = capsys.readouterr()
+        assert "☓ Invalid selection. Please use valid numbers." in err
+
+    def test_interactive_select_KEYBOARD_INTERRUPT(self, capsys, monkeypatch):
+        monkeypatch.setattr("builtins.input", MagicMock(side_effect=KeyboardInterrupt))
+        choices = ["test_1", "test_2"]
+
+        with pytest.raises(KeyboardInterrupt):
+            self.processor._interactive_select("--test", choices)
+
+        captured = capsys.readouterr()
+
+        assert "\nCancelled." in captured.out
 
     @pytest.mark.parametrize(
         "values",
         ["q\n", "Q\n"],
     )
-    def test_show_file_choices_MULTIPLE_Q(self, values, capsys, monkeypatch):
+    def test_sinteractive_select_QUIT(self, values, capsys, monkeypatch):
         monkeypatch.setattr("sys.stdin", io.StringIO(values))
+        choices = ["test_1", "test_2"]
 
-        file_names = ("docker-compose.yml", "docker-compose.prod.yml")
-        with patch(
-            "fast_dcp.process.DockerCmdProcessor._get_compose_file_paths"
-        ) as mock_paths:
-            mock_paths.return_value = [*file_names]
-            with pytest.raises(SystemExit):
-                self.processor._show_file_choices()
+        with pytest.raises(SystemExit):
+            self.processor._interactive_select("--test", choices)
 
-            captured = capsys.readouterr()
+        captured = capsys.readouterr()
 
-            assert "\nCancelled." in captured.out
+        assert "\nCancelled." in captured.out
+
+
+def test_get_compose_file_paths(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "docker-compose.yml").touch()
+    (tmp_path / "docker-compose.prod.yaml").touch()
+
+    result = DockerCmdProcessor._get_compose_file_paths()
+    assert len(result) == 2

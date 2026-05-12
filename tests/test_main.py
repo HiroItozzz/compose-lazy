@@ -30,6 +30,10 @@ class TestMain:
         ("dcp up -f test.yaml", "docker compose -f test.yaml up"),
         ("dcp u --file test.yaml", "docker compose -f test.yaml up"),
         ("dcp up --file test.yaml", "docker compose -f test.yaml up"),
+        ("dcp u -pf dev", "docker compose --profile dev up"),
+        ("dcp up -pf dev", "docker compose --profile dev up"),
+        ("dcp u --profile dev", "docker compose --profile dev up"),
+        ("dcp up --profile dev", "docker compose --profile dev up"),
         ("dcp u -f test1.yaml test2.yaml", "docker compose -f test1.yaml -f test2.yaml up"),
         ("dcp up -f test1.yaml test2.yaml", "docker compose -f test1.yaml -f test2.yaml up"),
         ("dcp u --file test1.yaml test2.yaml", "docker compose -f test1.yaml -f test2.yaml up"),
@@ -61,6 +65,8 @@ class TestMain:
         ("dcp build -f test.yaml", "docker compose -f test.yaml build"),
         ("dcp build -f test1.yaml test2.yaml", "docker compose -f test1.yaml -f test2.yaml build"),
         ("dcp build -p testproject", "docker compose -p testproject build"),
+        ("dcp b -pf dev", "docker compose --profile dev build"),
+        ("dcp b --profile dev", "docker compose --profile dev build"),
     )
     testcases_DCP_E_SINGLE_OPTION = (
         ("dcp e container", "docker compose exec container bash"),
@@ -76,6 +82,8 @@ class TestMain:
         ("dcp exec container -p testproject", "docker compose -p testproject exec container bash"),
         ("dcp exec container uv run pytest -p testproject",
          "docker compose -p testproject exec container uv run pytest"),
+        ("dcp e container -pf dev", "docker compose --profile dev exec container bash"),
+        ("dcp e container --profile dev", "docker compose --profile dev exec container bash"),
     )
     testcases_DCP_RUN_SINGLE_OPTION = (
         ("dcp run container", "docker compose run container bash"),
@@ -85,6 +93,8 @@ class TestMain:
         ("dcp run container -p testproject", "docker compose -p testproject run container bash"),
         ("dcp run container uv run pytest -p testproject",
          "docker compose -p testproject run container uv run pytest"),
+        ("dcp run container -pf dev", "docker compose --profile dev run container bash"),
+        ("dcp run container --profile dev", "docker compose --profile dev run container bash"),
     )
     testcases_DCP_RESTART_SINGLE_OPTION = (
         ("dcp re container", "docker compose restart container"),
@@ -134,13 +144,15 @@ class TestMain:
         ("dcp stop container", "docker compose stop container"),
         ("dcp stop container1 container2", "docker compose stop container1 container2"),
     )
-    testcases_DCP_D_SINGLE_OPTION = (
+    testcases_DCP_DOWN_SINGLE_OPTION = (
         ("dcp down", "docker compose down"),
         ("dcp down -ro", "docker compose down --remove-orphans"),
         ("dcp down --remove-orphans", "docker compose down --remove-orphans"),
         ("dcp down -f test.yaml", "docker compose -f test.yaml down"),
         ("dcp down -f test1.yaml test2.yaml", "docker compose -f test1.yaml -f test2.yaml down"),
         ("dcp down -p testproject", "docker compose -p testproject down"),
+        ("dcp down -pf dev", "docker compose --profile dev down"),
+        ("dcp down --profile dev", "docker compose --profile dev down"),
     )
     testcases_DCPU_SINGLE_OPTION = (
         ("dcpu", "docker compose up"),
@@ -156,6 +168,8 @@ class TestMain:
         ("dcpu --file test.yaml", "docker compose -f test.yaml up"),
         ("dcpu -f test1.yaml test2.yaml", "docker compose -f test1.yaml -f test2.yaml up"),
         ("dcpu --file test1.yaml test2.yaml", "docker compose -f test1.yaml -f test2.yaml up"),
+        ("dcpu -pf dev", "docker compose --profile dev up"),
+        ("dcpu --profile dev", "docker compose --profile dev up"),
     )
     testcases_DCPE_SINGLE_OPTION = (
         ("dcpe container", "docker compose exec container bash"),
@@ -165,6 +179,7 @@ class TestMain:
         ("dcpe container uv run pytest -f test.yaml", "docker compose -f test.yaml exec container uv run pytest"),
         ("dcpe container -p testproject", "docker compose -p testproject exec container bash"),
         ("dcpe container uv run pytest -p testproject", "docker compose -p testproject exec container uv run pytest"),
+        ("dcpe container -pf dev", "docker compose --profile dev exec container bash"),
     )
 
     # @fmt:on
@@ -180,7 +195,7 @@ class TestMain:
         *testcases_DCP_PS_SINGLE_OPTION,
         *testcases_DCP_L_SINGLE_OPTION,
         *testcases_DCP_S_SINGLE_OPTION,
-        *testcases_DCP_D_SINGLE_OPTION,
+        *testcases_DCP_DOWN_SINGLE_OPTION,
     ])
     def test_run_dcp(self, input_cmd, expected_cmd):
         with patch("fast_dcp.process.subprocess.run") as mock_run:

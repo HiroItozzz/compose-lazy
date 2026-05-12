@@ -38,6 +38,7 @@ def main() -> None:
         .add_detach_args()
         .add_build_args()
         .add_file_args()
+        .add_profile_args()
         .add_project_args()
         .set_defaults(func=Processor())
     )
@@ -55,6 +56,7 @@ def main() -> None:
         ArgBuilder(_build)
         .add_container_name_subcmd(multiple=True)
         .add_file_args()
+        .add_profile_args()
         .add_project_args()
         .set_defaults(func=Processor())
     )
@@ -73,11 +75,12 @@ def main() -> None:
         .add_container_name_subcmd(multiple=False)
         .add_inner_bash_cmd_args()
         .add_file_args()
+        .add_profile_args()
         .add_project_args()
         .set_defaults(func=Processor())
     )
 
-    # dcp run(R) command
+    # dcp run command
     _run = subparsers.add_parser(
         "run",
         allow_abbrev=False,
@@ -90,11 +93,12 @@ def main() -> None:
         .add_container_name_subcmd(multiple=False)
         .add_inner_bash_cmd_args()
         .add_file_args()
+        .add_profile_args()
         .add_project_args()
         .set_defaults(func=Processor())
     )
 
-    # dcp restart(r) command
+    # dcp restart(re) command
     _restart = subparsers.add_parser(
         "restart",
         aliases=["re"],
@@ -168,6 +172,7 @@ def main() -> None:
         ArgBuilder(_down)
         .add_remove_orphans_args()
         .add_file_args()
+        .add_profile_args()
         .add_project_args()
         .set_defaults(func=Processor())
     )
@@ -197,6 +202,7 @@ def dcpu_main() -> None:
         .add_detach_args()
         .add_build_args()
         .add_file_args()
+        .add_profile_args()
         .add_project_args()
         .set_defaults(func=Processor().call_dcpu)
     )
@@ -226,6 +232,7 @@ def dcpe_main() -> None:
         .add_container_name_subcmd(multiple=False)
         .add_inner_bash_cmd_args()
         .add_file_args()
+        .add_profile_args()
         .add_project_args()
         .set_defaults(func=Processor().call_dcpe)
     )
