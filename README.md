@@ -6,11 +6,11 @@
 How many times have you typed `docker compose up --build` today?
 Fast DCP cuts it down to `dcpu -b` — same result, a fraction of the keystrokes.
 
-## 🆕 What's New in v0.2.0
+## 🆕 Highlights
 
-**Interactive file selection for `--file` option**
+**Interactive file & profile selection**
 
-Running `dcpu -f` now auto-detects docker-compose files in your project and lets you choose interactively.
+Running `-f` or `-pf` without arguments auto-detects compose files and profiles, letting you choose interactively.
 
 ```bash
 $ dcpu -f
@@ -18,6 +18,19 @@ $ dcpu -f
     1. docker-compose.yml
     2. docker-compose.prod.yml
 Enter your choices (e.g., 1,3,4) or 'Q' to quit:
+
+$ dcpu -pf
+☑ Found 2 profiles!
+    1. dev
+    2. prod
+Enter your choices (e.g., 1,3,4) or 'Q' to quit:
+```
+
+**`--wait` option**
+
+```bash
+# Block until all services are healthy
+dcpu -w
 ```
 
 ## Sample Usage
@@ -102,6 +115,7 @@ Both `pipx` and `uv tool` install CLI tools in isolated environments, so fast-dc
 | dcp up(u)                                 | docker compose up                                 |
 | dcp up(u) container_name                  | docker compose up container_name                  |
 | dcp up(u) -f path1 path2...               | docker compose -f path1 -f path2 up               |
+| dcp up(u) -pf dev prod                     | docker compose --profile dev --profile prod up   |
 | dcp up(u) -p project_name...              | docker compose -p project_name up                 |
 | dcp up(u) -d                              | docker compose up -d                              |
 | dcp build(b)                              | docker compose build                              |
@@ -119,7 +133,7 @@ Both `pipx` and `uv tool` install CLI tools in isolated environments, so fast-dc
 | dcp ps -st running                        | docker compose ps --status running                |
 | dcp logs(l)                               | docker compose logs                               |
 | dcp logs(l) container_name                | docker compose logs container_name                |
-| dcp logs(l) container_name -F             | docker compose logs container_name -f             |
+| dcp logs(l) container_name -f             | docker compose logs container_name -f             |
 | dcp stop(s)                               | docker compose stop                               |
 | dcp stop(s) container_name                | docker compose stop container_name                | 
 | dcp down                                  | docker compose down                               |

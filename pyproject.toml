@@ -4,7 +4,7 @@ build-backend = "flit_core.buildapi"
 
 [project]
 name = "fast-dcp"
-version = "0.2.0"
+version = "0.3.0"
 authors = [{ name = "Hiro Ito", email = "mobiiii24@gmail.com" }]
 keywords = ["docker", "docker compose", "alias"]
 readme = "README.md"
@@ -13,7 +13,7 @@ dynamic = ["description"]
 license = "MIT"
 license-files = ["LICENSE"]
 classifiers = [
-    "Development Status :: 3 - Beta",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "Natural Language :: English",
     "Topic :: Utilities",
