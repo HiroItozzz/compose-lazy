@@ -1,7 +1,7 @@
 # Fast DCP
-> A smart CLI wrapper for `docker compose` — with interactive file, profile, and service selection.
+> 🚀 A smart CLI wrapper for `docker compose` — with interactive file, profile, and service selection.
 
-## Highlights
+## 🆕 Highlights
 
 **Interactive file, profile & service selection**
 
