@@ -4,7 +4,7 @@ build-backend = "flit_core.buildapi"
 
 [project]
 name = "fast-dcp"
-version = "0.5.1"
+version = "0.5.2"
 authors = [{ name = "Hiro Ito", email = "mobiiii24@gmail.com" }]
 keywords = ["docker", "docker compose", "alias", "command line tool", "productivity"]
 readme = "README.md"

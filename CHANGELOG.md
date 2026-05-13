@@ -1,3 +1,8 @@
+## v0.5.2 - 2026-05-13
+
+- Fixed duplicate log output when `setup_logger` is called multiple times
+- Fixed `exec`/`run` commands accepting empty service name selection
+
 ## v0.5.1 - 2026-05-13
 
 - `dcpe uv run pytest` style commands now auto-detect that the first token is not a service name and fall back to interactive selection
