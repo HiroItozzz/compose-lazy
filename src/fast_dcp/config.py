@@ -17,6 +17,10 @@ LOG_LEVEL = "DEBUG" if DEBUG else "INFO"
 def setup_logger(name: str) -> None:
     logger = logging.getLogger(name)
     logger.setLevel(logging.DEBUG)
+    logger.propagate = False
+
+    if any(isinstance(h, logging.StreamHandler) for h in logger.handlers):
+        return
 
     ch = logging.StreamHandler()
     ch.setLevel(getattr(logging, LOG_LEVEL, logging.INFO))

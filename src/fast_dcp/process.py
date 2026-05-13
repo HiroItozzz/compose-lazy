@@ -342,7 +342,7 @@ class DockerCmdProcessor:
                     )
                 )
 
-                if not multiple and len(choices) > 1:
+                if not multiple and len(choices) != 1:
                     raise ValueError
 
                 for idx in choices:
