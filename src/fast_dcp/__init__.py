@@ -1,4 +1,4 @@
-"""A CLI tool that provides shorthand aliases for common docker compose commands."""
+"""A smart CLI wrapper for docker compose with interactive selection support."""
 
 import logging
 from importlib.metadata import version

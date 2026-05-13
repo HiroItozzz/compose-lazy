@@ -1,36 +1,31 @@
 # Fast DCP
-> 🚀 A CLI tool that provides shorthand aliases for common `docker compose` commands.
+> A smart CLI wrapper for `docker compose` — with interactive file, profile, and service selection.
 
-## 🐳 Tired of Typing `docker compose` Every Time?
+## Highlights
 
-How many times have you typed `docker compose up --build` today?
-Fast DCP cuts it down to `dcpu -b` — same result, a fraction of the keystrokes.
+**Interactive file, profile & service selection**
 
-## 🆕 Highlights
-
-**Interactive file & profile selection**
-
-Running `-f` or `-pf` without arguments auto-detects compose files and profiles, letting you choose interactively.
+Running `-f`, `-pf`, or `-s` without arguments auto-detects compose files, profiles, and services, letting you choose interactively.
 
 ```bash
 $ dcpu -f
 ☑ Found 2 docker-compose files!
     1. docker-compose.yml
     2. docker-compose.prod.yml
-Enter your choices (e.g., 1,3,4) or 'Q' to quit:
+Enter your choices (e.g., 1,3,4) or 'q' to quit:
 
 $ dcpu -pf
 ☑ Found 2 profiles!
     1. dev
     2. prod
-Enter your choices (e.g., 1,3,4) or 'Q' to quit:
-```
+Enter your choices (e.g., 1,3,4) or 'q' to quit:
 
-**`--wait` option**
-
-```bash
-# Block until all services are healthy
-dcpu -w
+$ dcpu -s
+☑ Found 3 services!
+    1. db
+    2. frontend
+    3. app
+Enter your choices (e.g., 1,3,4) or 'q' to quit:
 ```
 
 ## Sample Usage
@@ -48,7 +43,7 @@ dcp re app
 ```
 
 ## Install fast-dcp
-### Quick Install (Recommended)
+### Quick Install
 ```bash
 # Using pipx
 pipx install fast-dcp
@@ -90,19 +85,20 @@ pipx install fast-dcp
 ```
 </details>
 
-## ✨ Features
+## Features
 
+- **Interactive Selection**: auto-detect and interactively select compose files, profiles, and services
 - **Short Aliases**: `dcp u`, `dcp b`, `dcp e` — fewer keystrokes for common commands
 - **Dedicated Commands**: `dcpu` and `dcpe` for frequent up/exec workflows
 - **Zero Config**: No configuration files needed — just install and run
 - **Cross-Platform**: Works on Windows, macOS, and Linux
 
-## ❓ FAQ
+## FAQ
 ### Why use pipx or uv tool instead of pip?
 
 Both `pipx` and `uv tool` install CLI tools in isolated environments, so fast-dcp won't conflict with other Python packages. The commands (`dcp`, `dcpu`, `dcpe`) are available globally without activating a virtual environment. `uv tool` is the faster alternative if you already use uv.
 
-## 🔧 Requirements
+## Requirements
 
 - Python 3.11+
 - Docker with Compose V2 (`docker compose` — not `docker-compose`)
@@ -110,28 +106,32 @@ Both `pipx` and `uv tool` install CLI tools in isolated environments, so fast-dc
 
 ## List of Commands
 
-> **Common options** (available for all commands): `-f FILE...`, `-pf PROFILE...`, `-p PROJECT`
+> **Common options** (available for all commands): `-s`, `-f FILE...`, `-pf PROFILE...`, `-p PROJECT`
 >
 > ⚠️ Note: `-f`, `-pf`, `-p` are passed before the subcommand in the actual docker compose syntax,  
 > but in fast-dcp they are specified after the subcommand (e.g. `dcp up -f FILE`).
 
-| Bash Command                              | Executed Docker Command                                  |
-|-------------------------------------------|----------------------------------------------------------|
-| dcp                                       | - (Show help)                                            |
-| dcp up(u) [CONTAINER...]                  | docker compose up [CONTAINER...]                         |
-| dcp up(u) -d                              | docker compose up -d                                     |
-| dcp up(u) -b                              | docker compose up --build                                |
-| dcp up(u) -w                              | docker compose up --wait                                 |
-| dcp build(b) [CONTAINER...]               | docker compose build [CONTAINER...]                      |
-| dcp exec(e) CONTAINER [CMD...]            | docker compose exec CONTAINER [CMD...]                   |
-| dcp run CONTAINER [CMD...]                | docker compose run CONTAINER [CMD...]                    |
-| dcp restart(re) [CONTAINER...]            | docker compose restart [CONTAINER...]                    |
-| dcp ps [CONTAINER...] [-a] [-st STATUS]   | docker compose ps [CONTAINER...] [--all] [--status ...]  |
-| dcp logs(l) [CONTAINER...] [-fo]           | docker compose logs [CONTAINER...] [-f]                  |
-| dcp stop(s) [CONTAINER...]                | docker compose stop [CONTAINER...]                       |
-| dcp down [-ro]                            | docker compose down [--remove-orphans]                   |
-| dcpu [CONTAINER...] [-d] [-b] [-w]        | docker compose up [CONTAINER...]                         |
-| dcpe CONTAINER [CMD...]                   | docker compose exec CONTAINER [CMD...]                   |
+| Bash Command                         | Executed Docker Command                                  |
+|--------------------------------------|----------------------------------------------------------|
+| dcp                                  | - (Show help)                                            |
+| dcpu [SERVICE...] [-d] [-b] [-w]     | docker compose up [SERVICE...]                           |
+| dcpe [SERVICE]                       | docker compose exec SERVICE bash                         |
+| dcpe [SERVICE] [COMMANDS...]         | docker compose exec SERVICE [COMMANDS...]                |
+| dcp up(u) [SERVICE...]               | docker compose up [SERVICE...]                           |
+| dcp up(u) -d                         | docker compose up -d                                     |
+| dcp up(u) -b                         | docker compose up --build                                |
+| dcp up(u) -w                         | docker compose up --wait                                 |
+| dcp build(b) [SERVICE...]            | docker compose build [SERVICE...]                        |
+| dcp exec(e) [SERVICE]                | docker compose exec SERVICE bash                         |
+| dcp exec(e) [SERVICE] [COMMANDS...]  | docker compose exec SERVICE bash [COMMANDS...]           |
+| dcp run [SERVICE]                    | docker compose run SERVICE bash                          |
+| dcp restart(re) [SERVICE...]         | docker compose restart [SERVICE...]                      |
+| dcp ps [SERVICE...] [-a] [-st STATUS]| docker compose ps [SERVICE...] [--all] [--status ...]    |
+| dcp logs(l) [SERVICE...] [-fo]       | docker compose logs [SERVICE...] [-f]                    |
+| dcp stop(s) [SERVICE...]             | docker compose stop [SERVICE...]                         |
+| dcp down [-ro]                       | docker compose down [--remove-orphans]                   |
+
+and more... see `dcp --help` for the full list of supported commands and options.
 
 ## License
 

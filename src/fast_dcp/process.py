@@ -281,9 +281,9 @@ class DockerCmdProcessor:
 
         args = []
         prompt = (
-            "\nEnter your choices (e.g., 1,3,4) or 'Q' to quit: "
+            "\nEnter your choices (e.g., 1,3,4) or 'q' to quit: "
             if multiple
-            else "\nEnter your choice or 'Q' to quit: "
+            else "\nEnter your choice or 'q' to quit: "
         )
         err_msg = (
             "☓ Invalid selection. Please use valid numbers."
