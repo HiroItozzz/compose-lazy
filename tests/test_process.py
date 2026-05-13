@@ -233,6 +233,118 @@ class TestCreateOptions(TestDCPBase):
         assert self.processor._create_project_option() == expected_value
 
 
+class TestCreateServiceOption(TestDCPBase):
+    @pytest.mark.parametrize(
+        "service_name,service,multiple,expected",
+        [
+            (["test"], False, False, ["test"]),
+            (["test"], True, False, ["test"]),
+            (["test"], False, True, ["test"]),
+            (["test"], True, True, ["test"]),
+            ([], False, True, []),
+        ],
+    )
+    def test_VALID(self, service_name, service, multiple, expected):
+        self.processor._args.service_name = service_name
+        self.processor._args.service = service
+
+        result = self.processor._create_service_option(multiple)
+        assert result == expected
+
+    @pytest.mark.parametrize(
+        "service_name,service,multiple",
+        [
+            ([], False, False),
+            ([], True, True),
+        ],
+    )
+    def test_WITHOUT_SERVICE_NAMES(self, service_name, service, multiple, monkeypatch):
+        """`_get_service_choices` method called."""
+        monkeypatch.setattr(Processor, "_get_service_choices", MagicMock())
+
+        self.processor._args.service_name = service_name
+        self.processor._args.service = service
+
+        self.processor._create_service_option(multiple)
+
+        self.processor._get_service_choices.assert_called_once_with(multiple=multiple)
+
+    @pytest.mark.parametrize(
+        "service_name,service,multiple,expected",
+        [
+            ([], False, False, KeyboardInterrupt),
+            ([], True, True, SystemExit),
+        ],
+    )
+    def test_ERROR_RAISED(self, service_name, service, multiple, expected, monkeypatch):
+        monkeypatch.setattr(
+            Processor, "_get_service_choices", MagicMock(side_effect=expected)
+        )
+        self.processor._args.service_name = service_name
+        self.processor._args.service = service
+
+        with pytest.raises(SystemExit):
+            self.processor._create_service_option(multiple=multiple)
+
+
+class TestGetServiceChoices(TestDCPBase):
+    def test_get_service_choices_EMPTY(self, capsys):
+        with patch(
+            "fast_dcp.process.DockerCmdProcessor._get_compose_file_paths"
+        ) as mock_paths:
+            mock_paths.return_value = []
+
+            with pytest.raises(SystemExit):
+                self.processor._get_service_choices()
+
+            captured = capsys.readouterr()
+            assert "❌ No services found." in captured.err
+
+    def test_get_service_choices_SINGLE(self, capsys, tmp_path, monkeypatch):
+        file_name = "docker-compose.yml"
+        content = """
+services:
+  db:
+"""
+        service_name = "db"
+
+        monkeypatch.chdir(tmp_path)
+        (tmp_path / file_name).write_text(content)
+        with patch(
+            "fast_dcp.process.DockerCmdProcessor._get_compose_file_paths"
+        ) as mock_paths:
+            mock_paths.return_value = [file_name]
+            result = self.processor._get_service_choices()
+
+        captured = capsys.readouterr()
+        assert f"☑ Service found: {service_name}" in captured.out
+        assert result == [service_name]
+
+    def test_get_service_choices_MULTIPLE(self, capsys, tmp_path, monkeypatch):
+        file_name = "docker-compose.yml"
+        content = """
+services:
+  app:
+  db:
+"""
+        services = sorted(["app", "db"])
+
+        monkeypatch.chdir(tmp_path)
+        (tmp_path / file_name).write_text(content)
+        with patch(
+            "fast_dcp.process.DockerCmdProcessor._get_compose_file_paths"
+        ) as mock_paths:
+            mock_paths.return_value = [file_name]
+            with patch(
+                "fast_dcp.process.DockerCmdProcessor._interactive_select"
+            ) as mock_select:
+                self.processor._get_service_choices()
+
+        captured = capsys.readouterr()
+        assert f"☑ Found {len(services)} services!" in captured.out
+        mock_select.assert_called_once_with(services, multiple=True)
+
+
 class TestFileChoices(TestDCPBase):
     def test_get_file_choices_EMPTY(self, capsys):
         with patch(
@@ -343,37 +455,75 @@ services:
 
 class TestInteraciveSelect(TestDCPBase):
     cases_f = (
-        ("1\n", "-f", ["-f", "choice_1"]),
-        ("2\n", "-f", ["-f", "choice_2"]),
-        ("1,2\n", "-f", ["-f", "choice_1", "-f", "choice_2"]),
+        ("1\n", "-f", True, ["-f", "choice_1"]),
+        ("2\n", "-f", True, ["-f", "choice_2"]),
+        ("1,2\n", "-f", True, ["-f", "choice_1", "-f", "choice_2"]),
         (
             "  1 , 2  \n",
             "-f",
+            True,
             ["-f", "choice_1", "-f", "choice_2"],
         ),
-        ("3\n1\n", "-f", ["-f", "choice_1"]),
+        ("3\n1\n", "-f", True, ["-f", "choice_1"]),
     )
     cases_pf = (
-        ("1\n", "-pf", ["-pf", "choice_1"]),
-        ("2\n", "-pf", ["-pf", "choice_2"]),
-        ("1,2\n", "-pf", ["-pf", "choice_1", "-pf", "choice_2"]),
+        ("1\n", "-pf", True, ["-pf", "choice_1"]),
+        ("2\n", "-pf", True, ["-pf", "choice_2"]),
+        ("1,2\n", "-pf", True, ["-pf", "choice_1", "-pf", "choice_2"]),
         (
             "  1 , 2  \n",
             "-pf",
+            True,
             ["-pf", "choice_1", "-pf", "choice_2"],
         ),
-        ("3\n1\n", "-pf", ["-pf", "choice_1"]),
+        ("3\n1\n", "-pf", True, ["-pf", "choice_1"]),
+    )
+    cases_s = (
+        ("1\n", None, True, ["choice_1"]),
+        ("2\n", None, True, ["choice_2"]),
+        ("1,2\n", None, True, ["choice_1", "choice_2"]),
+        (
+            "  1 , 2  \n",
+            None,
+            True,
+            ["choice_1", "choice_2"],
+        ),
+        ("3\n1\n", None, True, ["choice_1"]),
+    )
+    cases_MULTIPLE_False = (
+        ("1\n", None, False, ["choice_1"]),
+        ("3\n1\n", None, False, ["choice_1"]),
     )
 
     @pytest.mark.parametrize(
-        "keys,flag,expected",
-        [*cases_f, *cases_pf],
+        "keys,flag,multiple,expected",
+        [*cases_f, *cases_pf, *cases_s, *cases_MULTIPLE_False],
     )
-    def test_interactive_select(self, keys, flag, expected, monkeypatch):
+    def test_interactive_select(self, keys, flag, multiple, expected, monkeypatch):
         monkeypatch.setattr("sys.stdin", io.StringIO(keys))
         choices = ["choice_1", "choice_2"]
-        result = self.processor._interactive_select(choices, flag)
+        result = self.processor._interactive_select(choices, flag, multiple=multiple)
 
+        assert result == expected
+
+    cases_MULTIPLE_False = (
+        ("1\n", None, False, ["choice_1"]),
+        ("3\n1\n", None, False, ["choice_1"]),
+    )
+
+    @pytest.mark.parametrize(
+        "keys,flag,multiple,expected",
+        [("1,2\n2\n", None, False, ["choice_2"])],
+    )
+    def test_MULTIPLE_False_TO_MULTIPLE_ARGS(
+        self, keys, flag, multiple, expected, capsys, monkeypatch
+    ):
+        monkeypatch.setattr("sys.stdin", io.StringIO(keys))
+        choices = ["choice_1", "choice_2"]
+        result = self.processor._interactive_select(choices, flag, multiple=multiple)
+
+        _, err = capsys.readouterr()
+        assert "☓ Invalid selection. Please use a valid number." in err
         assert result == expected
 
     @pytest.mark.parametrize("keys", ["3\n1\n", "abc\n1\n"])

@@ -138,7 +138,15 @@ class DockerCmdProcessor:
 
     # Service option
     def _create_service_option(self, multiple: bool = True) -> list[str]:
-        """Execute interactive selection if `--service` option is active"""
+        """Return service name args for docker compose command.
+
+        If service_name is given, return it as-is regardless of other options.
+
+        If service_name is empty:
+            - multiple=True, service=False : return [] (no selection)
+            - multiple=True, service=True  : start interactive selection
+            - multiple=False               : start interactive selection automatically
+        """
         input_args: list[str] = self.args.service_name
 
         if input_args:
@@ -171,9 +179,9 @@ class DockerCmdProcessor:
             raise SystemExit
 
         if len(services) == 1:
-            c = services.pop()
-            print(f"☑ Service found: {c}")
-            return [c]
+            s = services.pop()
+            print(f"☑ Service found: {s}")
+            return [s]
 
         # Interactive session: select number(s) to get file args or press "Q" to quit.
         print(f"\n☑ Found {len(services)} services!")
@@ -194,7 +202,7 @@ class DockerCmdProcessor:
             except SystemExit:
                 sys.exit(0)
         else:
-            for f in self.args.file:
+            for f in input_args:
                 if not (Path(f).suffix in [".yaml", ".yml"]):  # noqa: E713
                     # prints a warning, does not raise
                     print(f"invalid file type: {f}", file=sys.stderr)
@@ -206,20 +214,20 @@ class DockerCmdProcessor:
         """Execute interactive session to create -f args."""
 
         # List up docker-compose files
-        file_dirs: list[str] = self._get_compose_file_paths()
-        file_count = len(file_dirs)
+        file_paths: list[str] = self._get_compose_file_paths()
+        file_count = len(file_paths)
 
         if file_count == 0:
             print("❌ docker-compose files haven't found.", file=sys.stderr)
             raise SystemExit
 
         if file_count == 1:
-            print(f"☑ docker-compose file found: {file_dirs[0]}")
-            return ["-f"] + file_dirs
+            print(f"☑ docker-compose file found: {file_paths[0]}")
+            return ["-f"] + file_paths
 
         print(f"\n☑ Found {file_count} docker-compose files!")
 
-        return self._interactive_select(file_dirs, "-f")
+        return self._interactive_select(file_paths, "-f")
 
     # Profile option
     def _create_profile_option(self) -> list[str]:

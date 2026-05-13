@@ -77,6 +77,7 @@ class TestAddServiceName(ArgBuilderTestBase):
         args = self.builder.parser.parse_args(["service1"])
 
         self.assertEqual(args.service_name, ["service1"])
+        self.assertFalse(args.service)
 
     def test_add_service_name_subcmd_MULTIPLE_ARGS_FOR_MULTIPLE_OPTION(self):
         self.builder.add_service_name_subcmd(multiple=True)
@@ -84,6 +85,19 @@ class TestAddServiceName(ArgBuilderTestBase):
 
         # Parses multiple args.
         self.assertEqual(args.service_name, ["service1", "service2"])
+        self.assertFalse(args.service)
+
+    def test_add_service_name_subcmd_WITH_CHOICE_FLAG(self):
+        self.builder.add_service_name_subcmd(multiple=True)
+        args = self.builder.parser.parse_args(["--service"])
+
+        self.assertTrue(args.service)
+
+    def test_add_service_name_subcmd_WITH_CHOICE_FLAG_SHORT(self):
+        self.builder.add_service_name_subcmd(multiple=True)
+        args = self.builder.parser.parse_args(["-s"])
+
+        self.assertTrue(args.service)
 
     def test_add_service_name_subcmd_MULTIPLE_ARGS_FOR_SINGLE_OPTION(self):
         self.builder.add_service_name_subcmd(multiple=False)
@@ -96,16 +110,16 @@ class TestAddServiceName(ArgBuilderTestBase):
     def test_add_service_name_subcmd_NO_ARGS_FOR_SINGLE_OPTION(self):
         self.builder.add_service_name_subcmd(multiple=False)
         args = self.builder.parser.parse_args([])
-        # Raises an error.
+
         self.assertEqual(args.service_name, [])
 
     def test_add_service_name_subcmd_NO_ARGS_FOR_MUTILPLE_OPTION(self):
         self.builder.add_service_name_subcmd(multiple=True)
         args, unknown = self.builder.parser.parse_known_args([])
 
-        # Does not raise an error.
         self.assertEqual(args.service_name, [])
         self.assertEqual(unknown, [])
+        self.assertFalse(args.service)
 
 
 class TestAddInnerBashCmd(ArgBuilderTestBase):

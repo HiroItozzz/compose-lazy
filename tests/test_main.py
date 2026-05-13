@@ -275,3 +275,33 @@ class TestMain:
                     dcpe_main()
                 mock_run.assert_called_once_with(expected_cmd.split())
                 assert exc_info.value.code == 0
+
+
+    @pytest.mark.parametrize(
+        "input_cmd,multiple",
+        [
+            ("dcp up", True),
+            ("dcp build", True),
+            ("dcp exec web", False),
+            ("dcp run web", False),
+            ("dcp restart", True),
+            ("dcp ps", True),
+            ("dcp logs", True),
+            ("dcp stop", True),
+        ],
+    )
+    def test_service_multiple_consistency(self, input_cmd, multiple):
+        """Attribute `multiple` in add_service_name_subcmd and _create_service_option are consistent."""
+
+        with patch(
+            "fast_dcp.process.DockerCmdProcessor._create_service_option", return_value=[]
+        ) as mock_service:
+            with patch("fast_dcp.process.subprocess.run") as mock_run:
+                mock_run.return_value = MagicMock(returncode=0)
+                with patch("sys.argv", input_cmd.split()):
+                    with pytest.raises(SystemExit):
+                        main()
+                if multiple:
+                    mock_service.assert_called_once_with()  # default to mutiple=True
+                else:
+                    mock_service.assert_called_once_with(multiple=False)
