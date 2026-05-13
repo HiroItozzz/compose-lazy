@@ -3,6 +3,7 @@ import logging
 import subprocess
 import sys
 from argparse import Namespace
+from functools import lru_cache
 from pathlib import Path
 from typing import Callable
 
@@ -83,6 +84,7 @@ class DockerCmdProcessor:
         self.cmd += ["build"] + self._create_service_option()
 
     def _create_exec_cmd(self) -> None:
+        self._adjust_service_name()
         self.cmd += (
             ["exec"]
             + self._create_service_option(multiple=False)
@@ -90,6 +92,7 @@ class DockerCmdProcessor:
         )
 
     def _create_run_cmd(self) -> None:
+        self._adjust_service_name()
         self.cmd += (
             ["run"]
             + self._create_service_option(multiple=False)
@@ -136,6 +139,33 @@ class DockerCmdProcessor:
         if not self.args.project:
             return []
         return ["-p", self.args.project]
+
+    def _adjust_service_name(self) -> None:
+        """Move service_name to inner_bash_cmd if it doesn't match any declared service.
+
+        Enables flows like `dcpe uv run pytest` where the first token is a command,
+        not a service name — triggering interactive service selection automatically.
+        """
+        if not (user_input := self.args.service_name):
+            return
+
+        file_paths = self._get_compose_file_paths()
+        existing_services = set()
+
+        for path in file_paths:
+            with open(path) as f:
+                data = yaml.safe_load(f)
+            for services_name in (data or {}).get("services", {}).keys():
+                existing_services.add(services_name)
+
+        if set(user_input) <= existing_services:
+            return
+
+        self.args.inner_bash_cmd = user_input + self.args.inner_bash_cmd
+        self.args.service_name = []
+
+        logger.debug(f"\n----adjusted args----\n{self.args}")
+        return
 
     def _call_safely(self, func: Callable[[], list[str]]) -> list[str]:
         try:
@@ -330,5 +360,6 @@ class DockerCmdProcessor:
         return args
 
     @staticmethod
+    @lru_cache
     def _get_compose_file_paths() -> list[str]:
         return glob.glob("*compose*.yml") + glob.glob("*compose*.yaml")
