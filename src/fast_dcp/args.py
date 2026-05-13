@@ -19,23 +19,12 @@ class ArgBuilder:
     def add_common_compose_options(self) -> Self:
         return self._add_file_args()._add_profile_args()._add_project_args()
 
-    def add_optional_container_name_choices(self) -> Self:
-        return self.add_container_name_subcmd(
-            multiple=True
-        )._add_container_name_selection()
-
-    def _add_container_name_selection(self) -> Self:
-        """add positional argument of container name(s) to command definition."""
-        self.parser.add_argument(
-            "-c",
-            "--container",
-            action="store_true",
-            help="show container name candidates, select interactively",
-        )
-        return self
-
     def add_container_name_subcmd(self, multiple: bool = False) -> Self:
-        """add positional argument of container name(s) to command definition."""
+        """Add positional argument of container name(s) to command definition.
+
+        multiple=True: accepts multiple container names, all optional (e.g. up, build, stop, etc.).
+        multiple=False: accepts single container name, required by docker compose (e.g. exec, run).
+        """
         if multiple:
             self.parser.add_argument(
                 "container_name",
@@ -43,7 +32,15 @@ class ArgBuilder:
                 default=[],
                 help="(optional) target container names",
             )
+            # Add trigger option to start interactive selection explicitly.
+            self.parser.add_argument(
+                "-c",
+                "--container",
+                action="store_true",
+                help="show container name candidates, select interactively",
+            )
         else:
+            # If no container_name given, interactive selection starts automatically.
             self.parser.add_argument(
                 "container_name",
                 nargs="?",

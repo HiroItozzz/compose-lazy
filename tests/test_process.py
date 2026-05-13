@@ -183,7 +183,7 @@ class TestCreateOptions(TestDCPBase):
     def test_create_file_option_ERROR_RAISED(self, exception):
         self.processor._args.file = []
         with patch(
-            "fast_dcp.process.DockerCmdProcessor._show_file_choices",
+            "fast_dcp.process.DockerCmdProcessor._get_file_choices",
             MagicMock(side_effect=exception),
         ):
             with pytest.raises(SystemExit):
@@ -213,7 +213,7 @@ class TestCreateOptions(TestDCPBase):
     def test_create_profile_option_ERROR_RAISED(self, exception):
         self.processor._args.profile = []
         with patch(
-            "fast_dcp.process.DockerCmdProcessor._show_profile_choices",
+            "fast_dcp.process.DockerCmdProcessor._get_profile_choices",
             MagicMock(side_effect=exception),
         ):
             with pytest.raises(SystemExit):
@@ -234,32 +234,32 @@ class TestCreateOptions(TestDCPBase):
 
 
 class TestFileChoices(TestDCPBase):
-    def test_show_file_choices_EMPTY(self, capsys):
+    def test_get_file_choices_EMPTY(self, capsys):
         with patch(
             "fast_dcp.process.DockerCmdProcessor._get_compose_file_paths"
         ) as mock_paths:
             mock_paths.return_value = []
 
             with pytest.raises(SystemExit):
-                self.processor._show_file_choices()
+                self.processor._get_file_choices()
 
             captured = capsys.readouterr()
             assert "docker-compose files haven't found." in captured.err
 
-    def test_show_file_choices_SINGLE(self, capsys):
+    def test_get_file_choices_SINGLE(self, capsys):
         file_name = "docker-compose.yml"
         with patch(
             "fast_dcp.process.DockerCmdProcessor._get_compose_file_paths"
         ) as mock_paths:
             mock_paths.return_value = [file_name]
 
-            result = self.processor._show_file_choices()
+            result = self.processor._get_file_choices()
             captured = capsys.readouterr()
 
         assert result == ["-f", file_name]
         assert f"docker-compose file found: {file_name}" in captured.out
 
-    def test_show_file_choices_MULTIPLE(self):
+    def test_get_file_choices_MULTIPLE(self):
         file_names = ["docker-compose.yml", "docker-compose.prod.yml"]
         with patch(
             "fast_dcp.process.DockerCmdProcessor._get_compose_file_paths"
@@ -268,25 +268,25 @@ class TestFileChoices(TestDCPBase):
             with patch(
                 "fast_dcp.process.DockerCmdProcessor._interactive_select"
             ) as mock_select:
-                self.processor._show_file_choices()
+                self.processor._get_file_choices()
 
         mock_select.assert_called_once_with(file_names, "-f")
 
 
-class TestShowProfileChoices(TestDCPBase):
-    def test_show_profile_choices_EMPTY(self, capsys):
+class TestProfileChoices(TestDCPBase):
+    def test_get_profile_choices_EMPTY(self, capsys):
         with patch(
             "fast_dcp.process.DockerCmdProcessor._get_compose_file_paths"
         ) as mock_paths:
             mock_paths.return_value = []
 
             with pytest.raises(SystemExit):
-                self.processor._show_profile_choices()
+                self.processor._get_profile_choices()
 
             captured = capsys.readouterr()
             assert "❌ No profiles found." in captured.err
 
-    def test_show_profile_choices_SINGLE(self, capsys, tmp_path, monkeypatch):
+    def test_get_profile_choices_SINGLE(self, capsys, tmp_path, monkeypatch):
         file_name = "docker-compose.yml"
         content = """
 services:
@@ -305,13 +305,13 @@ services:
             "fast_dcp.process.DockerCmdProcessor._get_compose_file_paths"
         ) as mock_paths:
             mock_paths.return_value = [file_name]
-            result = self.processor._show_profile_choices()
+            result = self.processor._get_profile_choices()
 
         captured = capsys.readouterr()
         assert f"☑ Profile found: {profile_name}" in captured.out
         assert result == ["--profile", profile_name]
 
-    def test_show_profile_choices_MULTIPLE(self, capsys, tmp_path, monkeypatch):
+    def test_get_profile_choices_MULTIPLE(self, capsys, tmp_path, monkeypatch):
         file_name = "docker-compose.yml"
         content = """
 services:
@@ -334,7 +334,7 @@ services:
             with patch(
                 "fast_dcp.process.DockerCmdProcessor._interactive_select"
             ) as mock_select:
-                self.processor._show_profile_choices()
+                self.processor._get_profile_choices()
 
         captured = capsys.readouterr()
         assert f"☑ Found {len(profiles)} profiles!" in captured.out
