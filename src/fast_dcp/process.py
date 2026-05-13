@@ -200,6 +200,9 @@ class DockerCmdProcessor:
     def _get_service_choices(self, multiple: bool = True) -> list[str]:
         """Execute interactive session to get service names."""
         file_paths = self._get_compose_file_paths()
+        if not file_paths:
+            print("❌ No compose files found.", file=sys.stderr)
+            raise SystemExit
 
         services = set()
         for path in file_paths:
@@ -228,36 +231,34 @@ class DockerCmdProcessor:
         if input_args is None:
             return []  # Do nothing
 
-        if len(input_args) == 0:
-            return self._call_safely(self._get_file_choices)
+        if input_args:
+            file_args = []
+            for f in input_args:
+                if not (Path(f).suffix in [".yaml", ".yml"]):  # noqa: E713
+                    # if invalid file input, start interactive selection.
+                    print(
+                        f"Invalid file type: {f}. Please select interactively.",
+                        file=sys.stderr,
+                    )
+                    break
+                file_args += ["-f", f]
+            else:
+                return file_args
 
-        file_args = []
-        for f in input_args:
-            if not (Path(f).suffix in [".yaml", ".yml"]):  # noqa: E713
-                # if invalid file input, start interactive selection.
-                print(
-                    f"Invalid file type: {f}. Please select interactively.",
-                    file=sys.stderr,
-                )
-                return self._call_safely(self._get_file_choices)
-
-            file_args += ["-f", f]
-
-        return file_args
+        return self._call_safely(self._get_file_choices)
 
     def _get_file_choices(self) -> list[str]:
         """Execute interactive session to create -f args."""
 
         # List up docker-compose files
         file_paths: list[str] = self._get_compose_file_paths()
-        file_count = len(file_paths)
 
-        if file_count == 0:
-            print("❌ docker-compose files haven't found.", file=sys.stderr)
+        if not file_paths:
+            print("❌ No compose files found.", file=sys.stderr)
             raise SystemExit
 
-        if file_count == 1:
-            print(f"☑ docker-compose file found: {file_paths[0]}")
+        if (file_count := len(file_paths)) == 1:
+            print(f"☑ Compose file found: {file_paths[0]}")
             return ["-f"] + file_paths
 
         print(f"\n☑ Found {file_count} docker-compose files!")
@@ -270,18 +271,20 @@ class DockerCmdProcessor:
         if input_args is None:
             return []  # Do nothing
 
-        if len(input_args) == 0:
-            return self._call_safely(self._get_profile_choices)
+        if input_args:
+            profile_args = []
+            for pf in input_args:
+                profile_args += ["--profile", pf]
+            return profile_args
 
-        profile_args = []
-        for pf in input_args:
-            profile_args += ["--profile", pf]
-
-        return profile_args
+        return self._call_safely(self._get_profile_choices)
 
     def _get_profile_choices(self) -> list[str]:
         """Execute interactive session to create --profile args."""
         file_paths = self._get_compose_file_paths()
+        if not file_paths:
+            print("❌ No compose files found.", file=sys.stderr)
+            raise SystemExit
 
         profiles = set()
         for path in file_paths:
