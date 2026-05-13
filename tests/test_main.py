@@ -3,9 +3,13 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from fast_dcp.main import dcpe_main, dcpu_main, main
+from fast_dcp.process import DockerCmdProcessor as Processor
 
 
 class TestMain:
+    def teardown_method(self):
+        Processor._get_compose_file_paths.cache_clear()
+
     # fmt:off
     testcases_DCP_U_SINGLE_OPTION = (
         ("dcp u", "docker compose up"),
@@ -71,34 +75,6 @@ class TestMain:
         ("dcp build -p testproject", "docker compose -p testproject build"),
         ("dcp b -pf dev", "docker compose --profile dev build"),
         ("dcp b --profile dev", "docker compose --profile dev build"),
-    )
-    testcases_DCP_E_SINGLE_OPTION = (
-        ("dcp e service", "docker compose exec service bash"),
-        ("dcp e service uv run pytest", "docker compose exec service uv run pytest"),
-        ("dcp e service -f test.yaml", "docker compose -f test.yaml exec service bash"),
-        ("dcp e service uv run pytest -f test.yaml", "docker compose -f test.yaml exec service uv run pytest"),
-        ("dcp e service -p testproject", "docker compose -p testproject exec service bash"),
-        ("dcp e service uv run pytest -p testproject", "docker compose -p testproject exec service uv run pytest"),
-        ("dcp exec service", "docker compose exec service bash"),
-        ("dcp exec service uv run pytest", "docker compose exec service uv run pytest"),
-        ("dcp exec service -f test.yaml", "docker compose -f test.yaml exec service bash"),
-        ("dcp exec service uv run pytest -f test.yaml", "docker compose -f test.yaml exec service uv run pytest"),
-        ("dcp exec service -p testproject", "docker compose -p testproject exec service bash"),
-        ("dcp exec service uv run pytest -p testproject",
-         "docker compose -p testproject exec service uv run pytest"),
-        ("dcp e service -pf dev", "docker compose --profile dev exec service bash"),
-        ("dcp e service --profile dev", "docker compose --profile dev exec service bash"),
-    )
-    testcases_DCP_RUN_SINGLE_OPTION = (
-        ("dcp run service", "docker compose run service bash"),
-        ("dcp run service uv run pytest", "docker compose run service uv run pytest"),
-        ("dcp run service -f test.yaml", "docker compose -f test.yaml run service bash"),
-        ("dcp run service uv run pytest -f test.yaml", "docker compose -f test.yaml run service uv run pytest"),
-        ("dcp run service -p testproject", "docker compose -p testproject run service bash"),
-        ("dcp run service uv run pytest -p testproject",
-         "docker compose -p testproject run service uv run pytest"),
-        ("dcp run service -pf dev", "docker compose --profile dev run service bash"),
-        ("dcp run service --profile dev", "docker compose --profile dev run service bash"),
     )
     testcases_DCP_RESTART_SINGLE_OPTION = (
         ("dcp re service", "docker compose restart service"),
@@ -212,8 +188,6 @@ class TestMain:
         *testcases_DCP_U_MULTIPLE_OPTIONS,
         *testcases_DCP_U_MIXED_ALIASES,
         *testcases_DCP_B_SINGLE_OPTION,
-        *testcases_DCP_E_SINGLE_OPTION,
-        *testcases_DCP_RUN_SINGLE_OPTION,
         *testcases_DCP_RESTART_SINGLE_OPTION,
         *testcases_DCP_PS_SINGLE_OPTION,
         *testcases_DCP_L_SINGLE_OPTION,
@@ -221,6 +195,49 @@ class TestMain:
         *testcases_DCP_DOWN_SINGLE_OPTION,
     ])
     def test_run_dcp(self, input_cmd, expected_cmd):
+        with patch("fast_dcp.process.subprocess.run") as mock_run:
+            mock_run.return_value = MagicMock(returncode=0)
+            with patch("sys.argv", input_cmd.split()):
+                with pytest.raises(SystemExit) as exc_info:
+                    main()
+                mock_run.assert_called_once_with(expected_cmd.split())
+                assert exc_info.value.code == 0
+
+    testcases_DCP_E_SINGLE_OPTION = (
+        ("dcp e service", "docker compose exec service bash"),
+        ("dcp e service uv run pytest", "docker compose exec service uv run pytest"),
+        ("dcp e service -f test.yaml", "docker compose -f test.yaml exec service bash"),
+        ("dcp e service uv run pytest -f test.yaml", "docker compose -f test.yaml exec service uv run pytest"),
+        ("dcp e service -p testproject", "docker compose -p testproject exec service bash"),
+        ("dcp e service uv run pytest -p testproject", "docker compose -p testproject exec service uv run pytest"),
+        ("dcp exec service", "docker compose exec service bash"),
+        ("dcp exec service uv run pytest", "docker compose exec service uv run pytest"),
+        ("dcp exec service -f test.yaml", "docker compose -f test.yaml exec service bash"),
+        ("dcp exec service uv run pytest -f test.yaml", "docker compose -f test.yaml exec service uv run pytest"),
+        ("dcp exec service -p testproject", "docker compose -p testproject exec service bash"),
+        ("dcp exec service uv run pytest -p testproject",
+         "docker compose -p testproject exec service uv run pytest"),
+        ("dcp e service -pf dev", "docker compose --profile dev exec service bash"),
+        ("dcp e service --profile dev", "docker compose --profile dev exec service bash"),
+    )
+    testcases_DCP_RUN_SINGLE_OPTION = (
+        ("dcp run service", "docker compose run service bash"),
+        ("dcp run service uv run pytest", "docker compose run service uv run pytest"),
+        ("dcp run service -f test.yaml", "docker compose -f test.yaml run service bash"),
+        ("dcp run service uv run pytest -f test.yaml", "docker compose -f test.yaml run service uv run pytest"),
+        ("dcp run service -p testproject", "docker compose -p testproject run service bash"),
+        ("dcp run service uv run pytest -p testproject",
+         "docker compose -p testproject run service uv run pytest"),
+        ("dcp run service -pf dev", "docker compose --profile dev run service bash"),
+        ("dcp run service --profile dev", "docker compose --profile dev run service bash"),
+    )
+    @pytest.mark.parametrize("input_cmd,expected_cmd", [
+        *testcases_DCP_E_SINGLE_OPTION,
+        *testcases_DCP_RUN_SINGLE_OPTION
+    ])
+    def test_run_dcp_EXEC_RUN(self, input_cmd, expected_cmd, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        (tmp_path / "compose.test.yml").write_text("services:\n  service:")
         with patch("fast_dcp.process.subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(returncode=0)
             with patch("sys.argv", input_cmd.split()):
@@ -255,7 +272,9 @@ class TestMain:
     @pytest.mark.parametrize("input_cmd,expected_cmd", [
         *testcases_DCPU_SINGLE_OPTION,
     ])
-    def test_run_dcpu(self, input_cmd, expected_cmd):
+    def test_run_dcpu(self, input_cmd, expected_cmd, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        (tmp_path / "compose.test.yml").write_text("services:\n  service:")
         with patch("fast_dcp.process.subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(returncode=0)
             with patch("sys.argv", input_cmd.split()):
@@ -267,7 +286,9 @@ class TestMain:
     @pytest.mark.parametrize("input_cmd,expected_cmd", [
         *testcases_DCPE_SINGLE_OPTION,
     ])
-    def test_run_dcpe(self, input_cmd, expected_cmd):
+    def test_run_dcpe(self, input_cmd, expected_cmd, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        (tmp_path / "compose.test.yml").write_text("services:\n  service:")
         with patch("fast_dcp.process.subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(returncode=0)
             with patch("sys.argv", input_cmd.split()):
@@ -290,8 +311,10 @@ class TestMain:
             ("dcp stop", True),
         ],
     )
-    def test_service_multiple_consistency(self, input_cmd, multiple):
+    def test_service_multiple_consistency(self, input_cmd, multiple, tmp_path, monkeypatch):
         """Attribute `multiple` in add_service_name_subcmd and _create_service_option are consistent."""
+        monkeypatch.chdir(tmp_path)
+        (tmp_path / "compose.test.yml").write_text("services:\n  web:")
 
         with patch(
             "fast_dcp.process.DockerCmdProcessor._create_service_option", return_value=[]

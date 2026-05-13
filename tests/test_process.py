@@ -12,6 +12,9 @@ class TestDCPBase:
     def setup_method(self):
         self.processor = Processor()
 
+    def teardown_method(self):
+        Processor._get_compose_file_paths.cache_clear()
+
 
 class TestDCPSetup(TestDCPBase):
     def test_dcp_setup(self, monkeypatch):
