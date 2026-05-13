@@ -102,7 +102,7 @@ Both `pipx` and `uv tool` install CLI tools in isolated environments, so fast-dc
 
 - Python 3.11+
 - Docker with Compose V2 (`docker compose` — not `docker-compose`)
-
+- A `docker-compose.yml` (or `*compose*.yml/yaml`) in the current directory for interactive selection features
 
 ## List of Commands
 

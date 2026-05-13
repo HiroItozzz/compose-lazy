@@ -12,6 +12,9 @@ class TestDCPBase:
     def setup_method(self):
         self.processor = Processor()
 
+    def teardown_method(self):
+        Processor._get_compose_file_paths.cache_clear()
+
 
 class TestDCPSetup(TestDCPBase):
     def test_dcp_setup(self, monkeypatch):
@@ -116,6 +119,53 @@ class TestRunSubprocess(TestDCPBase):
 
         assert code == 130
         subprocess.run.assert_called_once_with(test_cmd)
+
+
+class TestAdjustServiceName(TestDCPBase):
+    @pytest.mark.parametrize("service_name", [None, []])
+    def test_NO_ARGS(self, service_name):
+        self.processor.args.service_name = service_name
+        self.processor.args.inner_bash_cmd = []
+
+        self.processor._adjust_service_name()
+        assert self.processor.args.service_name == service_name
+        assert self.processor.args.inner_bash_cmd == []
+
+    def test_VALID_USER_INPUT(self, tmp_path, monkeypatch):
+        file_name = "compose.yml"
+        content = "services:\n  app:\n  db:"
+        monkeypatch.chdir(tmp_path)
+        (tmp_path / file_name).write_text(content)
+        monkeypatch.setattr(
+            Processor, "_get_compose_file_paths", MagicMock(return_value=[file_name])
+        )
+
+        # User input
+        self.processor.args.service_name = ["db", "app"]
+        self.processor.args.inner_bash_cmd = []
+
+        self.processor._adjust_service_name()
+
+        assert self.processor.args.service_name == ["db", "app"]
+        assert self.processor.args.inner_bash_cmd == []
+
+    def test_INVALID_USER_INPUT(self, tmp_path, monkeypatch):
+        file_name = "compose.yml"
+        content = "services:\n  app:\n  db:"
+        monkeypatch.chdir(tmp_path)
+        (tmp_path / file_name).write_text(content)
+        monkeypatch.setattr(
+            Processor, "_get_compose_file_paths", MagicMock(return_value=[file_name])
+        )
+
+        # User input
+        self.processor.args.service_name = ["manage.py"]
+        self.processor.args.inner_bash_cmd = ["runserver"]
+
+        self.processor._adjust_service_name()
+
+        assert self.processor.args.service_name == []
+        assert self.processor.args.inner_bash_cmd == ["manage.py", "runserver"]
 
 
 class TestCreateOptions(TestDCPBase):
@@ -288,11 +338,28 @@ class TestCreateServiceOption(TestDCPBase):
 
 
 class TestGetServiceChoices(TestDCPBase):
-    def test_get_service_choices_EMPTY(self, capsys):
+    def test_get_service_choices_NO_FILE(self, capsys):
         with patch(
             "fast_dcp.process.DockerCmdProcessor._get_compose_file_paths"
         ) as mock_paths:
             mock_paths.return_value = []
+
+            with pytest.raises(SystemExit):
+                self.processor._get_service_choices()
+
+            captured = capsys.readouterr()
+            assert "❌ No compose files found." in captured.err
+
+    def test_get_service_choices_EMPTY(self, capsys, tmp_path, monkeypatch):
+        file_name = "docker-compose.yml"
+        content = ""
+
+        monkeypatch.chdir(tmp_path)
+        (tmp_path / file_name).write_text(content)
+        with patch(
+            "fast_dcp.process.DockerCmdProcessor._get_compose_file_paths"
+        ) as mock_paths:
+            mock_paths.return_value = [file_name]
 
             with pytest.raises(SystemExit):
                 self.processor._get_service_choices()
@@ -356,7 +423,7 @@ class TestFileChoices(TestDCPBase):
                 self.processor._get_file_choices()
 
             captured = capsys.readouterr()
-            assert "docker-compose files haven't found." in captured.err
+            assert "No compose files found." in captured.err
 
     def test_get_file_choices_SINGLE(self, capsys):
         file_name = "docker-compose.yml"
@@ -369,7 +436,7 @@ class TestFileChoices(TestDCPBase):
             captured = capsys.readouterr()
 
         assert result == ["-f", file_name]
-        assert f"docker-compose file found: {file_name}" in captured.out
+        assert f"Compose file found: {file_name}" in captured.out
 
     def test_get_file_choices_MULTIPLE(self):
         file_names = ["docker-compose.yml", "docker-compose.prod.yml"]
@@ -386,12 +453,31 @@ class TestFileChoices(TestDCPBase):
 
 
 class TestProfileChoices(TestDCPBase):
-    def test_get_profile_choices_EMPTY(self, capsys):
+    def test_get_profile_choices_NO_FILE(self, capsys):
         with patch(
             "fast_dcp.process.DockerCmdProcessor._get_compose_file_paths"
         ) as mock_paths:
             mock_paths.return_value = []
 
+            with pytest.raises(SystemExit):
+                self.processor._get_profile_choices()
+
+            captured = capsys.readouterr()
+            assert "❌ No compose files found." in captured.err
+
+    def test_get_profile_choices_EMPTY(self, capsys, tmp_path, monkeypatch):
+        file_name = "docker-compose.yml"
+        content = """
+services:
+  app:
+  db:
+"""
+        monkeypatch.chdir(tmp_path)
+        (tmp_path / file_name).write_text(content)
+        with patch(
+            "fast_dcp.process.DockerCmdProcessor._get_compose_file_paths"
+        ) as mock_paths:
+            mock_paths.return_value = [file_name]
             with pytest.raises(SystemExit):
                 self.processor._get_profile_choices()
 
