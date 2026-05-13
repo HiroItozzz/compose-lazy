@@ -159,22 +159,22 @@ class TestCreateOptions(TestDCPBase):
         assert self.processor._create_file_option() == expected_value
 
     @pytest.mark.parametrize(
-        "file_values,expected_value",
+        "file_values",
         [
-            (["compose.txt"], ["-f", "compose.txt"]),
-            (
-                ["compose.txt", "compose_2.txt"],
-                ["-f", "compose.txt", "-f", "compose_2.txt"],
-            ),
+            ["compose.txt"],
+            ["compose.txt", "compose_2.txt"],
         ],
     )
-    def test_create_file_option_INVALID_TYPE(self, file_values, expected_value, capsys):
-        """test for invalid file extensions: warns to stderr but still processes the file"""
+    def test_create_file_option_INVALID_TYPE(self, file_values, capsys, monkeypatch):
+        """test for invalid file extensions: warns to stderr and start interactive selection"""
+        monkeypatch.setattr(Processor, "_get_file_choices", MagicMock())
         self.processor._args.file = file_values
 
-        assert self.processor._create_file_option() == expected_value
+        self.processor._create_file_option()
+
         captured = capsys.readouterr()
-        assert "invalid file type" in captured.err
+        assert "Invalid file type" in captured.err
+        Processor._get_file_choices.assert_called_once()
 
     @pytest.mark.parametrize(
         "exception",

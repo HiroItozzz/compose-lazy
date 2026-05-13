@@ -4,6 +4,7 @@ import subprocess
 import sys
 from argparse import Namespace
 from pathlib import Path
+from typing import Callable
 
 import yaml
 
@@ -136,6 +137,14 @@ class DockerCmdProcessor:
             return []
         return ["-p", self.args.project]
 
+    def _call_safely(self, func: Callable[[], list[str]]) -> list[str]:
+        try:
+            return func()
+        except KeyboardInterrupt:
+            sys.exit(130)
+        except SystemExit:
+            sys.exit(0)
+
     # Service option
     def _create_service_option(self, multiple: bool = True) -> list[str]:
         """Return service name args for docker compose command.
@@ -156,12 +165,7 @@ class DockerCmdProcessor:
             if not self.args.service:
                 return input_args
 
-        try:
-            return self._get_service_choices(multiple=multiple)
-        except KeyboardInterrupt:
-            sys.exit(130)
-        except SystemExit:
-            sys.exit(0)
+        return self._call_safely(lambda: self._get_service_choices(multiple=multiple))
 
     def _get_service_choices(self, multiple: bool = True) -> list[str]:
         """Execute interactive session to get service names."""
@@ -190,23 +194,24 @@ class DockerCmdProcessor:
 
     # File option
     def _create_file_option(self) -> list[str]:
-        file_args = []
         input_args: list[str] | None = self.args.file
         if input_args is None:
             return []  # Do nothing
-        elif len(input_args) == 0:
-            try:
-                file_args += self._get_file_choices()
-            except KeyboardInterrupt:
-                sys.exit(130)
-            except SystemExit:
-                sys.exit(0)
-        else:
-            for f in input_args:
-                if not (Path(f).suffix in [".yaml", ".yml"]):  # noqa: E713
-                    # prints a warning, does not raise
-                    print(f"invalid file type: {f}", file=sys.stderr)
-                file_args += ["-f", f]
+
+        if len(input_args) == 0:
+            return self._call_safely(self._get_file_choices)
+
+        file_args = []
+        for f in input_args:
+            if not (Path(f).suffix in [".yaml", ".yml"]):  # noqa: E713
+                # if invalid file input, start interactive selection.
+                print(
+                    f"Invalid file type: {f}. Please select interactively.",
+                    file=sys.stderr,
+                )
+                return self._call_safely(self._get_file_choices)
+
+            file_args += ["-f", f]
 
         return file_args
 
@@ -231,20 +236,16 @@ class DockerCmdProcessor:
 
     # Profile option
     def _create_profile_option(self) -> list[str]:
-        profile_args = []
         input_args: list[str] | None = self.args.profile
         if input_args is None:
             return []  # Do nothing
-        elif len(input_args) == 0:
-            try:
-                profile_args += self._get_profile_choices()
-            except KeyboardInterrupt:
-                sys.exit(130)
-            except SystemExit:
-                sys.exit(0)
-        else:
-            for pf in input_args:
-                profile_args += ["--profile", pf]
+
+        if len(input_args) == 0:
+            return self._call_safely(self._get_profile_choices)
+
+        profile_args = []
+        for pf in input_args:
+            profile_args += ["--profile", pf]
 
         return profile_args
 
