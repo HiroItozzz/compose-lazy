@@ -75,33 +75,33 @@ class DockerCmdProcessor:
             + (["--build"] if self.args.build else [])
             + (["-d"] if self.args.detach else [])
             + (["--wait"] if self.args.wait else [])
-            + self._create_container_option()
+            + self._create_service_option()
         )
 
     def _create_build_cmd(self) -> None:
-        self.cmd += ["build"] + self._create_container_option()
+        self.cmd += ["build"] + self._create_service_option()
 
     def _create_exec_cmd(self) -> None:
         self.cmd += (
             ["exec"]
-            + self._create_container_option(multiple=False)
+            + self._create_service_option(multiple=False)
             + self.args.inner_bash_cmd
         )
 
     def _create_run_cmd(self) -> None:
         self.cmd += (
             ["run"]
-            + self._create_container_option(multiple=False)
+            + self._create_service_option(multiple=False)
             + self.args.inner_bash_cmd
         )
 
     def _create_restart_cmd(self) -> None:
-        self.cmd += ["restart"] + self._create_container_option()
+        self.cmd += ["restart"] + self._create_service_option()
 
     def _create_ps_cmd(self) -> None:
         self.cmd += (
             ["ps"]
-            + self._create_container_option()
+            + self._create_service_option()
             + (["--all"] if self.args.all else [])
             + self._create_status_option()
         )
@@ -109,12 +109,12 @@ class DockerCmdProcessor:
     def _create_logs_cmd(self) -> None:
         self.cmd += (
             ["logs"]
-            + self._create_container_option()
+            + self._create_service_option()
             + (["-f"] if self.args.follow else [])
         )
 
     def _create_stop_cmd(self) -> None:
-        self.cmd += ["stop"] + self._create_container_option()
+        self.cmd += ["stop"] + self._create_service_option()
 
     def _create_down_cmd(self) -> None:
         self.cmd += ["down"] + (["--remove-orphans"] if self.args.remove_orphans else [])
@@ -136,49 +136,49 @@ class DockerCmdProcessor:
             return []
         return ["-p", self.args.project]
 
-    # Container option
-    def _create_container_option(self, multiple: bool = True) -> list[str]:
-        """Execute interactive selection if `--container` option is active"""
-        input_args: list[str] = self.args.container_name
+    # Service option
+    def _create_service_option(self, multiple: bool = True) -> list[str]:
+        """Execute interactive selection if `--service` option is active"""
+        input_args: list[str] = self.args.service_name
 
         if input_args:
             return input_args
 
         if multiple:
-            if not self.args.container:
+            if not self.args.service:
                 return input_args
 
         try:
-            return self._get_container_choices(multiple=multiple)
+            return self._get_service_choices(multiple=multiple)
         except KeyboardInterrupt:
             sys.exit(130)
         except SystemExit:
             sys.exit(0)
 
-    def _get_container_choices(self, multiple: bool = True) -> list[str]:
-        """Execute interactive session to get container names."""
+    def _get_service_choices(self, multiple: bool = True) -> list[str]:
+        """Execute interactive session to get service names."""
         file_paths = self._get_compose_file_paths()
 
-        containers = set()
+        services = set()
         for path in file_paths:
             with open(path) as f:
                 data = yaml.safe_load(f)
-            for container_name in (data or {}).get("services", {}).keys():
-                containers.add(container_name)
+            for services_name in (data or {}).get("services", {}).keys():
+                services.add(services_name)
 
-        if not containers:
+        if not services:
             print("❌ No services found.", file=sys.stderr)
             raise SystemExit
 
-        if len(containers) == 1:
-            c = containers.pop()
+        if len(services) == 1:
+            c = services.pop()
             print(f"☑ Service found: {c}")
             return [c]
 
         # Interactive session: select number(s) to get file args or press "Q" to quit.
-        print(f"\n☑ Found {len(containers)} services!")
+        print(f"\n☑ Found {len(services)} services!")
 
-        return self._interactive_select(sorted(containers), multiple=multiple)
+        return self._interactive_select(sorted(services), multiple=multiple)
 
     # File option
     def _create_file_option(self) -> list[str]:

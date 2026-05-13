@@ -19,34 +19,34 @@ class ArgBuilder:
     def add_common_compose_options(self) -> Self:
         return self._add_file_args()._add_profile_args()._add_project_args()
 
-    def add_container_name_subcmd(self, multiple: bool = False) -> Self:
-        """Add positional argument of container name(s) to command definition.
+    def add_service_name_subcmd(self, multiple: bool = False) -> Self:
+        """Add positional argument of service name(s) to command definition.
 
-        multiple=True: accepts multiple container names, all optional (e.g. up, build, stop, etc.).
-        multiple=False: accepts single container name, required by docker compose (e.g. exec, run).
+        multiple=True: accepts multiple service names, all optional (e.g. up, build, stop, etc.).
+        multiple=False: accepts single service name, required by docker compose (e.g. exec, run).
         """
         if multiple:
             self.parser.add_argument(
-                "container_name",
+                "service_name",
                 nargs="*",
                 default=[],
-                help="(optional) target container names",
+                help="(Optional) target service names",
             )
             # Add trigger option to start interactive selection explicitly.
             self.parser.add_argument(
-                "-c",
-                "--container",
+                "-s",
+                "--service",
                 action="store_true",
-                help="show container name candidates, select interactively",
+                help="show service name candidates, select interactively",
             )
         else:
-            # If no container_name given, interactive selection starts automatically.
+            # If no service_name given, interactive selection starts automatically.
             self.parser.add_argument(
-                "container_name",
+                "service_name",
                 nargs="?",
                 type=lambda x: [x],
                 default=[],
-                help="(required) target container name",
+                help="(Required) target service name",
             )
         return self
 
@@ -55,7 +55,7 @@ class ArgBuilder:
             "inner_bash_cmd",
             nargs="*",
             default=["bash"],
-            help="command to run inside the container (default: bash)",
+            help="command to run inside the service (default: bash)",
         )
         return self
 

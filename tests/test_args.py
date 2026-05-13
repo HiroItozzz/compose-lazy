@@ -65,46 +65,46 @@ class TestAddCommonComposeOptions(ArgBuilderTestBase):
         self.assertIs(result, self.builder)
 
 
-class TestAddContainerName(ArgBuilderTestBase):
-    def test_add_container_name_subcmd_SINGLE_ARG(self):
-        self.builder.add_container_name_subcmd(multiple=False)
+class TestAddServiceName(ArgBuilderTestBase):
+    def test_add_service_name_subcmd_SINGLE_ARG(self):
+        self.builder.add_service_name_subcmd(multiple=False)
         args = self.builder.parser.parse_args(["test"])
 
-        self.assertEqual(args.container_name, ["test"])
+        self.assertEqual(args.service_name, ["test"])
 
-    def test_add_container_name_subcmd_MULTIPLE_OPTION(self):
-        self.builder.add_container_name_subcmd(multiple=True)
-        args = self.builder.parser.parse_args(["container1"])
+    def test_add_service_name_subcmd_MULTIPLE_OPTION(self):
+        self.builder.add_service_name_subcmd(multiple=True)
+        args = self.builder.parser.parse_args(["service1"])
 
-        self.assertEqual(args.container_name, ["container1"])
+        self.assertEqual(args.service_name, ["service1"])
 
-    def test_add_container_name_subcmd_MULTIPLE_ARGS_FOR_MULTIPLE_OPTION(self):
-        self.builder.add_container_name_subcmd(multiple=True)
-        args = self.builder.parser.parse_args(["container1", "container2"])
+    def test_add_service_name_subcmd_MULTIPLE_ARGS_FOR_MULTIPLE_OPTION(self):
+        self.builder.add_service_name_subcmd(multiple=True)
+        args = self.builder.parser.parse_args(["service1", "service2"])
 
         # Parses multiple args.
-        self.assertEqual(args.container_name, ["container1", "container2"])
+        self.assertEqual(args.service_name, ["service1", "service2"])
 
-    def test_add_container_name_subcmd_MULTIPLE_ARGS_FOR_SINGLE_OPTION(self):
-        self.builder.add_container_name_subcmd(multiple=False)
-        args, unknown = self.builder.parser.parse_known_args(["container1", "container2"])
+    def test_add_service_name_subcmd_MULTIPLE_ARGS_FOR_SINGLE_OPTION(self):
+        self.builder.add_service_name_subcmd(multiple=False)
+        args, unknown = self.builder.parser.parse_known_args(["service1", "service2"])
 
         # Parses only 1 arg.
-        self.assertEqual(args.container_name, ["container1"])
-        self.assertEqual(unknown, ["container2"])
+        self.assertEqual(args.service_name, ["service1"])
+        self.assertEqual(unknown, ["service2"])
 
-    def test_add_container_name_subcmd_NO_ARGS_FOR_SINGLE_OPTION(self):
-        self.builder.add_container_name_subcmd(multiple=False)
+    def test_add_service_name_subcmd_NO_ARGS_FOR_SINGLE_OPTION(self):
+        self.builder.add_service_name_subcmd(multiple=False)
         args = self.builder.parser.parse_args([])
         # Raises an error.
-        self.assertEqual(args.container_name, [])
+        self.assertEqual(args.service_name, [])
 
-    def test_add_container_name_subcmd_NO_ARGS_FOR_MUTILPLE_OPTION(self):
-        self.builder.add_container_name_subcmd(multiple=True)
+    def test_add_service_name_subcmd_NO_ARGS_FOR_MUTILPLE_OPTION(self):
+        self.builder.add_service_name_subcmd(multiple=True)
         args, unknown = self.builder.parser.parse_known_args([])
 
         # Does not raise an error.
-        self.assertEqual(args.container_name, [])
+        self.assertEqual(args.service_name, [])
         self.assertEqual(unknown, [])
 
 

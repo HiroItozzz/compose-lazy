@@ -28,13 +28,13 @@ def main() -> None:
         "up",
         aliases=["u"],
         allow_abbrev=False,
-        usage="dcp up(u) [CONTAINER_NAME ...] [options]",
+        usage="dcp up(u) [SERVICE_NAME ...] [options]",
         description="Shorthand for `docker compose up`.",
         help="docker compose `up`",
     )
     (
         ArgBuilder(_up)
-        .add_container_name_subcmd(multiple=True)
+        .add_service_name_subcmd(multiple=True)
         .add_detach_args()
         .add_build_args()
         .add_wait_args()
@@ -47,13 +47,13 @@ def main() -> None:
         "build",
         aliases=["b"],
         allow_abbrev=False,
-        usage="dcp build(b) [CONTAINER_NAME ...] [options]",
+        usage="dcp build(b) [SERVICE_NAME ...] [options]",
         description="Shorthand for `docker compose build`.",
         help="docker compose `build`",
     )
     (
         ArgBuilder(_build)
-        .add_container_name_subcmd(multiple=True)
+        .add_service_name_subcmd(multiple=True)
         .add_common_compose_options()
         .set_defaults(func=Processor())
     )
@@ -63,13 +63,13 @@ def main() -> None:
         "exec",
         aliases=["e"],
         allow_abbrev=False,
-        usage="dcp exec(e) <CONTAINER_NAME> [BASH|commands] [options]",
+        usage="dcp exec(e) <SERVICE_NAME> [BASH|commands] [options]",
         description="Shorthand for `docker compose exec`.",
         help="docker compose `exec`",
     )
     (
         ArgBuilder(_exec)
-        .add_container_name_subcmd(multiple=False)
+        .add_service_name_subcmd(multiple=False)
         .add_inner_bash_cmd_args()
         .add_common_compose_options()
         .set_defaults(func=Processor())
@@ -79,13 +79,13 @@ def main() -> None:
     _run = subparsers.add_parser(
         "run",
         allow_abbrev=False,
-        usage="dcp run <CONTAINER_NAME> [BASH|commands]",
+        usage="dcp run <SERVICE_NAME> [BASH|commands]",
         description="Shorthand for `docker compose run`.",
         help="docker compose `run`",
     )
     (
         ArgBuilder(_run)
-        .add_container_name_subcmd(multiple=False)
+        .add_service_name_subcmd(multiple=False)
         .add_inner_bash_cmd_args()
         .add_common_compose_options()
         .set_defaults(func=Processor())
@@ -96,13 +96,13 @@ def main() -> None:
         "restart",
         aliases=["re"],
         allow_abbrev=False,
-        usage="dcp restart(re) [CONTAINER_NAME ...]",
+        usage="dcp restart(re) [SERVICE_NAME ...]",
         description="Shorthand for `docker compose restart`.",
         help="docker compose `restart`",
     )
     (
         ArgBuilder(_restart)
-        .add_container_name_subcmd(multiple=True)
+        .add_service_name_subcmd(multiple=True)
         .add_common_compose_options()
         .set_defaults(func=Processor())
     )
@@ -111,13 +111,13 @@ def main() -> None:
     _ps = subparsers.add_parser(
         "ps",
         allow_abbrev=False,
-        usage="dcp ps [CONTAINER_NAME ...] [-a] [-st STATUS]",
+        usage="dcp ps [SERVICE_NAME ...] [-a] [-st STATUS]",
         description="Shorthand for `docker compose ps`.",
         help="docker compose `ps`",
     )
     (
         ArgBuilder(_ps)
-        .add_container_name_subcmd(multiple=True)
+        .add_service_name_subcmd(multiple=True)
         .add_all_args()
         .add_status_args()
         .add_common_compose_options()
@@ -129,13 +129,13 @@ def main() -> None:
         "logs",
         aliases=["l"],
         allow_abbrev=False,
-        usage="dcp logs(l) [CONTAINER_NAME ...] [-f]",
+        usage="dcp logs(l) [SERVICE_NAME ...] [-f]",
         description="Shorthand for `docker compose logs`.",
         help="docker compose `logs`",
     )
     (
         ArgBuilder(_logs)
-        .add_container_name_subcmd(multiple=True)
+        .add_service_name_subcmd(multiple=True)
         .add_follow_args()
         .add_common_compose_options()
         .set_defaults(func=Processor())
@@ -146,13 +146,13 @@ def main() -> None:
         "stop",
         aliases=["s"],
         allow_abbrev=False,
-        usage="dcp stop(s) [CONTAINER_NAME ...]",
+        usage="dcp stop(s) [SERVICE_NAME ...]",
         description="Shorthand for `docker compose stop`.",
         help="docker compose `stop`",
     )
     (
         ArgBuilder(_stop)
-        .add_container_name_subcmd(multiple=True)
+        .add_service_name_subcmd(multiple=True)
         .add_common_compose_options()
         .set_defaults(func=Processor())
     )
@@ -185,7 +185,7 @@ def dcpu_main() -> None:
 
     parser = ArgumentParser(
         allow_abbrev=False,
-        usage="dcpu [CONTAINER_NAME] [options]",
+        usage="dcpu [SERVICE_NAME] [options]",
         description="Shorthand for `docker compose up`.",
         epilog="See also: `dcp -h`, `dcpe -h`",
     )
@@ -193,7 +193,7 @@ def dcpu_main() -> None:
     # dcpu command
     (
         ArgBuilder(parser)
-        .add_container_name_subcmd(multiple=True)
+        .add_service_name_subcmd(multiple=True)
         .add_detach_args()
         .add_build_args()
         .add_wait_args()
@@ -215,7 +215,7 @@ def dcpe_main() -> None:
 
     parser = ArgumentParser(
         allow_abbrev=False,
-        usage="dcpe <CONTAINER_NAME> [BASH|commands] [options]",
+        usage="dcpe <SERVICE_NAME> [BASH|commands] [options]",
         description="Shorthand for `docker compose exec`.",
         epilog="See also: `dcp -h`, `dcpu -h`",
     )
@@ -223,7 +223,7 @@ def dcpe_main() -> None:
     # dcpe command
     (
         ArgBuilder(parser)
-        .add_container_name_subcmd(multiple=False)
+        .add_service_name_subcmd(multiple=False)
         .add_inner_bash_cmd_args()
         .add_common_compose_options()
         .set_defaults(func=Processor().call_dcpe)
