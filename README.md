@@ -1,47 +1,67 @@
 # Fast DCP
 > 🚀 A smart CLI wrapper for `docker compose` — with interactive file, profile, and service selection.
 
-## 🆕 Highlights
+## Overview
+A CLI tool designed to streamline workflows for developers who frequently use `docker compose`.  
+In addition to short aliases for common commands, it features auto-detection and interactive selection of compose files, profiles, and service names.  
+Available on PyPI — install instantly with `pipx install fast-dcp` or `uv tool install fast-dcp`.
 
-**Interactive file, profile & service selection**
+[日本語版README](README_ja.md)もあります。
 
+## Highlights
+
+### Basic Commands
+Installing fast-dcp adds three commands to your PATH automatically.
+
+| Command | Description |
+|---|---|
+| `dcpu` | Alias for `docker compose up` |
+| `dcpe` | Alias for `docker compose exec` |
+| `dcp` | Alias for other subcommands (`build`, `logs`, `stop`, etc.) |
+
+Each command supports multiple options. See the [List of Commands](#list-of-commands) for details.
+
+### Interactive Selection
 Running `-f`, `-pf`, or `-s` without arguments auto-detects compose files, profiles, and services, letting you choose interactively.
 
 ```bash
 $ dcpu -f
-☑ Found 2 docker-compose files!
+☑ Found 2 compose files!
     1. docker-compose.yml
     2. docker-compose.prod.yml
-Enter your choices (e.g., 1,3,4) or 'q' to quit:
+Enter your choices (e.g., 1,3,4) or 'q' to quit: 2
+▷ Executing `docker compose -f docker-compose.prod.yml up`.
 
-$ dcpu -pf
+$ dcp re -pf   # `re`start
 ☑ Found 2 profiles!
     1. dev
     2. prod
-Enter your choices (e.g., 1,3,4) or 'q' to quit:
+Enter your choices (e.g., 1,3,4) or 'q' to quit: 1
+▷ Executing `docker compose --profile dev restart`.
 
-$ dcpu -s
+$ dcp l -s   # `l`ogs
 ☑ Found 3 services!
-    1. db
-    2. frontend
-    3. app
-Enter your choices (e.g., 1,3,4) or 'q' to quit:
+    1. app
+    2. db
+    3. frontend
+Enter your choices (e.g., 1,3,4) or 'q' to quit: 1,2
+▷ Executing `docker compose logs app db`.
 ```
 
-## Sample Usage
+For `exec`/`run`, interactive selection starts automatically when no service name is given.
+
 ```bash
-# docker compose up --build
-dcpu -b
-# docker compose exec app bash
-dcpe app
-# Auto-detects that `pytest` is not a service name, then prompts interactive selection
-dcpe pytest
-# docker compose restart app
-dcp re app
+$ dcpe   # `e`xec
+☑ Found 3 services!
+    1. app
+    2. db
+    3. frontend
+Enter your choice or 'q' to quit: 1
+▷ Executing `docker compose exec app bash`.
 ```
-For more examples, see the [List of Commands](#list-of-commands) section below.
 
-## Install fast-dcp
+
+## 🔧 Install fast-dcp
 ### Quick Install
 ```bash
 # Using pipx
