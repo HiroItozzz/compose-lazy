@@ -32,15 +32,14 @@ Enter your choices (e.g., 1,3,4) or 'q' to quit:
 ```bash
 # docker compose up --build
 dcpu -b
-# docker compose -f docker-compose.prod.yml up -d
-dcpu -df docker-compose.prod.yml
 # docker compose exec app bash
 dcpe app
-# docker compose exec db psql -U user -d mydb
-dcpe db -- psql -U user -d mydb
+# Auto-detects that `pytest` is not a service name, then prompts interactive selection
+dcpe pytest
 # docker compose restart app
 dcp re app
 ```
+For more examples, see the [List of Commands](#list-of-commands) section below.
 
 ## Install fast-dcp
 ### Quick Install
@@ -123,7 +122,7 @@ Both `pipx` and `uv tool` install CLI tools in isolated environments, so fast-dc
 | dcp up(u) -w                         | docker compose up --wait                                 |
 | dcp build(b) [SERVICE...]            | docker compose build [SERVICE...]                        |
 | dcp exec(e) [SERVICE]                | docker compose exec SERVICE bash                         |
-| dcp exec(e) [SERVICE] [COMMANDS...]  | docker compose exec SERVICE bash [COMMANDS...]           |
+| dcp exec(e) [SERVICE] [COMMANDS...]  | docker compose exec SERVICE [COMMANDS...]           |
 | dcp run [SERVICE]                    | docker compose run SERVICE bash                          |
 | dcp restart(re) [SERVICE...]         | docker compose restart [SERVICE...]                      |
 | dcp ps [SERVICE...] [-a] [-st STATUS]| docker compose ps [SERVICE...] [--all] [--status ...]    |

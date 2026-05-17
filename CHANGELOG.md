@@ -1,4 +1,7 @@
-## v0.5.2 - 2026-05-13
+## v0.5.3 - 2026-05-17
+- Fixed `exec`/`run` commands appending `bash` after user-specified command (e.g. `dcpe pytest` was executing `docker compose exec <service> pytest bash`)
+
+## v0.5.2 - 2026-05-13 (YANKED)
 
 - Fixed duplicate log output when `setup_logger` is called multiple times
 - Fixed `exec`/`run` commands accepting empty service name selection
