@@ -90,14 +90,14 @@ class DockerCmdProcessor:
         self.cmd += (
             ["exec"]
             + self._create_service_option(multiple=False)
-            + self.args.inner_bash_cmd
+            + (self.args.inner_bash_cmd or ["bash"])
         )
 
     def _create_run_cmd(self) -> None:
         self.cmd += (
             ["run"]
             + self._create_service_option(multiple=False)
-            + self.args.inner_bash_cmd
+            + (self.args.inner_bash_cmd or ["bash"])
         )
 
     def _create_restart_cmd(self) -> None:

@@ -54,7 +54,7 @@ class ArgBuilder:
         self.parser.add_argument(
             "inner_bash_cmd",
             nargs="*",
-            default=["bash"],
+            default=[],
             help="command to run inside the service (default: bash)",
         )
         return self

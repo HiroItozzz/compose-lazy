@@ -128,7 +128,7 @@ class TestAddInnerBashCmd(ArgBuilderTestBase):
         args = self.builder.parser.parse_args([])
 
         # Defaults to `bash`.
-        self.assertEqual(args.inner_bash_cmd, ["bash"])
+        self.assertEqual(args.inner_bash_cmd, [])
 
     def test_inner_bash_cmd_WITH_SOME_ARGS(self):
         self.builder.add_inner_bash_cmd_args()

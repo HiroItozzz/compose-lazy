@@ -1,3 +1,4 @@
+import io
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -203,6 +204,7 @@ class TestMain:
                 mock_run.assert_called_once_with(expected_cmd.split())
                 assert exc_info.value.code == 0
 
+    # fmt:off
     testcases_DCP_E_SINGLE_OPTION = (
         ("dcp e service", "docker compose exec service bash"),
         ("dcp e service uv run pytest", "docker compose exec service uv run pytest"),
@@ -231,11 +233,17 @@ class TestMain:
         ("dcp run service -pf dev", "docker compose --profile dev run service bash"),
         ("dcp run service --profile dev", "docker compose --profile dev run service bash"),
     )
-    @pytest.mark.parametrize("input_cmd,expected_cmd", [
-        *testcases_DCP_E_SINGLE_OPTION,
-        *testcases_DCP_RUN_SINGLE_OPTION
-    ])
+    # fmt:on
+
+    @pytest.mark.parametrize(
+        "input_cmd,expected_cmd",
+        [
+            *testcases_DCP_E_SINGLE_OPTION,
+            *testcases_DCP_RUN_SINGLE_OPTION,
+        ],
+    )
     def test_run_dcp_EXEC_RUN(self, input_cmd, expected_cmd, tmp_path, monkeypatch):
+        """Tests which requires yaml files."""
         monkeypatch.chdir(tmp_path)
         (tmp_path / "compose.test.yml").write_text("services:\n  service:")
         with patch("fast_dcp.process.subprocess.run") as mock_run:
@@ -246,11 +254,105 @@ class TestMain:
                 mock_run.assert_called_once_with(expected_cmd.split())
                 assert exc_info.value.code == 0
 
-    @pytest.mark.parametrize("input_cmd",[
-        "dcp ps --status",
-        "dcp ps --status invalid_status",
-        "dcp ps --status service1",
-    ])
+    # fmt:off
+    testcases_DCP_EXEC_INTERACTION = (
+        ("dcp e", "2\n","docker compose exec web bash"),
+        ("dcp e uv run pytest", "2\n","docker compose exec web uv run pytest"),
+        ("dcp e -f test.yaml", "2\n","docker compose -f test.yaml exec web bash"),
+        ("dcp e uv run pytest -f test.yaml", "2\n","docker compose -f test.yaml exec web uv run pytest"),
+        ("dcp e -p testproject", "2\n","docker compose -p testproject exec web bash"),
+        ("dcp e uv run pytest -p testproject", "2\n","docker compose -p testproject exec web uv run pytest"),
+        ("dcp e -pf dev", "2\n","docker compose --profile dev exec web bash"),
+        ("dcp e --profile dev", "2\n","docker compose --profile dev exec web bash"),
+    )
+
+    testcases_DCP_RUN_INTERACTION = (
+        ("dcp run", "2\n","docker compose run web bash"),
+        ("dcp run uv run pytest", "2\n","docker compose run web uv run pytest"),
+        ("dcp run -f test.yaml", "2\n","docker compose -f test.yaml run web bash"),
+        ("dcp run uv run pytest -f test.yaml", "2\n","docker compose -f test.yaml run web uv run pytest"),
+        ("dcp run -p testproject", "2\n","docker compose -p testproject run web bash"),
+        ("dcp run uv run pytest -p testproject", "2\n","docker compose -p testproject run web uv run pytest"),
+        ("dcp run -pf dev", "2\n","docker compose --profile dev run web bash"),
+        ("dcp run --profile dev", "2\n","docker compose --profile dev run web bash"),
+    )
+    # fmt:on
+
+    @pytest.mark.parametrize(
+        "input_cmd,users_choice,expected_cmd",
+        [
+            *testcases_DCP_EXEC_INTERACTION,
+            *testcases_DCP_RUN_INTERACTION,
+        ],
+    )
+    def test_run_INTERACTION_EXEC_RUN(
+        self, input_cmd, users_choice, expected_cmd, tmp_path, capsys, monkeypatch
+    ):
+        monkeypatch.setattr("sys.stdin", io.StringIO(users_choice))
+        monkeypatch.chdir(tmp_path)
+        # #1 is `db`, #2 is `web`.
+        (tmp_path / "compose.test.yml").write_text("services:\n  web:\n  db:")
+
+        with patch("fast_dcp.process.subprocess.run") as mock_run:
+            mock_run.return_value = MagicMock(returncode=0)
+            with patch("sys.argv", input_cmd.split()):
+                with pytest.raises(SystemExit) as exc_info:
+                    main()
+                mock_run.assert_called_once_with(expected_cmd.split())
+                assert exc_info.value.code == 0
+
+                std, _ = capsys.readouterr()
+                assert "\n☑ Found 2 services!" in std
+
+    # fmt:off
+    testcases_INTERACTION_GENERAL = (
+        ("dcp up -f", "2\n","docker compose -f compose.test_2.yml up"),
+        ("dcp up -pf", "2\n","docker compose --profile prod up"),
+        ("dcp up -s", "2\n","docker compose up frontend"),
+        ("dcp up -f", "99\n2\n","docker compose -f compose.test_2.yml up"),
+        ("dcp up -pf", "99\n2\n","docker compose --profile prod up"),
+        ("dcp up -s", "99\n2\n","docker compose up frontend"),
+        ("dcp up -f", "1,2\n","docker compose -f compose.test.yml -f compose.test_2.yml up"),
+        ("dcp up -pf", "1,2\n","docker compose --profile dev --profile prod up"),
+        ("dcp up -s", "1,2\n","docker compose up db frontend"),
+    )
+    # fmt:on
+
+    @pytest.mark.parametrize(
+        "input_cmd,users_choice,expected_cmd", [*testcases_INTERACTION_GENERAL]
+    )
+    def test_run_INTERACTION_MULTIPLE(
+        self, input_cmd, users_choice, expected_cmd, tmp_path, capsys, monkeypatch
+    ):
+        monkeypatch.setattr("sys.stdin", io.StringIO(users_choice))
+        monkeypatch.chdir(tmp_path)
+        # #1 is `db`, #2 is `frontend` and #3 is `web` for services,
+        # #1 is `compose.test.yml`, #2 is `compose.test_2.yml` for files,
+        # #1 is `dev`, #2 is prod for profiles.
+        yml = "services:\n  web:\n  db:\n    profiles:\n      [dev]"
+        yml_2 = "services:\n  web:\n  frontend:\n    profiles:\n      [prod]"
+        (tmp_path / "compose.test.yml").write_text(yml)
+        (tmp_path / "compose.test_2.yml").write_text(yml_2)
+
+        with patch("fast_dcp.process.subprocess.run") as mock_run:
+            mock_run.return_value = MagicMock(returncode=0)
+            with patch("sys.argv", input_cmd.split()):
+                with pytest.raises(SystemExit) as exc_info:
+                    main()
+                mock_run.assert_called_once_with(expected_cmd.split())
+                assert exc_info.value.code == 0
+
+                std, _ = capsys.readouterr()
+                assert "\n☑ Found " in std
+
+    @pytest.mark.parametrize(
+        "input_cmd",
+        [
+            "dcp ps --status",
+            "dcp ps --status invalid_status",
+            "dcp ps --status service1",
+        ],
+    )
     def test_run_dcp_ERROR(self, input_cmd):
         with patch("fast_dcp.process.subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(returncode=0)
@@ -269,9 +371,12 @@ class TestMain:
                 mock_help.assert_called_once_with()
                 assert exc_info.value.code == 0
 
-    @pytest.mark.parametrize("input_cmd,expected_cmd", [
-        *testcases_DCPU_SINGLE_OPTION,
-    ])
+    @pytest.mark.parametrize(
+        "input_cmd,expected_cmd",
+        [
+            *testcases_DCPU_SINGLE_OPTION,
+        ],
+    )
     def test_run_dcpu(self, input_cmd, expected_cmd, tmp_path, monkeypatch):
         monkeypatch.chdir(tmp_path)
         (tmp_path / "compose.test.yml").write_text("services:\n  service:")
@@ -283,9 +388,12 @@ class TestMain:
                 mock_run.assert_called_once_with(expected_cmd.split())
                 assert exc_info.value.code == 0
 
-    @pytest.mark.parametrize("input_cmd,expected_cmd", [
-        *testcases_DCPE_SINGLE_OPTION,
-    ])
+    @pytest.mark.parametrize(
+        "input_cmd,expected_cmd",
+        [
+            *testcases_DCPE_SINGLE_OPTION,
+        ],
+    )
     def test_run_dcpe(self, input_cmd, expected_cmd, tmp_path, monkeypatch):
         monkeypatch.chdir(tmp_path)
         (tmp_path / "compose.test.yml").write_text("services:\n  service:")
@@ -296,7 +404,6 @@ class TestMain:
                     dcpe_main()
                 mock_run.assert_called_once_with(expected_cmd.split())
                 assert exc_info.value.code == 0
-
 
     @pytest.mark.parametrize(
         "input_cmd,multiple",
@@ -311,7 +418,9 @@ class TestMain:
             ("dcp stop", True),
         ],
     )
-    def test_service_multiple_consistency(self, input_cmd, multiple, tmp_path, monkeypatch):
+    def test_service_multiple_consistency(
+        self, input_cmd, multiple, tmp_path, monkeypatch
+    ):
         """Attribute `multiple` in add_service_name_subcmd and _create_service_option are consistent."""
         monkeypatch.chdir(tmp_path)
         (tmp_path / "compose.test.yml").write_text("services:\n  web:")
