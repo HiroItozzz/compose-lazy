@@ -5,7 +5,7 @@ import sys
 from argparse import Namespace
 from functools import lru_cache
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Iterable
 
 import yaml
 
@@ -197,7 +197,7 @@ class DockerCmdProcessor:
         # Interactive session: select number(s) to get file args or press "Q" to quit.
         print(f"\n☑ Found {len(services)} services!")
 
-        return self._interactive_select(sorted(services), multiple=multiple)
+        return self._interactive_select(services, multiple=multiple)
 
     # File option
     def _create_file_option(self) -> list[str]:
@@ -280,12 +280,13 @@ class DockerCmdProcessor:
         # Interactive session: select number(s) to get file args or press "Q" to quit.
         print(f"\n☑ Found {len(profiles)} profiles!")
 
-        return self._interactive_select(sorted(profiles), "--profile")
+        return self._interactive_select(profiles, "--profile")
 
     def _interactive_select(
-        self, choice_list: list[str], flag: str | None = None, multiple: bool = True
+        self, choice_list: Iterable[str], flag: str | None = None, multiple: bool = True
     ) -> list[str]:
 
+        choice_list = sorted(choice_list)
         args = []
         prompt = (
             "\nEnter your choices (e.g., 1,3,4) or 'q' to quit: "

@@ -394,7 +394,7 @@ services:
   app:
   db:
 """
-        services = sorted(["app", "db"])
+        services = {"app", "db"}
 
         monkeypatch.chdir(tmp_path)
         (tmp_path / file_name).write_text(content)
@@ -521,7 +521,7 @@ services:
       - prod
       - dev
 """
-        profiles = sorted(["prod", "dev"])
+        profiles = {"prod", "dev"}
 
         monkeypatch.chdir(tmp_path)
         (tmp_path / file_name).write_text(content)
@@ -626,7 +626,7 @@ class TestInteraciveSelect(TestDCPBase):
         choices = ["test_1", "test_2"]
 
         with pytest.raises(KeyboardInterrupt):
-            self.processor._interactive_select("--test", choices)
+            self.processor._interactive_select(choices, "--test")
 
         captured = capsys.readouterr()
 
@@ -641,7 +641,7 @@ class TestInteraciveSelect(TestDCPBase):
         choices = ["test_1", "test_2"]
 
         with pytest.raises(SystemExit):
-            self.processor._interactive_select("--test", choices)
+            self.processor._interactive_select(choices, "--test")
 
         captured = capsys.readouterr()
 
