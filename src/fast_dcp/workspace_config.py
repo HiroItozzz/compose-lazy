@@ -1,5 +1,6 @@
 import logging
 import sys
+from argparse import Namespace
 from pathlib import Path
 
 import yaml
@@ -43,7 +44,7 @@ class YamlHandler:
         )
 
     @property
-    def config(self):
+    def config(self) -> AttrDict:
         return self._config
 
     def setup_config(self, *keys) -> None:
@@ -89,7 +90,7 @@ class YamlHandler:
             if key not in target:
                 target[key] = []
             if value in target[key]:
-                print(f"Oops, `{value}` is already in `{key}`.")
+                print(f"Oops, `{value}` is already in `{key}`.", file=sys.stderr)
                 continue
             target[key].append(value)
             target[key].sort()
@@ -97,7 +98,7 @@ class YamlHandler:
 
         return cnt
 
-    def _read_and_load(self) -> dict:
+    def _read_and_load(self) -> AttrDict:
         return yaml.safe_load(self.path.read_text(encoding="utf-8")) or AttrDict()
 
     def dump_and_write(self) -> None:
@@ -113,7 +114,7 @@ class Registrar:
     def __init__(self) -> None:
         self.handler = YamlHandler(CONFIG_PATH)
 
-    def __call__(self, args) -> None:
+    def __call__(self, args: Namespace) -> None:
         self.handler.setup_config(*self.YAML_KEYS)
 
         try:
@@ -126,12 +127,18 @@ class Registrar:
         except KeyboardInterrupt:
             print("\nCancelled.")
             sys.exit(130)
+        except SystemExit:
+            sys.exit(0)
 
     def show_list(self) -> None:
         config = self.handler.config
-        for key in config[self._WORKSPACE_KEY]:
+        if not (workspaces := config[self._WORKSPACE_KEY]):
+            print("☓ No workspaces registered yet.")
+        for key in workspaces:
             print(f"========={key}=========")
-            for value in config[self._WORKSPACE_KEY][key]:
+            if not workspaces[key]:
+                print("☓ No repos registered yet.")
+            for value in workspaces[key]:
                 print(f"- {value}")
 
     def register_repo(self) -> None:
@@ -139,89 +146,120 @@ class Registrar:
         new_repo = Path(input("Please enter a new directory path: ")).resolve()
 
         if not new_repo.is_dir():
-            print(f"❌ The path doesn't exists: {str(new_repo)}")
-            return
+            print(f"❌ The path doesn't exists: {str(new_repo)}", file=sys.stderr)
+            raise SystemExit
 
+        workspace_dict = self.handler.config[self._WORKSPACE_KEY]
         # User input
-        workspace_name = self._select_workspace_name()
-
+        workspace_name = self._select_workspace_name(workspace_dict)
         count = self.handler.append_subcategory(
             self._WORKSPACE_KEY, **{workspace_name: str(new_repo)}
         )
+
         if count == 0:
-            print(f"The path already exists: {str(new_repo)}")
+            # Prompt is implemented in YamlHandler.
+            pass
         else:
             self.handler.dump_and_write()
             print(f"☑ Registered new path to {workspace_name}: {str(new_repo)}")
-        print("💡 Hint: To check workspace list, execute `dcp --list`.")
+        print("💡 Hint: To see workspace list, run `dcp --list`.")
 
     def delete_repo(self) -> None:
-        prompt = "☑ Found {} registered workspace{}."
 
         config = self.handler.config
-        workspaces = config[self._WORKSPACE_KEY]
+        workspace_dict = config[self._WORKSPACE_KEY]
 
-        if not workspaces:
-            print("❌ No workspaces found.")
-            return
-        
+        if not workspace_dict:
+            print("☓ No workspaces registered yet.", file=sys.stderr)
+            raise SystemExit
+
         # User input
-        target_workspace_name = self._select_workspace_name()
-        target_workspace = workspaces[target_workspace_name]
+        target_workspace_name = self._select_workspace_name(
+            workspace_dict, allow_add=False
+        )
+        target_workspace = workspace_dict[target_workspace_name]
 
-        if (count := len(target_workspace)) == 1:
-            print(prompt.format(count, ""))
-        elif count >= 2:
-            print(prompt.format(count, "s"))
+        prompt = "☑ Found {} director{}."
+        if (length := len(target_workspace)) == 1:
+            print(prompt.format(length, "y"))
+        elif length >= 2:
+            print(prompt.format(length, "ies"))
 
         for idx, choice in enumerate(target_workspace, start=1):
             print(f"{idx:>5}. {choice}")
 
-        # TODO: add error handling
-        # User input
-        user_input = input("\nEnter your choices to delete (e.g., 1,3,4): ")
+        while True:
+            try:
+                # TODO: add error handling
+                # User input
+                user_input = input("\nEnter your choices to delete (e.g., 1,3,4): ")
 
-        # Sort in reverse order to avoid index error.
-        choices = sorted(
-            map(
-                lambda i: int(i) - 1,
-                (i.strip() for i in user_input.split(",") if i.strip()),
-            ),
-            reverse=True,
-        )
+                # Sort in reverse order to avoid index error.
+                choices = sorted(
+                    map(
+                        lambda i: int(i) - 1,
+                        (i.strip() for i in user_input.split(",") if i.strip()),
+                    ),
+                    reverse=True,
+                )
+                if max(choices) >= length:
+                    raise IndexError
+            except (IndexError, ValueError):
+                print("☓ Invalid selection. Please use a valid number.", file=sys.stderr)
+            else:
+                break
+
         for i in choices:
             name = target_workspace[i]
             del target_workspace[i]
             print(f"☑ Deleted: {name}")
 
         if not target_workspace:
-            del workspaces[target_workspace_name]
+            del workspace_dict[target_workspace_name]
 
         self.handler.dump_and_write()
 
-    def _select_workspace_name(self) -> str:
-        workspaces = self.handler.config[self._WORKSPACE_KEY]
+    def _select_workspace_name(self, workspace_dict: dict, allow_add=True) -> str:
 
-        if workspaces:
-            prompt = "☑ Found {} registered workspace{}."
+        if workspace_dict:
+            length = len(workspace_dict)
+            intro = "☑ Found {} registered workspace{}."
+            if length >= 2:
+                print(intro.format(length, "s"))
+            else:
+                print(intro.format(length, ""))
 
-            if (count := len(workspaces)) == 1:
-                print(prompt.format(count, ""))
-            elif count >= 2:
-                print(prompt.format(count, "s"))
+            if allow_add:
+                prompt = "\nEnter your choice or input new workspace name: "
+            else:
+                prompt = "\nEnter your choice: "
 
-            for idx, choice in enumerate(workspaces, start=1):
+            for idx, choice in enumerate(workspace_dict, start=1):
                 print(f"{idx:>5}. {choice}")
 
-            # TODO: add error handling
-            user_input_workspace = input(
-                "\nEnter your choice or input new workspace name: "
-            )
-            try:
-                target_workspace_number = int(user_input_workspace.strip()) - 1
-                target_workspace_name = list(workspaces.keys())[target_workspace_number]
-            except ValueError:
-                target_workspace_name = user_input_workspace
+            while True:
+                user_input_workspace = input(prompt)
+                try:
+                    target_workspace_number = int(user_input_workspace.strip()) - 1
+                    target_workspace_name = list(workspace_dict.keys())[
+                        target_workspace_number
+                    ]
+                    print()
+                    break
+                except ValueError:
+                    if allow_add:
+                        target_workspace_name = user_input_workspace
+                        break
+                    else:
+                        print(
+                            "\n☓ Invalid selection. Please use a valid number.",
+                            file=sys.stderr,
+                        )
+                except IndexError:
+                    print(
+                        "\n☓ Invalid selection. Please use a valid number.",
+                        file=sys.stderr,
+                    )
 
         else:
             target_workspace_name = input("Please enter a new workspace name: ").strip()
