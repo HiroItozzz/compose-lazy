@@ -5,7 +5,7 @@ from importlib.metadata import version
 from . import config
 from .args import ArgBuilder
 from .process import DockerCmdProcessor as Processor
-from .register import Registrar
+from .workspace_config import Registrar, Executor
 
 VERSION = version("fast_dcp")
 
@@ -23,13 +23,25 @@ def main() -> None:
     )
     base_parser.add_argument("--version", action="version", version=f"fast-dcp {VERSION}")
 
-    group = base_parser.add_mutually_exclusive_group()
+    subparsers = base_parser.add_subparsers(dest="subcmd")
+    # dcp workspace(ws) command
+    _workspace = subparsers.add_parser(
+        "workspace",
+        aliases=["ws"],
+        allow_abbrev=False,
+        usage="",
+        description="Compose up of all yaml files in a registered workspace.",
+        help=""
+    )
+    _workspace.set_defaults(func=Executor())
+
+    group = _workspace.add_mutually_exclusive_group()
     group.add_argument("-reg", "--register", action="store_true", help="")
     group.add_argument("-del", "--delete", action="store_true", help="")
     group.add_argument("--list", action="store_true", help="")
     group.set_defaults(func=Registrar())
 
-    subparsers = base_parser.add_subparsers(dest="subcmd")
+
     # dcp up(u) command
     _up = subparsers.add_parser(
         "up",

@@ -1,7 +1,9 @@
 import logging
+import subprocess
 import sys
 from argparse import Namespace
 from pathlib import Path
+from typing import override
 
 import yaml
 from yaml.scanner import ScannerError
@@ -165,10 +167,8 @@ class Registrar:
         print("💡 Hint: To see workspace list, run `dcp --list`.")
 
     def delete_repo(self) -> None:
-
         config = self.handler.config
         workspace_dict = config[self._WORKSPACE_KEY]
-
         if not workspace_dict:
             print("☓ No workspaces registered yet.", file=sys.stderr)
             raise SystemExit
@@ -220,7 +220,6 @@ class Registrar:
         self.handler.dump_and_write()
 
     def _select_workspace_name(self, workspace_dict: dict, allow_add=True) -> str:
-
         if workspace_dict:
             length = len(workspace_dict)
             intro = "☑ Found {} registered workspace{}."
@@ -265,3 +264,31 @@ class Registrar:
             target_workspace_name = input("Please enter a new workspace name: ").strip()
 
         return target_workspace_name
+
+
+class Executor(Registrar):
+    def __init__(self) -> None:
+        super().__init__()
+
+    @override
+    def __call__(self, args: Namespace):
+        self.handler.setup_config(*self.YAML_KEYS)
+        cmd = ["docker", "compose", "up"]
+        for workdir in self.get_target_workspace():
+            logger.debug(
+                f"\n---------workdir---------\n{workdir}\n----output docker cmd---- \n{cmd}"
+            )
+            self._execute_command(cmd, workdir)
+
+    def get_target_workspace(self) -> list[str]:
+        workspaces = self.handler.config[self._WORKSPACE_KEY]
+        workspace_name = self._select_workspace_name(workspaces, allow_add=False)
+        return workspaces[workspace_name]
+
+    def _execute_command(self, cmd: list[str], workdir: Path) -> int:
+        print(f"▷ Executing `{' '.join(cmd)}` in `{workdir}`.")
+        try:
+            result = subprocess.run(cmd, cwd=workdir)
+            return result.returncode
+        except KeyboardInterrupt:
+            return 130
