@@ -5,6 +5,7 @@ from importlib.metadata import version
 from . import config
 from .args import ArgBuilder
 from .process import DockerCmdProcessor as Processor
+from .register import Registrar
 
 VERSION = version("fast_dcp")
 
@@ -21,6 +22,12 @@ def main() -> None:
         epilog="See also: `dcpu -h`, `dcpe -h`",
     )
     base_parser.add_argument("--version", action="version", version=f"fast-dcp {VERSION}")
+
+    group = base_parser.add_mutually_exclusive_group()
+    group.add_argument("-reg", "--register", action="store_true", help="")
+    group.add_argument("-del", "--delete", action="store_true", help="")
+    group.add_argument("--list", action="store_true", help="")
+    group.set_defaults(func=Registrar())
 
     subparsers = base_parser.add_subparsers(dest="subcmd")
     # dcp up(u) command
@@ -173,7 +180,7 @@ def main() -> None:
     )
 
     args = base_parser.parse_args()
-    if args.subcmd is None:
+    if not any((args.subcmd, args.register, args.delete, args.list)):
         base_parser.print_help()
         exit(0)
     code = args.func(args)
