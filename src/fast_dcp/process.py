@@ -5,9 +5,11 @@ import sys
 from argparse import Namespace
 from functools import lru_cache
 from pathlib import Path
-from typing import Callable, Iterable
+from typing import Callable
 
 import yaml
+
+from . import utils
 
 logger = logging.getLogger(__name__)
 
@@ -197,7 +199,7 @@ class DockerCmdProcessor:
         # Interactive session: select number(s) to get file args or press "Q" to quit.
         print(f"\n☑ Found {len(services)} services!")
 
-        return self._interactive_select(services, multiple=multiple)
+        return utils.interactive_select(services, multiple=multiple)
 
     # File option
     def _create_file_option(self) -> list[str]:
@@ -237,7 +239,7 @@ class DockerCmdProcessor:
 
         print(f"\n☑ Found {file_count} docker-compose files!")
 
-        return self._interactive_select(file_paths, "-f")
+        return utils.interactive_select(file_paths, "-f")
 
     # Profile option
     def _create_profile_option(self) -> list[str]:
@@ -280,62 +282,7 @@ class DockerCmdProcessor:
         # Interactive session: select number(s) to get file args or press "Q" to quit.
         print(f"\n☑ Found {len(profiles)} profiles!")
 
-        return self._interactive_select(profiles, "--profile")
-
-    def _interactive_select(
-        self, choice_list: Iterable[str], flag: str | None = None, multiple: bool = True
-    ) -> list[str]:
-
-        choice_list = sorted(choice_list)
-        args = []
-        prompt = (
-            "\nEnter your choices (e.g., 1,3,4) or 'q' to quit: "
-            if multiple
-            else "\nEnter your choice or 'q' to quit: "
-        )
-        err_msg = (
-            "☓ Invalid selection. Please use valid numbers."
-            if multiple
-            else "☓ Invalid selection. Please use a valid number."
-        )
-
-        # Show choices
-        for idx, choice in enumerate(choice_list, start=1):
-            print(f"{idx:>5}. {choice}")
-
-        # User input
-        while True:
-            try:
-                if (choices_str := input(prompt)) in ["Q", "q"]:
-                    print("\nCancelled.")
-                    raise SystemExit
-
-                choices = list(
-                    map(
-                        lambda i: int(i) - 1,
-                        (i.strip() for i in choices_str.split(",") if i),
-                    )
-                )
-
-                if not multiple and len(choices) != 1:
-                    raise ValueError
-
-                for idx in choices:
-                    chosen = choice_list[idx]
-                    if flag is None:
-                        args += [chosen]
-                    else:
-                        args += [flag, chosen]
-
-            except (ValueError, IndexError):
-                print(err_msg, file=sys.stderr)
-            except KeyboardInterrupt as e:
-                print("\nCancelled.")
-                raise e
-            else:
-                print()
-                break
-        return args
+        return utils.interactive_select(profiles, "--profile")
 
     def _adjust_service_name(self) -> None:
         """Move service_name to inner_bash_cmd if it doesn't match any declared service.

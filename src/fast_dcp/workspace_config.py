@@ -4,30 +4,13 @@ import sys
 from abc import ABC, abstractmethod
 from argparse import Namespace
 from pathlib import Path
-
+from .utils import AttrDict
 import yaml
 from yaml.scanner import ScannerError
 
 logger = logging.getLogger(__name__)
 
 CONFIG_PATH = Path.home() / ".config" / "fast-dcp"
-
-
-class AttrDict(dict):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
-    def __getattr__(self, key):
-        try:
-            return self[key]
-        except KeyError:
-            raise AttributeError(key)
-
-    def __setattr__(self, key, value):
-        self[key] = value
-
-    def __dir__(self):
-        return self.keys()
 
 
 class YamlHandler:
@@ -311,6 +294,7 @@ class WorkspaceExecutor(AbstractWsExecutor):
                 codes.append(code)
             return next((c for c in codes if c != 0), 0)
         except KeyboardInterrupt:
+            print("\nCancelled.")
             return 130
 
     def get_target_workspace(self) -> list[str]:
