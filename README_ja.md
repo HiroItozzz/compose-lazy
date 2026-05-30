@@ -4,7 +4,7 @@
 ## 概要
 
 `docker compose` コマンドの使用頻度の高い開発者の作業を補助するためのCLIツールです。  
-よく使われるコマンドの短縮エイリアスに加え、composeファイル・プロファイル・サービス名を自動検出しインタラクティブに選択できる機能を実装しています。  
+よく使われるコマンドの短縮エイリアスに加え、composeファイル・プロファイル・サービス名のインタラクティブ選択や、複数リポジトリを一括操作するワークスペース管理機能を実装しています。    
 PyPIで公開しており、`pipx install fast-dcp`または`uv tool install fast-dcp`で即座に使用できます。
 
 ## 主な機能
@@ -19,6 +19,29 @@ PyPIで公開しており、`pipx install fast-dcp`または`uv tool install fas
 | `dcp` | その他サブコマンド (`build`, `logs`, `stop` など) のエイリアス |
 
 各コマンドには複数のオプションを指定可能です。オプションの一覧は[こちら](README.md#list-of-commands)を参照してください。  
+
+
+### ワークスペース機能
+ 
+複数のリポジトリを「ワークスペース」としてまとめて登録し、一括で docker compose コマンドを実行できます。
+ 
+```bash
+# リポジトリをワークスペースに登録
+$ dcp ws register
+Please enter a new directory path: /path/to/repo
+Please enter a new workspace name: myproject
+☑ Registered new path to myproject: /path/to/repo
+ 
+# ワークスペース内の全リポジトリを起動
+$ dcp ws up
+☑ Found 1 registered workspace.
+    1. myproject
+Enter your choice: 1
+▷ Executing `docker compose up -d` in `/path/to/repo`.
+```
+ 
+設定は `~/.config/fast-dcp` に保存されます。
+
 
 ### インタラクティブ機能
 `-f`、`-pf`、`-s` 各オプションを付与すると、カレントディレクトリのcomposeファイルが読み込まれ、対話的に実行対象を選択できます。
@@ -58,7 +81,6 @@ $ dcpe   # `e`xec
 Enter your choice or 'q' to quit: 1
 ▷ Executing `docker compose exec app bash`.
 ```
-
 
 ## 🔧 インストール
 
@@ -102,7 +124,7 @@ ArgBuilder(parser)
 
 **テスト**
 
-単体テストのほか、`sys.argv`と`subprocess.run`をモックした結合テストを実装することで品質を担保しています。約350テスト、カバレッジ99%を維持しています。
+単体テストのほか、`sys.argv`と`subprocess.run`をモックした結合テストを実装することで品質を担保しています。約470テスト、カバレッジ99%を維持しています。
 
 
 ## 感想 (2026-05-18)
@@ -114,4 +136,4 @@ PyPIでの配布についてですが、その手続き自体はそこまで煩�
 設計は簡明で拡張性は高いため、今後もアイデアが思いついた際には機能拡張を行っていく予定です。
 
 日頃当たり前に使用しているCLIアプリケーションの裏側を知ることができ良い経験になりました。  
-現在はインストールにpipxかuvが必要であり使用できる層は限られてしまっているため、将来的に別言語でのバイナリ形式での配布を行えればと考えています。
+現在はインストールにpipxかuvが必要であり使用できる層は限られているため、将来的に別言語でのバイナリ形式での配布を行えればと考えています。

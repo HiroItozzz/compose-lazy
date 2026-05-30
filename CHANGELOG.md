@@ -1,3 +1,43 @@
+## v0.6.0 - 2026-05-30
+ 
+### Added
+ 
+**`dcp workspace(ws)` command — operate multiple repositories at once**
+ 
+A new `workspace` command lets you register named groups of repositories and run docker compose commands across all of them in one shot.
+ 
+```bash
+# Register repositories to a workspace
+$ dcp ws register
+Please enter a new directory path: /path/to/repo
+Please enter a new workspace name: myproject
+☑ Registered new path to myproject: /path/to/repo
+ 
+# Launch all repos in a workspace
+$ dcp ws up
+☑ Found 1 registered workspace.
+    1. myproject
+Enter your choice: 1
+▷ Executing `docker compose up -d` in `/path/to/repo`.
+```
+ 
+**Subcommands**
+ 
+| Command | Description |
+|---|---|
+| `dcp ws register(reg)` | Register a new repository to a workspace interactively |
+| `dcp ws delete(del)` | Delete a repository from a workspace interactively |
+| `dcp ws list(li)` | List all registered workspaces and their repositories |
+| `dcp ws up(u)` | Run `docker compose up -d` for all repos in a workspace |
+| `dcp ws restart(re)` | Run `docker compose restart` for all repos in a workspace |
+| `dcp ws stop(s)` | Run `docker compose stop` for all repos in a workspace |
+| `dcp ws down` | Run `docker compose down` for all repos in a workspace |
+ 
+Workspace configuration is stored in `~/.config/fast-dcp`.
+
+### Fixed
+- Fix non-positive integer input (`0`, negative numbers) in interactive selection silently selecting wrong entries
+
 ## v0.5.3 - 2026-05-17
 - Fixed `exec`/`run` commands appending `bash` after user-specified command (e.g. `dcpe pytest` was executing `docker compose exec <service> pytest bash`)
 

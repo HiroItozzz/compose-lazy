@@ -3,7 +3,7 @@
 
 ## Overview
 A CLI tool designed to streamline workflows for developers who frequently use `docker compose`.  
-In addition to short aliases for common commands, it features auto-detection and interactive selection of compose files, profiles, and service names.  
+In addition to short aliases for common commands, it features interactive selection of compose files, profiles, and services, and multi-repository workspace management.   
 Available on PyPI — install instantly with `pipx install fast-dcp` or `uv tool install fast-dcp`.
 
 [日本語版README](README_ja.md)もあります。
@@ -20,6 +20,28 @@ Installing fast-dcp adds three commands to your PATH automatically.
 | `dcp` | Alias for other subcommands (`build`, `logs`, `stop`, etc.) |
 
 Each command supports multiple options. See the [List of Commands](#list-of-commands) for details.
+
+
+### Multi-Repo Workspace
+Register named groups of repositories as a *workspace* and operate all of them at once.
+ 
+```bash
+# Register repositories to a workspace
+$ dcp ws register
+Please enter a new directory path: /path/to/repo
+Please enter a new workspace name: myproject
+☑ Registered new path to myproject: /path/to/repo
+ 
+# Launch all repos in a workspace
+$ dcp ws up
+☑ Found 1 registered workspace.
+    1. myproject
+Enter your choice: 1
+▷ Executing `docker compose up -d` in `/path/to/repo`.
+```
+ 
+Workspace configuration is stored in `~/.config/fast-dcp`.
+
 
 ### Interactive Selection
 Running `-f`, `-pf`, or `-s` without arguments auto-detects compose files, profiles, and services, letting you choose interactively.
@@ -107,9 +129,9 @@ pipx install fast-dcp
 ## Features
 
 - **Interactive Selection**: auto-detect and interactively select compose files, profiles, and services
+- **Multi-Repo Workspace**: run docker compose commands across multiple repositories at once with `dcp ws`
 - **Short Aliases**: `dcp u`, `dcp b`, `dcp e` — fewer keystrokes for common commands
 - **Dedicated Commands**: `dcpu` and `dcpe` for frequent up/exec workflows
-- **Zero Config**: No configuration files needed — just install and run
 - **Cross-Platform**: Works on Windows, macOS, and Linux
 
 ## FAQ
@@ -149,6 +171,13 @@ Both `pipx` and `uv tool` install CLI tools in isolated environments, so fast-dc
 | dcp logs(l) [SERVICE...] [-fo]       | docker compose logs [SERVICE...] [-f]                    |
 | dcp stop(s) [SERVICE...]             | docker compose stop [SERVICE...]                         |
 | dcp down [-ro]                       | docker compose down [--remove-orphans]                   |
+| dcp workspace(ws) register(reg)      | Register a new repo to a workspace interactively         |
+| dcp workspace(ws) delete(del)        | Delete a repo from a workspace interactively             |
+| dcp workspace(ws) list(li)           | List all registered workspaces                           |
+| dcp workspace(ws) up(u)              | docker compose up -d for each repo in a workspace        |
+| dcp workspace(ws) restart(re)        | docker compose restart for each repo in a workspace      |
+| dcp workspace(ws) stop(s)            | docker compose stop for each repo in a workspace         |
+| dcp workspace(ws) down               | docker compose down for each repo in a workspace         |
 
 and more... see `dcp --help` for the full list of supported commands and options.
 
