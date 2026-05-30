@@ -61,7 +61,7 @@ class YamlHandler:
             self._config = AttrDict()
         return self._config
 
-    def setup_config(self, *keys: str) -> AttrDict:
+    def setup_config(self, *keys: str) -> None:
         """Load configuration or create basic structure in configuration file.
 
         Returns:
@@ -104,7 +104,7 @@ class YamlHandler:
         ```
         """
         *keys, value = args
-        current = self._config
+        current = self.config
         for key in keys[:-1]:
             if not current.get(key):
                 current[key] = AttrDict()
@@ -141,7 +141,7 @@ class AbstractWsExecutor(ABC):
         return code
 
     @abstractmethod
-    def _switch(args: Namespace) -> int: ...
+    def _switch(self, args: Namespace) -> int: ...
 
     def _select_workspace_name(self, workspace_dict: dict, allow_add=True) -> str:
         if workspace_dict:
