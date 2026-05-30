@@ -180,7 +180,7 @@ class AbstractWsExecutor(ABC):
         return target_workspace_name
 
 
-class Registrar(AbstractWsExecutor):
+class WsRegistrar(AbstractWsExecutor):
     def __call__(self, args: Namespace) -> None:
 
         try:
@@ -285,7 +285,7 @@ class Registrar(AbstractWsExecutor):
         self.handler.dump_and_write()
 
 
-class Executor(AbstractWsExecutor):
+class WsExecutor(AbstractWsExecutor):
     def __call__(self, args: Namespace) -> None:
         cmd = ["docker", "compose", "up", "-d"]
         for workdir in self.get_target_workspace():

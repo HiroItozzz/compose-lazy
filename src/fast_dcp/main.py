@@ -4,19 +4,22 @@ from importlib.metadata import version
 
 from . import config
 from .args import ArgBuilder
-from .process import DockerCmdProcessor as Processor
-from .workspace_config import Executor, Registrar
+from .process import DockerCmdProcessor
+from .workspace_config import WsExecutor, WsRegistrar
 
 VERSION = version("fast_dcp")
 
 logger = logging.getLogger(__name__)
 
 
+processor = DockerCmdProcessor()
+
+
 def switch_ws_cmd(args: Namespace) -> None:
     if any((args.register, args.list, args.delete)):
-        return Registrar()(args)
+        return WsRegistrar()(args)
     else:
-        return Executor()(args)
+        return WsExecutor()(args)
 
 
 def main() -> None:
@@ -48,7 +51,7 @@ def main() -> None:
         .add_build_args()
         .add_wait_args()
         .add_common_compose_options()
-        .set_defaults(func=Processor())
+        .set_defaults(func=processor)
     )
 
     # dcp build(b) command
@@ -64,7 +67,7 @@ def main() -> None:
         ArgBuilder(_build)
         .add_service_name_subcmd(multiple=True)
         .add_common_compose_options()
-        .set_defaults(func=Processor())
+        .set_defaults(func=processor)
     )
 
     # dcp exec(e) command
@@ -81,7 +84,7 @@ def main() -> None:
         .add_service_name_subcmd(multiple=False)
         .add_inner_bash_cmd_args()
         .add_common_compose_options()
-        .set_defaults(func=Processor())
+        .set_defaults(func=processor)
     )
 
     # dcp run command
@@ -97,7 +100,7 @@ def main() -> None:
         .add_service_name_subcmd(multiple=False)
         .add_inner_bash_cmd_args()
         .add_common_compose_options()
-        .set_defaults(func=Processor())
+        .set_defaults(func=processor)
     )
 
     # dcp restart(re) command
@@ -113,7 +116,7 @@ def main() -> None:
         ArgBuilder(_restart)
         .add_service_name_subcmd(multiple=True)
         .add_common_compose_options()
-        .set_defaults(func=Processor())
+        .set_defaults(func=processor)
     )
 
     # dcp ps command
@@ -130,7 +133,7 @@ def main() -> None:
         .add_all_args()
         .add_status_args()
         .add_common_compose_options()
-        .set_defaults(func=Processor())
+        .set_defaults(func=processor)
     )
 
     # dcp logs(l) command
@@ -147,7 +150,7 @@ def main() -> None:
         .add_service_name_subcmd(multiple=True)
         .add_follow_args()
         .add_common_compose_options()
-        .set_defaults(func=Processor())
+        .set_defaults(func=processor)
     )
 
     # dcp stop(s) command
@@ -163,7 +166,7 @@ def main() -> None:
         ArgBuilder(_stop)
         .add_service_name_subcmd(multiple=True)
         .add_common_compose_options()
-        .set_defaults(func=Processor())
+        .set_defaults(func=processor)
     )
 
     # dcp down command
@@ -178,7 +181,7 @@ def main() -> None:
         ArgBuilder(_down)
         .add_remove_orphans_args()
         .add_common_compose_options()
-        .set_defaults(func=Processor())
+        .set_defaults(func=processor)
     )
 
     # dcp workspace(ws) command
@@ -222,7 +225,7 @@ def dcpu_main() -> None:
         .add_build_args()
         .add_wait_args()
         .add_common_compose_options()
-        .set_defaults(func=Processor().call_dcpu)
+        .set_defaults(func=processor.call_dcpu)
     )
 
     parser.add_argument(
@@ -250,7 +253,7 @@ def dcpe_main() -> None:
         .add_service_name_subcmd(multiple=False)
         .add_inner_bash_cmd_args()
         .add_common_compose_options()
-        .set_defaults(func=Processor().call_dcpe)
+        .set_defaults(func=processor.call_dcpe)
     )
 
     parser.add_argument(
