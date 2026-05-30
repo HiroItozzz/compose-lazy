@@ -4,9 +4,11 @@ import sys
 from abc import ABC, abstractmethod
 from argparse import Namespace
 from pathlib import Path
-from .utils import AttrDict
+
 import yaml
 from yaml.scanner import ScannerError
+
+from .utils import AttrDict
 
 logger = logging.getLogger(__name__)
 
@@ -115,7 +117,7 @@ class AbstractWsExecutor(ABC):
         self.handler = YamlHandler(CONFIG_PATH, *self.YAML_KEYS)
 
     @abstractmethod
-    def __call__(self, args: Namespace) -> None: ...
+    def __call__(self, args: Namespace) -> int: ...
 
     def _select_workspace_name(self, workspace_dict: dict, allow_add=True) -> str:
         if workspace_dict:
@@ -173,11 +175,14 @@ class WorkspaceRegistrar(AbstractWsExecutor):
                     return self.delete_repo()
                 case "list" | "li":
                     return self.show_list()
+                case _:
+                    # Unreachable branch
+                    return 1
         except KeyboardInterrupt:
             print("\nCancelled.")
-            sys.exit(130)
+            return 130
         except SystemExit:
-            sys.exit(0)
+            return 0
 
     def show_list(self) -> int:
         config = self.handler.config
@@ -283,6 +288,9 @@ class WorkspaceExecutor(AbstractWsExecutor):
                 cmd = ["docker", "compose", "stop"]
             case "down":
                 cmd = ["docker", "compose", "down"]
+            case _:
+                # Unreachable branch
+                return 1
 
         try:
             codes = []
@@ -292,10 +300,11 @@ class WorkspaceExecutor(AbstractWsExecutor):
                 )
                 code = self._execute_command(cmd, workdir)
                 codes.append(code)
-            return next((c for c in codes if c != 0), 0)
         except KeyboardInterrupt:
             print("\nCancelled.")
-            return 130
+            sys.exit(130)
+
+        return next((c for c in codes if c != 0), 0)
 
     def get_target_workspace(self) -> list[str]:
         workspaces: dict = self.handler.config[self._WORKSPACE_KEY]
