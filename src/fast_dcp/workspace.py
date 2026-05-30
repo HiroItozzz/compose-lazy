@@ -190,9 +190,9 @@ class WorkspaceRegistrar(AbstractWsExecutor):
                     return self.delete_repo()
                 case "list" | "li":
                     return self.show_list()
-                case _:
+                case _:  # pragma: no cover
                     # Unreachable branch
-                    return 1
+                    return 1  # pragma: no cover
         except KeyboardInterrupt:
             print("\nCancelled.")
             return 130
@@ -303,9 +303,9 @@ class WorkspaceExecutor(AbstractWsExecutor):
                 cmd = ["docker", "compose", "stop"]
             case "down":
                 cmd = ["docker", "compose", "down"]
-            case _:
+            case _:  # pragma: no cover
                 # Unreachable branch
-                return 1
+                return 1  # pragma: no cover
 
         try:
             codes = []

@@ -61,6 +61,12 @@ class TestYamlHandlerInit:
         assert set(h.config) == set(keys)
         assert isinstance(h.config, AttrDict)
         assert isinstance(h.config.key1, AttrDict)
+        
+    def test_setup_config_KEY_ALREADY_EXISTS(self, tmp_path):
+        config_path = tmp_path / "test"
+        config_path.write_text("workspaces:\n  ws1: []\n", encoding="utf-8")
+        handler = YamlHandler(config_path, "workspaces")
+        assert "workspaces" in handler.config
 
     def test_init_PATH_NOT_EXISTS(self, tmp_path, monkeypatch):
         monkeypatch.chdir(tmp_path)

@@ -18,6 +18,7 @@ temp/
 
 # tests
 .coverage
+*,cover
 *compose*.yml
 *compose*.yaml
 samples

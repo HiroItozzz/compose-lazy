@@ -54,9 +54,9 @@ class DockerCmdProcessor:
                 self._create_stop_cmd()
             case "down":
                 self._create_down_cmd()
-            case _:
+            case _:  # pragma: no cover
                 # Unreachable branch
-                return 1
+                return 1  # pragma: no cover
         return self._execute_command()
 
     def call_dcpu(self, args: Namespace) -> int:

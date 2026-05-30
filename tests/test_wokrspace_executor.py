@@ -39,7 +39,9 @@ class TestRegistrarCall(TestWsBase):
         ],
     )
     def test_call(self, ws_subcmd, expected_method, monkeypatch):
-        monkeypatch.setattr(WorkspaceRegistrar, "register_repo", MagicMock(return_value=0))
+        monkeypatch.setattr(
+            WorkspaceRegistrar, "register_repo", MagicMock(return_value=0)
+        )
         monkeypatch.setattr(WorkspaceRegistrar, "delete_repo", MagicMock(return_value=0))
         monkeypatch.setattr(WorkspaceRegistrar, "show_list", MagicMock(return_value=0))
 
@@ -102,7 +104,9 @@ class TestShowList(TestWsBase):
 
 class TestRegisterRepo(TestWsBase):
     def test_INVALID_PATH(self, capsys, monkeypatch, tmp_path):
-        monkeypatch.setattr("builtins.input", MagicMock(return_value=str(tmp_path / "nonexistent")))
+        monkeypatch.setattr(
+            "builtins.input", MagicMock(return_value=str(tmp_path / "nonexistent"))
+        )
         code = self.registrar.register_repo()
 
         _, err = capsys.readouterr()
@@ -187,7 +191,8 @@ class TestDeleteRepo(TestWsBase):
         self.registrar.delete_repo()
 
         assert "ws1" not in self.registrar.handler.config["workspaces"]
-        
+
+
     def test_DELETE_OUT_OF_RANGE(self, capsys, monkeypatch):
         workspaces = {"ws1": ["/path/to/repo1", "/path/to/repo2"]}
         self.registrar.handler.config = {"workspaces": workspaces}
@@ -232,7 +237,9 @@ class TestExecutorCall(TestWsBase):
         args = Namespace(ws_subcmd=ws_subcmd)
         code = self.executor(args)
 
-        self.executor._execute_command.assert_called_once_with(expected_cmd, "/path/to/repo")
+        self.executor._execute_command.assert_called_once_with(
+            expected_cmd, "/path/to/repo"
+        )
         assert code == 0
 
     def test_call_KEYBOARD_INTERRUPT(self, capsys):
@@ -262,7 +269,9 @@ class TestExecuteCommand(TestWsBase):
         result.returncode = 0
         subprocess.run = MagicMock(return_value=result)
 
-        code = self.executor._execute_command(["docker", "compose", "up", "-d"], "/path/to/repo")
+        code = self.executor._execute_command(
+            ["docker", "compose", "up", "-d"], "/path/to/repo"
+        )
 
         subprocess.run.assert_called_once_with(
             ["docker", "compose", "up", "-d"], cwd="/path/to/repo"
@@ -301,7 +310,9 @@ class TestSelectWorkspaceName(TestWsBase):
     @pytest.mark.parametrize("keys,workspace_dict,allow_add,expected", cases_number)
     def test_number_input(self, keys, workspace_dict, allow_add, expected, monkeypatch):
         monkeypatch.setattr("sys.stdin", __import__("io").StringIO(keys))
-        result = self.registrar._select_workspace_name(workspace_dict, allow_add=allow_add)
+        result = self.registrar._select_workspace_name(
+            workspace_dict, allow_add=allow_add
+        )
         assert result == expected
 
     def test_string_input_allow_add(self, monkeypatch):
