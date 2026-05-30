@@ -7,8 +7,6 @@ from yaml.scanner import ScannerError
 
 from fast_dcp.workspace import (
     AttrDict,
-    WorkspaceExecutor,
-    WorkspaceRegistrar,
     YamlHandler,
 )
 
@@ -36,18 +34,24 @@ class TestAttrDict:
 
 class TestYamlHandlerInit:
     def test_init(self, monkeypatch):
-        monkeypatch.setattr(YamlHandler, "_setup_config", MagicMock())
         monkeypatch.setattr(yaml, "add_representer", MagicMock())
         monkeypatch.setattr(yaml, "add_constructor", MagicMock())
 
         path = Path("path")
-        keys = 1, 2, 3
-        h = YamlHandler(path, *keys)
+        h = YamlHandler(path)
         yaml.add_representer.assert_called_once()
         yaml.add_constructor.assert_called_once()
-        h._setup_config.assert_called_once_with(*keys)
+        assert h.path == path
+        assert h._config is None
 
-    def test_init_PATH_EXISTS(self, tmp_path, monkeypatch):
+    def test_setup_config_PROPERTY(self, tmp_path):
+        config_path = tmp_path / "test"
+        config_path.touch()
+        handler = YamlHandler(config_path)
+        assert handler._config is None
+        assert handler.config == AttrDict()
+
+    def test_setup_config_PATH_EXISTS(self, tmp_path, monkeypatch):
         monkeypatch.chdir(tmp_path)
         config_path = tmp_path / "test"
         config_path.touch()
@@ -55,20 +59,22 @@ class TestYamlHandlerInit:
             YamlHandler, "_read_and_load", MagicMock(return_value=AttrDict())
         )
         keys = "key1", "key2"
-        h = YamlHandler(config_path, *keys)
+        h = YamlHandler(config_path)
+        h.setup_config(*keys)
 
         h._read_and_load.assert_called_once()
         assert set(h.config) == set(keys)
         assert isinstance(h.config, AttrDict)
         assert isinstance(h.config.key1, AttrDict)
-        
+
     def test_setup_config_KEY_ALREADY_EXISTS(self, tmp_path):
         config_path = tmp_path / "test"
         config_path.write_text("workspaces:\n  ws1: []\n", encoding="utf-8")
-        handler = YamlHandler(config_path, "workspaces")
-        assert "workspaces" in handler.config
+        h = YamlHandler(config_path)
+        h.setup_config()
+        assert "workspaces" in h.config
 
-    def test_init_PATH_NOT_EXISTS(self, tmp_path, monkeypatch):
+    def test_setup_config_PATH_NOT_EXISTS(self, tmp_path, monkeypatch):
         monkeypatch.chdir(tmp_path)
         config_path = tmp_path / "test"
         assert not config_path.exists()
@@ -77,7 +83,8 @@ class TestYamlHandlerInit:
             YamlHandler, "_read_and_load", MagicMock(return_value=AttrDict())
         )
         keys = "key1", "key2"
-        h = YamlHandler(config_path, *keys)
+        h = YamlHandler(config_path)
+        h.setup_config(*keys)
 
         assert config_path.exists()
         assert set(h.config) == set(keys)
@@ -91,34 +98,31 @@ class TestYamlHandlerInit:
             ]
         ),
     )
-    def test_init_ERROR(self, error, msg, capsys, tmp_path, monkeypatch):
+    def test_setup_config_ERROR(self, error, msg, capsys, tmp_path, monkeypatch):
         monkeypatch.chdir(tmp_path)
         config_path = tmp_path / "test"
         config_path.touch()
         monkeypatch.setattr(YamlHandler, "_read_and_load", MagicMock(side_effect=error))
         keys = "key1", "key2"
+        h = YamlHandler(config_path)
 
         with pytest.raises(SystemExit):
-            YamlHandler(config_path, *keys)
+            h.setup_config(*keys)
         _, err = capsys.readouterr()
         assert msg in err
 
-    def test_read_and_load(self, tmp_path, monkeypatch):
+    def test_read_and_load(self, tmp_path):
         config_path = tmp_path / "test"
         config_path.write_text("key: value", encoding="utf-8")
-        monkeypatch.setattr(YamlHandler, "__init__", lambda self, *args, **kwargs: None)
-        handler = YamlHandler.__new__(YamlHandler)
-        handler.path = config_path
+        handler = YamlHandler(config_path)
         result = handler._read_and_load()
 
         assert result["key"] == "value"
 
-    def test_dump_and_write(self, tmp_path, monkeypatch):
-        monkeypatch.setattr(YamlHandler, "__init__", lambda self, *args, **kwargs: None)
-        handler = YamlHandler.__new__(YamlHandler)
+    def test_dump_and_write(self, tmp_path):
         config_path = tmp_path / "test"
         config_path.touch()
-        handler.path = config_path
+        handler = YamlHandler(config_path)
         handler._config = AttrDict(key="value")
 
         handler.dump_and_write()
@@ -152,4 +156,3 @@ class TestYamlHandlerAppendValue:
         result = self.handler.append_value("cat1", "cat2", "cat3", "value")
         assert result is True
         assert "value" in self.handler._config["cat1"]["cat2"]["cat3"]
-

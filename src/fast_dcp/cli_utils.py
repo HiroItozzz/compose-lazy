@@ -36,12 +36,13 @@ def interactive_select(
             choices = list(
                 map(
                     lambda i: int(i) - 1,
-                    (i.strip() for i in choices_str.split(",") if i),
+                    (i.strip() for i in choices_str.split(",") if i.strip()),
                 )
             )
-
             if not multiple and len(choices) != 1:
                 raise ValueError
+            if any((i < 0 for i in choices)):
+                raise IndexError
 
             for idx in choices:
                 chosen = choice_list[idx]

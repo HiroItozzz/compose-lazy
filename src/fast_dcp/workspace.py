@@ -31,7 +31,7 @@ class AttrDict(dict):
 
 
 class YamlHandler:
-    def __init__(self, path: Path, *keys: str) -> None:
+    def __init__(self, path: Path) -> None:
         """Initialize basic YAML setting, configuration path, and load YAML.
 
         Set AttrDict should convert from/to dict object in YAML, path to configuration file,
@@ -52,13 +52,16 @@ class YamlHandler:
             Loader=yaml.SafeLoader,
         )
         self.path = path
-        self._config = self._setup_config(*keys)
+        self._config = None
 
     @property
     def config(self) -> AttrDict:
+        if self._config is None:
+            logger.debug("WARNING: YamlHandler is not initialized.")
+            self._config = AttrDict()
         return self._config
 
-    def _setup_config(self, *keys: str) -> AttrDict:
+    def setup_config(self, *keys: str) -> AttrDict:
         """Load configuration or create basic structure in configuration file.
 
         Returns:
@@ -85,7 +88,8 @@ class YamlHandler:
             if key not in config:
                 config[key] = AttrDict()
         logger.debug(f"{config=}")
-        return config
+        
+        self._config = config
 
     def append_value(self, *args: str) -> bool:
         """Append value to the config.
@@ -129,10 +133,15 @@ class AbstractWsExecutor(ABC):
     YAML_KEYS = (_WORKSPACE_KEY,)
 
     def __init__(self) -> None:
-        self.handler = YamlHandler(CONFIG_PATH, *self.YAML_KEYS)
+        self.handler = YamlHandler(CONFIG_PATH)
+
+    def __call__(self, args: Namespace) -> int:
+        self.handler.setup_config(*self.YAML_KEYS)
+        code = self._switch(args)
+        return code
 
     @abstractmethod
-    def __call__(self, args: Namespace) -> int: ...
+    def _switch(args: Namespace) -> int: ...
 
     def _select_workspace_name(self, workspace_dict: dict, allow_add=True) -> str:
         if workspace_dict:
@@ -181,7 +190,7 @@ class AbstractWsExecutor(ABC):
 
 
 class WorkspaceRegistrar(AbstractWsExecutor):
-    def __call__(self, args: Namespace) -> int:
+    def _switch(self, args: Namespace) -> int:
         try:
             match args.ws_subcmd:
                 case "register" | "reg":
@@ -272,6 +281,8 @@ class WorkspaceRegistrar(AbstractWsExecutor):
                     ),
                     reverse=True,
                 )
+                if any((i < 0 for i in choices)):
+                    raise IndexError
                 if max(choices) >= length:
                     raise IndexError
             except (IndexError, ValueError):
@@ -292,7 +303,7 @@ class WorkspaceRegistrar(AbstractWsExecutor):
 
 
 class WorkspaceExecutor(AbstractWsExecutor):
-    def __call__(self, args: Namespace) -> int:
+    def _switch(self, args: Namespace) -> int:
         cmd = []
         match args.ws_subcmd:
             case "up" | "u":
@@ -317,7 +328,7 @@ class WorkspaceExecutor(AbstractWsExecutor):
                 codes.append(code)
         except KeyboardInterrupt:
             print("\nCancelled.")
-            sys.exit(130)
+            return 130
 
         return next((c for c in codes if c != 0), 0)
 

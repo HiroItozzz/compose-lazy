@@ -1,24 +1,20 @@
 import subprocess
 from argparse import Namespace
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
 from fast_dcp.workspace import (
-    AbstractWsExecutor,
     WorkspaceExecutor,
     WorkspaceRegistrar,
+    YamlHandler,
 )
 
 
 class TestWsBase:
     def setup_method(self):
-        with patch.object(AbstractWsExecutor, "__init__", return_value=None):
-            self.registrar = WorkspaceRegistrar.__new__(WorkspaceRegistrar)
-            self.executor = WorkspaceExecutor.__new__(WorkspaceExecutor)
-
-        self.registrar.handler = MagicMock()
-        self.executor.handler = MagicMock()
+        self.registrar = WorkspaceRegistrar()
+        self.executor = WorkspaceExecutor()
 
 
 # ─────────────────────────────────────────────
@@ -27,6 +23,16 @@ class TestWsBase:
 
 
 class TestRegistrarCall(TestWsBase):
+    def test_call(self, monkeypatch):
+        monkeypatch.setattr(YamlHandler, "setup_config", MagicMock())
+        monkeypatch.setattr(WorkspaceRegistrar, "_switch", MagicMock(return_value=0))
+        args = Namespace(subcmd="ws", ws_subcmd="test")
+        code = self.registrar(args)
+
+        getattr(YamlHandler, "setup_config").assert_called_once_with("workspaces")
+        getattr(WorkspaceRegistrar, "_switch").assert_called_once_with(args)
+        assert code == 0
+
     @pytest.mark.parametrize(
         "ws_subcmd,expected_method",
         [
@@ -38,7 +44,7 @@ class TestRegistrarCall(TestWsBase):
             ("li", "show_list"),
         ],
     )
-    def test_call(self, ws_subcmd, expected_method, monkeypatch):
+    def test_switch(self, ws_subcmd, expected_method, monkeypatch):
         monkeypatch.setattr(
             WorkspaceRegistrar, "register_repo", MagicMock(return_value=0)
         )
@@ -46,7 +52,7 @@ class TestRegistrarCall(TestWsBase):
         monkeypatch.setattr(WorkspaceRegistrar, "show_list", MagicMock(return_value=0))
 
         args = Namespace(ws_subcmd=ws_subcmd)
-        self.registrar(args)
+        self.registrar._switch(args)
 
         getattr(WorkspaceRegistrar, expected_method).assert_called_once()
 
@@ -73,7 +79,7 @@ class TestRegistrarCall(TestWsBase):
 
 class TestShowList(TestWsBase):
     def test_NO_WORKSPACES(self, capsys):
-        self.registrar.handler.config = {"workspaces": {}}
+        self.registrar.handler._config = {"workspaces": {}}
         code = self.registrar.show_list()
 
         out, _ = capsys.readouterr()
@@ -81,7 +87,7 @@ class TestShowList(TestWsBase):
         assert code == 1
 
     def test_WITH_WORKSPACES(self, capsys):
-        self.registrar.handler.config = {
+        self.registrar.handler._config = {
             "workspaces": {
                 "ws1": ["/path/to/repo1", "/path/to/repo2"],
             }
@@ -94,7 +100,7 @@ class TestShowList(TestWsBase):
         assert code == 0
 
     def test_EMPTY_WORKSPACE(self, capsys):
-        self.registrar.handler.config = {"workspaces": {"ws1": []}}
+        self.registrar.handler._config = {"workspaces": {"ws1": []}}
         code = self.registrar.show_list()
 
         out, _ = capsys.readouterr()
@@ -114,7 +120,7 @@ class TestRegisterRepo(TestWsBase):
         assert code == 1
 
     def test_VALID_PATH_NEW(self, capsys, monkeypatch, tmp_path):
-        self.registrar.handler.config = {"workspaces": {}}
+        self.registrar.handler._config = {"workspaces": {}}
         self.registrar.handler.append_value = MagicMock(return_value=True)
         self.registrar.handler.dump_and_write = MagicMock()
         monkeypatch.setattr(
@@ -132,7 +138,7 @@ class TestRegisterRepo(TestWsBase):
         assert code == 0
 
     def test_VALID_PATH_DUPLICATE(self, capsys, monkeypatch, tmp_path):
-        self.registrar.handler.config = {"workspaces": {}}
+        self.registrar.handler._config = {"workspaces": {}}
         self.registrar.handler.append_value = MagicMock(return_value=False)
         self.registrar.handler.dump_and_write = MagicMock()
         monkeypatch.setattr(
@@ -152,7 +158,7 @@ class TestRegisterRepo(TestWsBase):
 
 class TestDeleteRepo(TestWsBase):
     def test_NO_WORKSPACES(self, capsys):
-        self.registrar.handler.config = {"workspaces": {}}
+        self.registrar.handler._config = {"workspaces": {}}
         code = self.registrar.delete_repo()
 
         _, err = capsys.readouterr()
@@ -161,7 +167,7 @@ class TestDeleteRepo(TestWsBase):
 
     def test_DELETE(self, capsys, monkeypatch):
         workspaces = {"ws1": ["/path/to/repo1", "/path/to/repo2"]}
-        self.registrar.handler.config = {"workspaces": workspaces}
+        self.registrar.handler._config = {"workspaces": workspaces}
         self.registrar.handler.dump_and_write = MagicMock()
         monkeypatch.setattr(
             WorkspaceRegistrar,
@@ -179,7 +185,7 @@ class TestDeleteRepo(TestWsBase):
 
     def test_DELETE_ALL_REMOVES_WORKSPACE(self, monkeypatch):
         workspaces = {"ws1": ["/path/to/repo1"]}
-        self.registrar.handler.config = {"workspaces": workspaces}
+        self.registrar.handler._config = {"workspaces": workspaces}
         self.registrar.handler.dump_and_write = MagicMock()
         monkeypatch.setattr(
             WorkspaceRegistrar,
@@ -192,17 +198,17 @@ class TestDeleteRepo(TestWsBase):
 
         assert "ws1" not in self.registrar.handler.config["workspaces"]
 
-
-    def test_DELETE_OUT_OF_RANGE(self, capsys, monkeypatch):
+    @pytest.mark.parametrize("commands", [("3", "1"), ("0", "1"), ("-1", "1")])
+    def test_DELETE_OUT_OF_RANGE(self, commands, capsys, monkeypatch):
         workspaces = {"ws1": ["/path/to/repo1", "/path/to/repo2"]}
-        self.registrar.handler.config = {"workspaces": workspaces}
+        self.registrar.handler._config = {"workspaces": workspaces}
         self.registrar.handler.dump_and_write = MagicMock()
         monkeypatch.setattr(
             WorkspaceRegistrar,
             "_select_workspace_name",
             MagicMock(return_value="ws1"),
         )
-        monkeypatch.setattr("builtins.input", MagicMock(side_effect=["3", "1"]))
+        monkeypatch.setattr("builtins.input", MagicMock(side_effect=commands))
 
         self.registrar.delete_repo()
 
@@ -221,6 +227,16 @@ class TestExecutorCall(TestWsBase):
         self.executor.get_target_workspace = MagicMock(return_value=["/path/to/repo"])
         self.executor._execute_command = MagicMock(return_value=0)
 
+    def test_call(self, monkeypatch):
+        monkeypatch.setattr(YamlHandler, "setup_config", MagicMock())
+        monkeypatch.setattr(WorkspaceExecutor, "_switch", MagicMock(return_value=0))
+        args = Namespace(subcmd="ws", ws_subcmd="test")
+        code = self.executor(args)
+
+        getattr(YamlHandler, "setup_config").assert_called_once_with("workspaces")
+        getattr(WorkspaceExecutor, "_switch").assert_called_once_with(args)
+        assert code == 0
+
     @pytest.mark.parametrize(
         "ws_subcmd,expected_cmd",
         [
@@ -233,9 +249,9 @@ class TestExecutorCall(TestWsBase):
             ("down", ["docker", "compose", "down"]),
         ],
     )
-    def test_call(self, ws_subcmd, expected_cmd):
+    def test_switch(self, ws_subcmd, expected_cmd):
         args = Namespace(ws_subcmd=ws_subcmd)
-        code = self.executor(args)
+        code = self.executor._switch(args)
 
         self.executor._execute_command.assert_called_once_with(
             expected_cmd, "/path/to/repo"
@@ -245,12 +261,11 @@ class TestExecutorCall(TestWsBase):
     def test_call_KEYBOARD_INTERRUPT(self, capsys):
         self.executor.get_target_workspace = MagicMock(side_effect=KeyboardInterrupt)
         args = Namespace(ws_subcmd="up")
-        with pytest.raises(SystemExit) as exc_info:
-            self.executor(args)
+        code = self.executor(args)
 
         out, _ = capsys.readouterr()
         assert "\nCancelled." in out
-        assert exc_info.value.code == 130
+        assert code == 130
 
     def test_returns_nonzero_on_failure(self):
         self.executor._execute_command = MagicMock(side_effect=[0, 1, 0])
@@ -282,7 +297,7 @@ class TestExecuteCommand(TestWsBase):
 class TestGetTargetWorkspace(TestWsBase):
     def test_get_target_workspace(self, monkeypatch):
         workspaces = {"ws1": ["/repo1", "/repo2"]}
-        self.executor.handler.config = {"workspaces": workspaces}
+        self.executor.handler._config = {"workspaces": workspaces}
         monkeypatch.setattr(
             WorkspaceExecutor,
             "_select_workspace_name",

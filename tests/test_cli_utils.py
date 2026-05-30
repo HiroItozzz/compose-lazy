@@ -79,7 +79,7 @@ class TestInteraciveSelect:
         assert "☓ Invalid selection. Please use a valid number." in err
         assert result == expected
 
-    @pytest.mark.parametrize("keys", ["3\n1\n", "abc\n1\n"])
+    @pytest.mark.parametrize("keys", ["3\n1\n", "abc\n1\n", "0\n-1\n1\n"])
     def test_interactive_select_VALUE_ERROR(self, keys, capsys, monkeypatch):
         monkeypatch.setattr("sys.stdin", io.StringIO(keys))
         choices = ["choice_1", "choice_2"]
