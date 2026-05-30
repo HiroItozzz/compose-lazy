@@ -1,4 +1,3 @@
-import io
 import subprocess
 from argparse import Namespace
 from unittest.mock import MagicMock, patch
@@ -394,7 +393,7 @@ services:
   app:
   db:
 """
-        services = sorted(["app", "db"])
+        services = {"app", "db"}
 
         monkeypatch.chdir(tmp_path)
         (tmp_path / file_name).write_text(content)
@@ -402,9 +401,7 @@ services:
             "fast_dcp.process.DockerCmdProcessor._get_compose_file_paths"
         ) as mock_paths:
             mock_paths.return_value = [file_name]
-            with patch(
-                "fast_dcp.process.DockerCmdProcessor._interactive_select"
-            ) as mock_select:
+            with patch("fast_dcp.cli_utils.interactive_select") as mock_select:
                 self.processor._get_service_choices()
 
         captured = capsys.readouterr()
@@ -444,9 +441,7 @@ class TestFileChoices(TestDCPBase):
             "fast_dcp.process.DockerCmdProcessor._get_compose_file_paths"
         ) as mock_paths:
             mock_paths.return_value = file_names
-            with patch(
-                "fast_dcp.process.DockerCmdProcessor._interactive_select"
-            ) as mock_select:
+            with patch("fast_dcp.cli_utils.interactive_select") as mock_select:
                 self.processor._get_file_choices()
 
         mock_select.assert_called_once_with(file_names, "-f")
@@ -521,7 +516,7 @@ services:
       - prod
       - dev
 """
-        profiles = sorted(["prod", "dev"])
+        profiles = {"prod", "dev"}
 
         monkeypatch.chdir(tmp_path)
         (tmp_path / file_name).write_text(content)
@@ -529,123 +524,12 @@ services:
             "fast_dcp.process.DockerCmdProcessor._get_compose_file_paths"
         ) as mock_paths:
             mock_paths.return_value = [file_name]
-            with patch(
-                "fast_dcp.process.DockerCmdProcessor._interactive_select"
-            ) as mock_select:
+            with patch("fast_dcp.cli_utils.interactive_select") as mock_select:
                 self.processor._get_profile_choices()
 
         captured = capsys.readouterr()
         assert f"☑ Found {len(profiles)} profiles!" in captured.out
         mock_select.assert_called_once_with(profiles, "--profile")
-
-
-class TestInteraciveSelect(TestDCPBase):
-    cases_f = (
-        ("1\n", "-f", True, ["-f", "choice_1"]),
-        ("2\n", "-f", True, ["-f", "choice_2"]),
-        ("1,2\n", "-f", True, ["-f", "choice_1", "-f", "choice_2"]),
-        (
-            "  1 , 2  \n",
-            "-f",
-            True,
-            ["-f", "choice_1", "-f", "choice_2"],
-        ),
-        ("3\n1\n", "-f", True, ["-f", "choice_1"]),
-    )
-    cases_pf = (
-        ("1\n", "-pf", True, ["-pf", "choice_1"]),
-        ("2\n", "-pf", True, ["-pf", "choice_2"]),
-        ("1,2\n", "-pf", True, ["-pf", "choice_1", "-pf", "choice_2"]),
-        (
-            "  1 , 2  \n",
-            "-pf",
-            True,
-            ["-pf", "choice_1", "-pf", "choice_2"],
-        ),
-        ("3\n1\n", "-pf", True, ["-pf", "choice_1"]),
-    )
-    cases_s = (
-        ("1\n", None, True, ["choice_1"]),
-        ("2\n", None, True, ["choice_2"]),
-        ("1,2\n", None, True, ["choice_1", "choice_2"]),
-        (
-            "  1 , 2  \n",
-            None,
-            True,
-            ["choice_1", "choice_2"],
-        ),
-        ("3\n1\n", None, True, ["choice_1"]),
-    )
-    cases_MULTIPLE_False = (
-        ("1\n", None, False, ["choice_1"]),
-        ("3\n1\n", None, False, ["choice_1"]),
-    )
-
-    @pytest.mark.parametrize(
-        "keys,flag,multiple,expected",
-        [*cases_f, *cases_pf, *cases_s, *cases_MULTIPLE_False],
-    )
-    def test_interactive_select(self, keys, flag, multiple, expected, monkeypatch):
-        monkeypatch.setattr("sys.stdin", io.StringIO(keys))
-        choices = ["choice_1", "choice_2"]
-        result = self.processor._interactive_select(choices, flag, multiple=multiple)
-
-        assert result == expected
-
-    cases_MULTIPLE_False = (
-        ("1\n", None, False, ["choice_1"]),
-        ("3\n1\n", None, False, ["choice_1"]),
-    )
-
-    @pytest.mark.parametrize(
-        "keys,flag,multiple,expected",
-        [("1,2\n2\n", None, False, ["choice_2"])],
-    )
-    def test_MULTIPLE_False_TO_MULTIPLE_ARGS(
-        self, keys, flag, multiple, expected, capsys, monkeypatch
-    ):
-        monkeypatch.setattr("sys.stdin", io.StringIO(keys))
-        choices = ["choice_1", "choice_2"]
-        result = self.processor._interactive_select(choices, flag, multiple=multiple)
-
-        _, err = capsys.readouterr()
-        assert "☓ Invalid selection. Please use a valid number." in err
-        assert result == expected
-
-    @pytest.mark.parametrize("keys", ["3\n1\n", "abc\n1\n"])
-    def test_interactive_select_VALUE_ERROR(self, keys, capsys, monkeypatch):
-        monkeypatch.setattr("sys.stdin", io.StringIO(keys))
-        choices = ["choice_1", "choice_2"]
-        self.processor._interactive_select(choices, "--test")
-
-        _, err = capsys.readouterr()
-        assert "☓ Invalid selection. Please use valid numbers." in err
-
-    def test_interactive_select_KEYBOARD_INTERRUPT(self, capsys, monkeypatch):
-        monkeypatch.setattr("builtins.input", MagicMock(side_effect=KeyboardInterrupt))
-        choices = ["test_1", "test_2"]
-
-        with pytest.raises(KeyboardInterrupt):
-            self.processor._interactive_select("--test", choices)
-
-        captured = capsys.readouterr()
-
-        assert "\nCancelled." in captured.out
-
-    @pytest.mark.parametrize(
-        "values",
-        ["q\n", "Q\n"],
-    )
-    def test_sinteractive_select_QUIT(self, values, capsys, monkeypatch):
-        monkeypatch.setattr("sys.stdin", io.StringIO(values))
-        choices = ["test_1", "test_2"]
-
-        with pytest.raises(SystemExit):
-            self.processor._interactive_select("--test", choices)
-
-        captured = capsys.readouterr()
-
-        assert "\nCancelled." in captured.out
 
 
 def test_get_compose_file_paths(tmp_path, monkeypatch):

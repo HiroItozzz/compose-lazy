@@ -151,37 +151,6 @@ class TestMain:
         ("dcp down -pf dev", "docker compose --profile dev down"),
         ("dcp down --profile dev", "docker compose --profile dev down"),
     )
-    testcases_DCPU_SINGLE_OPTION = (
-        ("dcpu", "docker compose up"),
-        ("dcpu test_service", "docker compose up test_service"),
-        ("dcpu test1 test2", "docker compose up test1 test2"),
-        ("dcpu -b", "docker compose up --build"),
-        ("dcpu --build", "docker compose up --build"),
-        ("dcpu -d", "docker compose up -d"),
-        ("dcpu --detach", "docker compose up -d"),
-        ("dcpu -w", "docker compose up --wait"),
-        ("dcpu --wait", "docker compose up --wait"),
-        ("dcpu -p test", "docker compose -p test up"),
-        ("dcpu --project test", "docker compose -p test up"),
-        ("dcpu -f test.yaml", "docker compose -f test.yaml up"),
-        ("dcpu --file test.yaml", "docker compose -f test.yaml up"),
-        ("dcpu -f test1.yaml test2.yaml", "docker compose -f test1.yaml -f test2.yaml up"),
-        ("dcpu --file test1.yaml test2.yaml", "docker compose -f test1.yaml -f test2.yaml up"),
-        ("dcpu -pf dev", "docker compose --profile dev up"),
-        ("dcpu --profile dev", "docker compose --profile dev up"),
-    )
-    testcases_DCPE_SINGLE_OPTION = (
-        ("dcpe service", "docker compose exec service bash"),
-        ("dcpe service -f test.yaml", "docker compose -f test.yaml exec service bash"),
-        ("dcpe service uv run pytest", "docker compose exec service uv run pytest"),
-        ("dcpe service -f test.yaml", "docker compose -f test.yaml exec service bash"),
-        ("dcpe service uv run pytest -f test.yaml", "docker compose -f test.yaml exec service uv run pytest"),
-        ("dcpe service -p testproject", "docker compose -p testproject exec service bash"),
-        ("dcpe service uv run pytest -p testproject", "docker compose -p testproject exec service uv run pytest"),
-        ("dcpe service -pf dev", "docker compose --profile dev exec service bash"),
-        ("dcpe service -pf dev prod", "docker compose --profile dev --profile prod exec service bash"),
-    )
-
     # @fmt:on
 
     @pytest.mark.parametrize("input_cmd,expected_cmd", [
@@ -251,6 +220,74 @@ class TestMain:
             with patch("sys.argv", input_cmd.split()):
                 with pytest.raises(SystemExit) as exc_info:
                     main()
+                mock_run.assert_called_once_with(expected_cmd.split())
+                assert exc_info.value.code == 0
+
+    # fmt:off
+    testcases_DCPU_SINGLE_OPTION = (
+        ("dcpu", "docker compose up"),
+        ("dcpu test_service", "docker compose up test_service"),
+        ("dcpu test1 test2", "docker compose up test1 test2"),
+        ("dcpu -b", "docker compose up --build"),
+        ("dcpu --build", "docker compose up --build"),
+        ("dcpu -d", "docker compose up -d"),
+        ("dcpu --detach", "docker compose up -d"),
+        ("dcpu -w", "docker compose up --wait"),
+        ("dcpu --wait", "docker compose up --wait"),
+        ("dcpu -p test", "docker compose -p test up"),
+        ("dcpu --project test", "docker compose -p test up"),
+        ("dcpu -f test.yaml", "docker compose -f test.yaml up"),
+        ("dcpu --file test.yaml", "docker compose -f test.yaml up"),
+        ("dcpu -f test1.yaml test2.yaml", "docker compose -f test1.yaml -f test2.yaml up"),
+        ("dcpu --file test1.yaml test2.yaml", "docker compose -f test1.yaml -f test2.yaml up"),
+        ("dcpu -pf dev", "docker compose --profile dev up"),
+        ("dcpu --profile dev", "docker compose --profile dev up"),
+    )
+    # @fmt:on
+    @pytest.mark.parametrize(
+        "input_cmd,expected_cmd",
+        [
+            *testcases_DCPU_SINGLE_OPTION,
+        ],
+    )
+    def test_run_dcpu(self, input_cmd, expected_cmd, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        (tmp_path / "compose.test.yml").write_text("services:\n  service:")
+        with patch("fast_dcp.process.subprocess.run") as mock_run:
+            mock_run.return_value = MagicMock(returncode=0)
+            with patch("sys.argv", input_cmd.split()):
+                with pytest.raises(SystemExit) as exc_info:
+                    dcpu_main()
+                mock_run.assert_called_once_with(expected_cmd.split())
+                assert exc_info.value.code == 0
+
+    # fmt:off
+    testcases_DCPE_SINGLE_OPTION = (
+        ("dcpe service", "docker compose exec service bash"),
+        ("dcpe service -f test.yaml", "docker compose -f test.yaml exec service bash"),
+        ("dcpe service uv run pytest", "docker compose exec service uv run pytest"),
+        ("dcpe service -f test.yaml", "docker compose -f test.yaml exec service bash"),
+        ("dcpe service uv run pytest -f test.yaml", "docker compose -f test.yaml exec service uv run pytest"),
+        ("dcpe service -p testproject", "docker compose -p testproject exec service bash"),
+        ("dcpe service uv run pytest -p testproject", "docker compose -p testproject exec service uv run pytest"),
+        ("dcpe service -pf dev", "docker compose --profile dev exec service bash"),
+        ("dcpe service -pf dev prod", "docker compose --profile dev --profile prod exec service bash"),
+    )
+    # @fmt:on
+    @pytest.mark.parametrize(
+        "input_cmd,expected_cmd",
+        [
+            *testcases_DCPE_SINGLE_OPTION,
+        ],
+    )
+    def test_run_dcpe(self, input_cmd, expected_cmd, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        (tmp_path / "compose.test.yml").write_text("services:\n  service:")
+        with patch("fast_dcp.process.subprocess.run") as mock_run:
+            mock_run.return_value = MagicMock(returncode=0)
+            with patch("sys.argv", input_cmd.split()):
+                with pytest.raises(SystemExit) as exc_info:
+                    dcpe_main()
                 mock_run.assert_called_once_with(expected_cmd.split())
                 assert exc_info.value.code == 0
 
@@ -346,6 +383,58 @@ class TestMain:
                 assert "\n☑ Found " in std
 
     @pytest.mark.parametrize(
+        "input_cmd,expected_ws_subcmd",
+        [
+            ("dcp ws up", "up"),
+            ("dcp ws u", "u"),
+            ("dcp ws restart", "restart"),
+            ("dcp ws re", "re"),
+            ("dcp ws stop", "stop"),
+            ("dcp ws s", "s"),
+            ("dcp ws down", "down"),
+            ("dcp workspace up", "up"),
+            ("dcp workspace u", "u"),
+            ("dcp workspace restart", "restart"),
+            ("dcp workspace down", "down"),
+        ],
+    )
+    def test_run_dcp_WS_EXECUTOR(self, input_cmd, expected_ws_subcmd):
+        with patch("fast_dcp.main.executor") as mock_executor:
+            mock_executor.return_value = 0
+            with patch("sys.argv", input_cmd.split()):
+                with pytest.raises(SystemExit) as exc_info:
+                    main()
+            mock_executor.assert_called_once()
+            args = mock_executor.call_args[0][0]
+            assert args.ws_subcmd == expected_ws_subcmd
+            assert exc_info.value.code == 0
+
+    @pytest.mark.parametrize(
+        "input_cmd,expected_ws_subcmd",
+        [
+            ("dcp ws register", "register"),
+            ("dcp ws reg", "reg"),
+            ("dcp ws delete", "delete"),
+            ("dcp ws del", "del"),
+            ("dcp ws list", "list"),
+            ("dcp ws li", "li"),
+            ("dcp workspace register", "register"),
+            ("dcp workspace delete", "delete"),
+            ("dcp workspace list", "list"),
+        ],
+    )
+    def test_run_dcp_WS_REGISTRAR(self, input_cmd, expected_ws_subcmd):
+        with patch("fast_dcp.main.registrar") as mock_registrar:
+            mock_registrar.return_value = 0
+            with patch("sys.argv", input_cmd.split()):
+                with pytest.raises(SystemExit) as exc_info:
+                    main()
+            mock_registrar.assert_called_once()
+            args = mock_registrar.call_args[0][0]
+            assert args.ws_subcmd == expected_ws_subcmd
+            assert exc_info.value.code == 0
+
+    @pytest.mark.parametrize(
         "input_cmd",
         [
             "dcp ps --status",
@@ -371,38 +460,14 @@ class TestMain:
                 mock_help.assert_called_once_with()
                 assert exc_info.value.code == 0
 
-    @pytest.mark.parametrize(
-        "input_cmd,expected_cmd",
-        [
-            *testcases_DCPU_SINGLE_OPTION,
-        ],
-    )
-    def test_run_dcpu(self, input_cmd, expected_cmd, tmp_path, monkeypatch):
-        monkeypatch.chdir(tmp_path)
-        (tmp_path / "compose.test.yml").write_text("services:\n  service:")
-        with patch("fast_dcp.process.subprocess.run") as mock_run:
-            mock_run.return_value = MagicMock(returncode=0)
+    @pytest.mark.parametrize("input_cmd", ["dcp ws"])
+    def test_run_dcp_SUBCMD_WS_AND_WS_SUBCMD_IS_NONE(self, input_cmd):
+        with patch("fast_dcp.main.ArgumentParser.print_help") as mock_help:
+            mock_help.return_value = MagicMock()
             with patch("sys.argv", input_cmd.split()):
                 with pytest.raises(SystemExit) as exc_info:
-                    dcpu_main()
-                mock_run.assert_called_once_with(expected_cmd.split())
-                assert exc_info.value.code == 0
-
-    @pytest.mark.parametrize(
-        "input_cmd,expected_cmd",
-        [
-            *testcases_DCPE_SINGLE_OPTION,
-        ],
-    )
-    def test_run_dcpe(self, input_cmd, expected_cmd, tmp_path, monkeypatch):
-        monkeypatch.chdir(tmp_path)
-        (tmp_path / "compose.test.yml").write_text("services:\n  service:")
-        with patch("fast_dcp.process.subprocess.run") as mock_run:
-            mock_run.return_value = MagicMock(returncode=0)
-            with patch("sys.argv", input_cmd.split()):
-                with pytest.raises(SystemExit) as exc_info:
-                    dcpe_main()
-                mock_run.assert_called_once_with(expected_cmd.split())
+                    main()
+                mock_help.assert_called_once_with()
                 assert exc_info.value.code == 0
 
     @pytest.mark.parametrize(
