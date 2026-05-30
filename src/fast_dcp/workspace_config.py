@@ -180,41 +180,42 @@ class AbstractWsExecutor(ABC):
         return target_workspace_name
 
 
-class WsRegistrar(AbstractWsExecutor):
-    def __call__(self, args: Namespace) -> None:
-
+class WorkspaceRegistrar(AbstractWsExecutor):
+    def __call__(self, args: Namespace) -> int:
         try:
-            if args.register:
-                return self.register_repo()
-            if args.delete:
-                return self.delete_repo()
-            if args.list:
-                return self.show_list()
+            match args.ws_subcmd:
+                case "register" | "reg":
+                    return self.register_repo()
+                case "delete" | "del":
+                    return self.delete_repo()
+                case "list" | "li":
+                    return self.show_list()
         except KeyboardInterrupt:
             print("\nCancelled.")
             sys.exit(130)
         except SystemExit:
             sys.exit(0)
 
-    def show_list(self) -> None:
+    def show_list(self) -> int:
         config = self.handler.config
         if not (workspaces := config[self._WORKSPACE_KEY]):
             print("☓ No workspaces registered yet.")
-            return
+            return 1
         for key in workspaces:
             print(f"========={key}=========")
             if not workspaces[key]:
                 print("☓ No repos registered yet.")
             for value in workspaces[key]:
                 print(f"- {value}")
+        return 0
 
-    def register_repo(self) -> None:
+    def register_repo(self) -> int:
         # User input
         new_repo = Path(input("Please enter a new directory path: ")).resolve()
 
         if not new_repo.is_dir():
             print(f"❌ The path doesn't exists: {str(new_repo)}", file=sys.stderr)
-            raise SystemExit
+            return 1
 
         workspace_dict = self.handler.config[self._WORKSPACE_KEY]
         # User input
@@ -231,13 +232,14 @@ class WsRegistrar(AbstractWsExecutor):
                 file=sys.stderr,
             )
         print("💡 Hint: To get workspace lists, run `dcp ws -li/--list`.")
+        return 0
 
-    def delete_repo(self) -> None:
+    def delete_repo(self) -> int:
         config = self.handler.config
         workspace_dict = config[self._WORKSPACE_KEY]
         if not workspace_dict:
             print("☓ No workspaces registered yet.", file=sys.stderr)
-            raise SystemExit
+            return 1
 
         # User input
         target_workspace_name = self._select_workspace_name(
@@ -283,16 +285,33 @@ class WsRegistrar(AbstractWsExecutor):
             del workspace_dict[target_workspace_name]
 
         self.handler.dump_and_write()
+        return 0
 
 
-class WsExecutor(AbstractWsExecutor):
-    def __call__(self, args: Namespace) -> None:
-        cmd = ["docker", "compose", "up", "-d"]
-        for workdir in self.get_target_workspace():
-            logger.debug(
-                f"\n---------workdir---------\n{workdir}\n----output docker cmd---- \n{cmd}"
-            )
-            self._execute_command(cmd, workdir)
+class WorkspaceExecutor(AbstractWsExecutor):
+    def __call__(self, args: Namespace) -> int:
+        cmd = []
+        match args.ws_subcmd:
+            case "up" | "u":
+                cmd = ["docker", "compose", "up", "-d"]
+            case "restart" | "re":
+                cmd = ["docker", "compose", "restart"]
+            case "stop" | "s":
+                cmd = ["docker", "compose", "stop"]
+            case "down":
+                cmd = ["docker", "compose", "down"]
+
+        try:
+            codes = []
+            for workdir in self.get_target_workspace():
+                logger.debug(
+                    f"\n---------workdir---------\n{workdir}\n----output docker cmd---- \n{cmd}"
+                )
+                code = self._execute_command(cmd, workdir)
+                codes.append(code)
+            return next((c for c in codes if c != 0), 0)
+        except KeyboardInterrupt:
+            return 130
 
     def get_target_workspace(self) -> list[str]:
         workspaces: dict = self.handler.config[self._WORKSPACE_KEY]
@@ -301,8 +320,5 @@ class WsExecutor(AbstractWsExecutor):
 
     def _execute_command(self, cmd: list[str], workdir: str) -> int:
         print(f"▷ Executing `{' '.join(cmd)}` in `{workdir}`.")
-        try:
-            result = subprocess.run(cmd, cwd=workdir)
-            return result.returncode
-        except KeyboardInterrupt:
-            return 130
+        result = subprocess.run(cmd, cwd=workdir)
+        return result.returncode

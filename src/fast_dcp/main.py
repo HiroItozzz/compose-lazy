@@ -1,11 +1,12 @@
 import logging
-from argparse import ArgumentParser, Namespace
+import sys
+from argparse import ArgumentParser
 from importlib.metadata import version
 
 from . import config
 from .args import ArgBuilder
 from .process import DockerCmdProcessor
-from .workspace_config import WsExecutor, WsRegistrar
+from .workspace_config import WorkspaceExecutor, WorkspaceRegistrar
 
 VERSION = version("fast_dcp")
 
@@ -13,13 +14,8 @@ logger = logging.getLogger(__name__)
 
 
 processor = DockerCmdProcessor()
-
-
-def switch_ws_cmd(args: Namespace) -> None:
-    if any((args.register, args.list, args.delete)):
-        return WsRegistrar()(args)
-    else:
-        return WsExecutor()(args)
+registrar = WorkspaceRegistrar()
+executor = WorkspaceExecutor()
 
 
 def main() -> None:
@@ -33,10 +29,10 @@ def main() -> None:
     )
     base_parser.add_argument("--version", action="version", version=f"fast-dcp {VERSION}")
 
-    subparsers = base_parser.add_subparsers(dest="subcmd")
+    root_subparsers = base_parser.add_subparsers(dest="subcmd")
 
     # dcp up(u) command
-    _up = subparsers.add_parser(
+    _up = root_subparsers.add_parser(
         "up",
         aliases=["u"],
         allow_abbrev=False,
@@ -55,7 +51,7 @@ def main() -> None:
     )
 
     # dcp build(b) command
-    _build = subparsers.add_parser(
+    _build = root_subparsers.add_parser(
         "build",
         aliases=["b"],
         allow_abbrev=False,
@@ -71,7 +67,7 @@ def main() -> None:
     )
 
     # dcp exec(e) command
-    _exec = subparsers.add_parser(
+    _exec = root_subparsers.add_parser(
         "exec",
         aliases=["e"],
         allow_abbrev=False,
@@ -88,7 +84,7 @@ def main() -> None:
     )
 
     # dcp run command
-    _run = subparsers.add_parser(
+    _run = root_subparsers.add_parser(
         "run",
         allow_abbrev=False,
         usage="dcp run <SERVICE_NAME> [BASH|commands]",
@@ -104,7 +100,7 @@ def main() -> None:
     )
 
     # dcp restart(re) command
-    _restart = subparsers.add_parser(
+    _restart = root_subparsers.add_parser(
         "restart",
         aliases=["re"],
         allow_abbrev=False,
@@ -120,7 +116,7 @@ def main() -> None:
     )
 
     # dcp ps command
-    _ps = subparsers.add_parser(
+    _ps = root_subparsers.add_parser(
         "ps",
         allow_abbrev=False,
         usage="dcp ps [SERVICE_NAME ...] [-a] [-st STATUS]",
@@ -137,7 +133,7 @@ def main() -> None:
     )
 
     # dcp logs(l) command
-    _logs = subparsers.add_parser(
+    _logs = root_subparsers.add_parser(
         "logs",
         aliases=["l"],
         allow_abbrev=False,
@@ -154,7 +150,7 @@ def main() -> None:
     )
 
     # dcp stop(s) command
-    _stop = subparsers.add_parser(
+    _stop = root_subparsers.add_parser(
         "stop",
         aliases=["s"],
         allow_abbrev=False,
@@ -170,7 +166,7 @@ def main() -> None:
     )
 
     # dcp down command
-    _down = subparsers.add_parser(
+    _down = root_subparsers.add_parser(
         "down",
         allow_abbrev=False,
         usage="dcp down [-f FILE_NAME ...] [-p PROJECT_NAME] [-ro]",
@@ -185,26 +181,95 @@ def main() -> None:
     )
 
     # dcp workspace(ws) command
-    _workspace = subparsers.add_parser(
+    _workspace = root_subparsers.add_parser(
         "workspace",
         aliases=["ws"],
         allow_abbrev=False,
-        usage="",
-        description="Compose up of all yaml files in a registered workspace.",
-        help="",
+        usage="dcp workspace(ws) [SUBCOMMAND] [options]",
+        description="Operate all repos in a user-defined workspace (a named group of repositories).",
+        help="Original command, operate multiple repos at once. See also `dcp ws -h`.",
     )
-    group = _workspace.add_mutually_exclusive_group()
-    group.add_argument("-reg", "--register", action="store_true", help="")
-    group.add_argument("-del", "--delete", action="store_true", help="")
-    group.add_argument("-li", "--list", action="store_true", help="")
-    _workspace.set_defaults(func=switch_ws_cmd)
+    ws_subparsers = _workspace.add_subparsers(dest="ws_subcmd")
+
+    # dcp ws register command
+    ws_subparsers.add_parser(
+        "register",
+        aliases=["reg"],
+        allow_abbrev=False,
+        usage="dcp ws register(reg)",
+        description="Register a new repository to a workspace interactively. A workspace is a user-defined named group of repositories.",
+        help="Register a new repo to a workspace.",
+    ).set_defaults(func=registrar)
+
+    # dcp ws delete command
+    ws_subparsers.add_parser(
+        "delete",
+        aliases=["del"],
+        allow_abbrev=False,
+        usage="dcp ws delete(del)",
+        description="Delete a repository from a workspace interactively.",
+        help="Delete a repo from a workspace.",
+    ).set_defaults(func=registrar)
+
+    # dcp ws list command
+    ws_subparsers.add_parser(
+        "list",
+        aliases=["li"],
+        allow_abbrev=False,
+        usage="dcp ws list(li)",
+        description="Show all registered workspaces and their repositories.",
+        help="List all registered workspaces.",
+    ).set_defaults(func=registrar)
+
+    # dcp ws up command
+    ws_subparsers.add_parser(
+        "up",
+        aliases=["u"],
+        allow_abbrev=False,
+        usage="dcp ws up(u)",
+        description="Run `docker compose up` for all repos in a selected workspace.",
+        help="docker compose `up` for each repo.",
+    ).set_defaults(func=executor)
+
+    # dcp ws restart command
+    ws_subparsers.add_parser(
+        "restart",
+        aliases=["re"],
+        allow_abbrev=False,
+        usage="dcp ws restart(re)",
+        description="Run `docker compose restart` for all repos in a selected workspace.",
+        help="docker compose `restart` for each repo.",
+    ).set_defaults(func=executor)
+
+    # dcp ws stop command
+    ws_subparsers.add_parser(
+        "stop",
+        aliases=["s"],
+        allow_abbrev=False,
+        usage="dcp ws stop(s)",
+        description="Run `docker compose stop` for all repos in a selected workspace.",
+        help="docker compose `stop` for each repo.",
+    ).set_defaults(func=executor)
+
+    # dcp ws down command
+    ws_subparsers.add_parser(
+        "down",
+        allow_abbrev=False,
+        usage="dcp ws down",
+        description="Run `docker compose down` for all repos in a selected workspace.",
+        help="docker compose `down` for each repo.",
+    ).set_defaults(func=executor)
 
     args = base_parser.parse_args()
     if args.subcmd is None:
         base_parser.print_help()
-        exit(0)
+        sys.exit(0)
+    if args.subcmd in ("workspace", "ws") and args.ws_subcmd is None:
+        _workspace.print_help()
+        sys.exit(0)
+
     code = args.func(args)
-    exit(code)
+    sys.exit(code)
 
 
 def dcpu_main() -> None:
@@ -234,7 +299,7 @@ def dcpu_main() -> None:
 
     args = parser.parse_args()
     code = args.func(args)
-    exit(code)
+    sys.exit(code)
 
 
 def dcpe_main() -> None:
@@ -262,4 +327,4 @@ def dcpe_main() -> None:
 
     args = parser.parse_args()
     code = args.func(args)
-    exit(code)
+    sys.exit(code)
