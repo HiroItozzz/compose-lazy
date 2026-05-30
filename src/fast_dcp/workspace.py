@@ -14,8 +14,8 @@ CONFIG_PATH = Path.home() / ".config" / "fast-dcp"
 
 
 class AttrDict(dict):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
     def __getattr__(self, key):
         try:
@@ -48,7 +48,7 @@ class YamlHandler:
         )
         yaml.add_constructor(
             "tag:yaml.org,2002:map",
-            lambda loader, node: AttrDict(**loader.construct_mapping(node, deep=True)),
+            lambda loader, node: AttrDict(loader.construct_mapping(node, deep=True)),
             Loader=yaml.SafeLoader,
         )
         self.path = path
@@ -88,7 +88,7 @@ class YamlHandler:
             if key not in config:
                 config[key] = AttrDict()
         logger.debug(f"{config=}")
-        
+
         self._config = config
 
     def append_value(self, *args: str) -> bool:
