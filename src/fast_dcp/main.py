@@ -6,7 +6,7 @@ from importlib.metadata import version
 from . import config
 from .args import ArgBuilder
 from .process import DockerCmdProcessor
-from .workspace_config import WorkspaceExecutor, WorkspaceRegistrar
+from .workspace import WorkspaceExecutor, WorkspaceRegistrar
 
 VERSION = version("fast_dcp")
 

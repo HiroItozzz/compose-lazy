@@ -9,7 +9,7 @@ from typing import Callable
 
 import yaml
 
-from . import utils
+from . import cli_utils
 
 logger = logging.getLogger(__name__)
 
@@ -202,7 +202,7 @@ class DockerCmdProcessor:
         # Interactive session: select number(s) to get file args or press "Q" to quit.
         print(f"\n☑ Found {len(services)} services!")
 
-        return utils.interactive_select(services, multiple=multiple)
+        return cli_utils.interactive_select(services, multiple=multiple)
 
     # File option
     def _create_file_option(self) -> list[str]:
@@ -242,7 +242,7 @@ class DockerCmdProcessor:
 
         print(f"\n☑ Found {file_count} docker-compose files!")
 
-        return utils.interactive_select(file_paths, "-f")
+        return cli_utils.interactive_select(file_paths, "-f")
 
     # Profile option
     def _create_profile_option(self) -> list[str]:
@@ -285,7 +285,7 @@ class DockerCmdProcessor:
         # Interactive session: select number(s) to get file args or press "Q" to quit.
         print(f"\n☑ Found {len(profiles)} profiles!")
 
-        return utils.interactive_select(profiles, "--profile")
+        return cli_utils.interactive_select(profiles, "--profile")
 
     def _adjust_service_name(self) -> None:
         """Move service_name to inner_bash_cmd if it doesn't match any declared service.

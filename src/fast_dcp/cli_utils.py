@@ -5,23 +5,6 @@ from typing import Iterable
 logger = logging.getLogger(__name__)
 
 
-class AttrDict(dict):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
-    def __getattr__(self, key):
-        try:
-            return self[key]
-        except KeyError:
-            raise AttributeError(key)
-
-    def __setattr__(self, key, value):
-        self[key] = value
-
-    def __dir__(self):
-        return self.keys()
-
-
 def interactive_select(
     choice_list: Iterable[str], flag: str | None = None, multiple: bool = True
 ) -> list[str]:

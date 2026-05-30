@@ -401,7 +401,7 @@ services:
             "fast_dcp.process.DockerCmdProcessor._get_compose_file_paths"
         ) as mock_paths:
             mock_paths.return_value = [file_name]
-            with patch("fast_dcp.utils.interactive_select") as mock_select:
+            with patch("fast_dcp.cli_utils.interactive_select") as mock_select:
                 self.processor._get_service_choices()
 
         captured = capsys.readouterr()
@@ -441,7 +441,7 @@ class TestFileChoices(TestDCPBase):
             "fast_dcp.process.DockerCmdProcessor._get_compose_file_paths"
         ) as mock_paths:
             mock_paths.return_value = file_names
-            with patch("fast_dcp.utils.interactive_select") as mock_select:
+            with patch("fast_dcp.cli_utils.interactive_select") as mock_select:
                 self.processor._get_file_choices()
 
         mock_select.assert_called_once_with(file_names, "-f")
@@ -524,7 +524,7 @@ services:
             "fast_dcp.process.DockerCmdProcessor._get_compose_file_paths"
         ) as mock_paths:
             mock_paths.return_value = [file_name]
-            with patch("fast_dcp.utils.interactive_select") as mock_select:
+            with patch("fast_dcp.cli_utils.interactive_select") as mock_select:
                 self.processor._get_profile_choices()
 
         captured = capsys.readouterr()

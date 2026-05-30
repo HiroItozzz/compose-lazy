@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from fast_dcp import utils
+from fast_dcp import cli_utils
 
 
 class TestInteraciveSelect:
@@ -55,7 +55,7 @@ class TestInteraciveSelect:
     def test_interactive_select(self, keys, flag, multiple, expected, monkeypatch):
         monkeypatch.setattr("sys.stdin", io.StringIO(keys))
         choices = ["choice_1", "choice_2"]
-        result = utils.interactive_select(choices, flag, multiple=multiple)
+        result = cli_utils.interactive_select(choices, flag, multiple=multiple)
 
         assert result == expected
 
@@ -73,7 +73,7 @@ class TestInteraciveSelect:
     ):
         monkeypatch.setattr("sys.stdin", io.StringIO(keys))
         choices = ["choice_1", "choice_2"]
-        result = utils.interactive_select(choices, flag, multiple=multiple)
+        result = cli_utils.interactive_select(choices, flag, multiple=multiple)
 
         _, err = capsys.readouterr()
         assert "☓ Invalid selection. Please use a valid number." in err
@@ -83,7 +83,7 @@ class TestInteraciveSelect:
     def test_interactive_select_VALUE_ERROR(self, keys, capsys, monkeypatch):
         monkeypatch.setattr("sys.stdin", io.StringIO(keys))
         choices = ["choice_1", "choice_2"]
-        utils.interactive_select(choices, "--test")
+        cli_utils.interactive_select(choices, "--test")
 
         _, err = capsys.readouterr()
         assert "☓ Invalid selection. Please use valid numbers." in err
@@ -93,7 +93,7 @@ class TestInteraciveSelect:
         choices = ["test_1", "test_2"]
 
         with pytest.raises(KeyboardInterrupt):
-            utils.interactive_select(choices, "--test")
+            cli_utils.interactive_select(choices, "--test")
 
         captured = capsys.readouterr()
 
@@ -108,7 +108,7 @@ class TestInteraciveSelect:
         choices = ["test_1", "test_2"]
 
         with pytest.raises(SystemExit):
-            utils.interactive_select(choices, "--test")
+            cli_utils.interactive_select(choices, "--test")
 
         captured = capsys.readouterr()
 
