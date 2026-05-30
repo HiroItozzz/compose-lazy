@@ -1,9 +1,9 @@
 import logging
 import subprocess
 import sys
+from abc import ABC, abstractmethod
 from argparse import Namespace
 from pathlib import Path
-from typing import override
 
 import yaml
 from yaml.scanner import ScannerError
@@ -31,9 +31,16 @@ class AttrDict(dict):
 
 
 class YamlHandler:
-    def __init__(self, path: Path):
-        self.path = path
-        self._config = AttrDict()
+    def __init__(self, path: Path, *keys: str) -> None:
+        """Initialize basic YAML setting, configuration path, and load YAML.
+
+        Set AttrDict should convert from/to dict object in YAML, path to configuration file,
+        and load configuration or create basic structure in configuration file.
+
+        Args:
+            path (Path): Path to the configuration file.
+            keys (str): Top level keys to be initialized in configuration file.
+        """
         yaml.add_representer(
             AttrDict,
             lambda dumper, data: dumper.represent_dict(data),
@@ -44,19 +51,27 @@ class YamlHandler:
             lambda loader, node: AttrDict(**loader.construct_mapping(node, deep=True)),
             Loader=yaml.SafeLoader,
         )
+        self.path = path
+        self._config = self._setup_config(*keys)
 
     @property
     def config(self) -> AttrDict:
         return self._config
 
-    def setup_config(self, *keys) -> None:
+    def _setup_config(self, *keys: str) -> AttrDict:
+        """Load configuration or create basic structure in configuration file.
+
+        Returns:
+            AttrDict: Loaded YAML configuration.
+        """
         try:
             if self.path.exists():
-                self._config = self._read_and_load()
+                config = self._read_and_load()
             else:
                 # Make parent directories.
                 self.path.parent.mkdir(parents=True, exist_ok=True)
                 self.path.touch()
+                config = AttrDict()
         # For developpers
         except ScannerError:
             print(f"❌ Couldn't load yaml: {self.path}", file=sys.stderr)
@@ -67,38 +82,38 @@ class YamlHandler:
 
         # Setup basic data structure
         for key in keys:
-            if key not in self._config:
-                self._config[key] = AttrDict()
-        logger.debug(f"{self._config=}")
+            if key not in config:
+                config[key] = AttrDict()
+        logger.debug(f"{config=}")
+        return config
 
-    def append_subcategory(self, category: str, **subcategory: str) -> int:
-        """Append values to the config under the given category.
+    def append_value(self, *args: str) -> bool:
+        """Append value to the config.
 
-        Assumed Structure:
-        category_1:
-          subcategory_1:
-            - value_1
-            - value_2
-          subcategory_2:
-            - value_3
-
+        For example, if `append_elements("cat1", "cat2", "cat3", "value")` executed,
+        configuration dict or YAML got structure like bellow:
+        ```
+        cat1:
+          cat2:
+            cat3:
+              - value
+        ```
         """
-        if not self._config.get(category):
-            self._config[category] = AttrDict()
+        *keys, value = args
+        current = self._config
+        for key in keys[:-1]:
+            if not current.get(key):
+                current[key] = AttrDict()
+            current = current[key]
+        last_key = keys[-1]
+        if not current.get(last_key):
+            current[last_key] = []
 
-        target = self._config[category]
-        cnt = 0
-        for key, value in subcategory.items():
-            if key not in target:
-                target[key] = []
-            if value in target[key]:
-                print(f"Oops, `{value}` is already in `{key}`.", file=sys.stderr)
-                continue
-            target[key].append(value)
-            target[key].sort()
-            cnt += 1
-
-        return cnt
+        if value in current[last_key]:
+            return False
+        current[last_key].append(value)
+        current[last_key].sort()
+        return True
 
     def _read_and_load(self) -> AttrDict:
         return yaml.safe_load(self.path.read_text(encoding="utf-8")) or AttrDict()
@@ -109,15 +124,64 @@ class YamlHandler:
         )
 
 
-class Registrar:
+class AbstractWsExecutor(ABC):
     _WORKSPACE_KEY = "workspaces"
     YAML_KEYS = (_WORKSPACE_KEY,)
 
     def __init__(self) -> None:
-        self.handler = YamlHandler(CONFIG_PATH)
+        self.handler = YamlHandler(CONFIG_PATH, *self.YAML_KEYS)
 
+    @abstractmethod
+    def __call__(self, args: Namespace) -> None: ...
+
+    def _select_workspace_name(self, workspace_dict: dict, allow_add=True) -> str:
+        if workspace_dict:
+            length = len(workspace_dict)
+            intro = "☑ Found {} registered workspace{}."
+            if length >= 2:
+                print(intro.format(length, "s"))
+            else:
+                print(intro.format(length, ""))
+
+            if allow_add:
+                prompt = "\nEnter your choice or input new workspace name: "
+            else:
+                prompt = "\nEnter your choice: "
+
+            for idx, choice in enumerate(workspace_dict, start=1):
+                print(f"{idx:>5}. {choice}")
+
+            while True:
+                user_input_workspace = input(prompt)
+                try:
+                    target_workspace_number = int(user_input_workspace.strip()) - 1
+                    target_workspace_name = list(workspace_dict.keys())[
+                        target_workspace_number
+                    ]
+                    break
+                except ValueError:
+                    if allow_add:
+                        target_workspace_name = user_input_workspace
+                        break
+                    else:
+                        print(
+                            "\n☓ Invalid selection. Please use a valid number.",
+                            file=sys.stderr,
+                        )
+                except IndexError:
+                    print(
+                        "\n☓ Invalid selection. Please use a valid number.",
+                        file=sys.stderr,
+                    )
+
+        else:
+            target_workspace_name = input("Please enter a new workspace name: ").strip()
+
+        return target_workspace_name
+
+
+class Registrar(AbstractWsExecutor):
     def __call__(self, args: Namespace) -> None:
-        self.handler.setup_config(*self.YAML_KEYS)
 
         try:
             if args.register:
@@ -136,6 +200,7 @@ class Registrar:
         config = self.handler.config
         if not (workspaces := config[self._WORKSPACE_KEY]):
             print("☓ No workspaces registered yet.")
+            return
         for key in workspaces:
             print(f"========={key}=========")
             if not workspaces[key]:
@@ -144,7 +209,7 @@ class Registrar:
                 print(f"- {value}")
 
     def register_repo(self) -> None:
-        # User iput
+        # User input
         new_repo = Path(input("Please enter a new directory path: ")).resolve()
 
         if not new_repo.is_dir():
@@ -154,17 +219,18 @@ class Registrar:
         workspace_dict = self.handler.config[self._WORKSPACE_KEY]
         # User input
         workspace_name = self._select_workspace_name(workspace_dict)
-        count = self.handler.append_subcategory(
-            self._WORKSPACE_KEY, **{workspace_name: str(new_repo)}
+        appended = self.handler.append_value(
+            self._WORKSPACE_KEY, workspace_name, str(new_repo)
         )
-
-        if count == 0:
-            # Prompt is implemented in YamlHandler.
-            pass
-        else:
+        if appended:
             self.handler.dump_and_write()
             print(f"☑ Registered new path to {workspace_name}: {str(new_repo)}")
-        print("💡 Hint: To see workspace list, run `dcp --list`.")
+        else:
+            print(
+                f"Oops, `{str(new_repo)}` is already in `{workspace_name}`.",
+                file=sys.stderr,
+            )
+        print("💡 Hint: To get workspace lists, run `dcp ws -li/--list`.")
 
     def delete_repo(self) -> None:
         config = self.handler.config
@@ -190,7 +256,6 @@ class Registrar:
 
         while True:
             try:
-                # TODO: add error handling
                 # User input
                 user_input = input("\nEnter your choices to delete (e.g., 1,3,4): ")
 
@@ -219,61 +284,10 @@ class Registrar:
 
         self.handler.dump_and_write()
 
-    def _select_workspace_name(self, workspace_dict: dict, allow_add=True) -> str:
-        if workspace_dict:
-            length = len(workspace_dict)
-            intro = "☑ Found {} registered workspace{}."
-            if length >= 2:
-                print(intro.format(length, "s"))
-            else:
-                print(intro.format(length, ""))
 
-            if allow_add:
-                prompt = "\nEnter your choice or input new workspace name: "
-            else:
-                prompt = "\nEnter your choice: "
-
-            for idx, choice in enumerate(workspace_dict, start=1):
-                print(f"{idx:>5}. {choice}")
-
-            while True:
-                user_input_workspace = input(prompt)
-                try:
-                    target_workspace_number = int(user_input_workspace.strip()) - 1
-                    target_workspace_name = list(workspace_dict.keys())[
-                        target_workspace_number
-                    ]
-                    print()
-                    break
-                except ValueError:
-                    if allow_add:
-                        target_workspace_name = user_input_workspace
-                        break
-                    else:
-                        print(
-                            "\n☓ Invalid selection. Please use a valid number.",
-                            file=sys.stderr,
-                        )
-                except IndexError:
-                    print(
-                        "\n☓ Invalid selection. Please use a valid number.",
-                        file=sys.stderr,
-                    )
-
-        else:
-            target_workspace_name = input("Please enter a new workspace name: ").strip()
-
-        return target_workspace_name
-
-
-class Executor(Registrar):
-    def __init__(self) -> None:
-        super().__init__()
-
-    @override
-    def __call__(self, args: Namespace):
-        self.handler.setup_config(*self.YAML_KEYS)
-        cmd = ["docker", "compose", "up"]
+class Executor(AbstractWsExecutor):
+    def __call__(self, args: Namespace) -> None:
+        cmd = ["docker", "compose", "up", "-d"]
         for workdir in self.get_target_workspace():
             logger.debug(
                 f"\n---------workdir---------\n{workdir}\n----output docker cmd---- \n{cmd}"
@@ -281,11 +295,11 @@ class Executor(Registrar):
             self._execute_command(cmd, workdir)
 
     def get_target_workspace(self) -> list[str]:
-        workspaces = self.handler.config[self._WORKSPACE_KEY]
-        workspace_name = self._select_workspace_name(workspaces, allow_add=False)
+        workspaces: dict = self.handler.config[self._WORKSPACE_KEY]
+        workspace_name: str = self._select_workspace_name(workspaces, allow_add=False)
         return workspaces[workspace_name]
 
-    def _execute_command(self, cmd: list[str], workdir: Path) -> int:
+    def _execute_command(self, cmd: list[str], workdir: str) -> int:
         print(f"▷ Executing `{' '.join(cmd)}` in `{workdir}`.")
         try:
             result = subprocess.run(cmd, cwd=workdir)

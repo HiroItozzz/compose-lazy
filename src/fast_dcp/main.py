@@ -1,15 +1,22 @@
 import logging
-from argparse import ArgumentParser
+from argparse import ArgumentParser, Namespace
 from importlib.metadata import version
 
 from . import config
 from .args import ArgBuilder
 from .process import DockerCmdProcessor as Processor
-from .workspace_config import Registrar, Executor
+from .workspace_config import Executor, Registrar
 
 VERSION = version("fast_dcp")
 
 logger = logging.getLogger(__name__)
+
+
+def switch_ws_cmd(args: Namespace) -> None:
+    if any((args.register, args.list, args.delete)):
+        return Registrar()(args)
+    else:
+        return Executor()(args)
 
 
 def main() -> None:
@@ -24,23 +31,6 @@ def main() -> None:
     base_parser.add_argument("--version", action="version", version=f"fast-dcp {VERSION}")
 
     subparsers = base_parser.add_subparsers(dest="subcmd")
-    # dcp workspace(ws) command
-    _workspace = subparsers.add_parser(
-        "workspace",
-        aliases=["ws"],
-        allow_abbrev=False,
-        usage="",
-        description="Compose up of all yaml files in a registered workspace.",
-        help=""
-    )
-    _workspace.set_defaults(func=Executor())
-
-    group = _workspace.add_mutually_exclusive_group()
-    group.add_argument("-reg", "--register", action="store_true", help="")
-    group.add_argument("-del", "--delete", action="store_true", help="")
-    group.add_argument("--list", action="store_true", help="")
-    group.set_defaults(func=Registrar())
-
 
     # dcp up(u) command
     _up = subparsers.add_parser(
@@ -191,8 +181,23 @@ def main() -> None:
         .set_defaults(func=Processor())
     )
 
+    # dcp workspace(ws) command
+    _workspace = subparsers.add_parser(
+        "workspace",
+        aliases=["ws"],
+        allow_abbrev=False,
+        usage="",
+        description="Compose up of all yaml files in a registered workspace.",
+        help="",
+    )
+    group = _workspace.add_mutually_exclusive_group()
+    group.add_argument("-reg", "--register", action="store_true", help="")
+    group.add_argument("-del", "--delete", action="store_true", help="")
+    group.add_argument("-li", "--list", action="store_true", help="")
+    _workspace.set_defaults(func=switch_ws_cmd)
+
     args = base_parser.parse_args()
-    if not any((args.subcmd, args.register, args.delete, args.list)):
+    if args.subcmd is None:
         base_parser.print_help()
         exit(0)
     code = args.func(args)
