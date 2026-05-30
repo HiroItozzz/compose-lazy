@@ -383,6 +383,58 @@ class TestMain:
                 assert "\n☑ Found " in std
 
     @pytest.mark.parametrize(
+        "input_cmd,expected_ws_subcmd",
+        [
+            ("dcp ws up", "up"),
+            ("dcp ws u", "u"),
+            ("dcp ws restart", "restart"),
+            ("dcp ws re", "re"),
+            ("dcp ws stop", "stop"),
+            ("dcp ws s", "s"),
+            ("dcp ws down", "down"),
+            ("dcp workspace up", "up"),
+            ("dcp workspace u", "u"),
+            ("dcp workspace restart", "restart"),
+            ("dcp workspace down", "down"),
+        ],
+    )
+    def test_run_dcp_WS_EXECUTOR(self, input_cmd, expected_ws_subcmd):
+        with patch("fast_dcp.main.executor") as mock_executor:
+            mock_executor.return_value = 0
+            with patch("sys.argv", input_cmd.split()):
+                with pytest.raises(SystemExit) as exc_info:
+                    main()
+            mock_executor.assert_called_once()
+            args = mock_executor.call_args[0][0]
+            assert args.ws_subcmd == expected_ws_subcmd
+            assert exc_info.value.code == 0
+
+    @pytest.mark.parametrize(
+        "input_cmd,expected_ws_subcmd",
+        [
+            ("dcp ws register", "register"),
+            ("dcp ws reg", "reg"),
+            ("dcp ws delete", "delete"),
+            ("dcp ws del", "del"),
+            ("dcp ws list", "list"),
+            ("dcp ws li", "li"),
+            ("dcp workspace register", "register"),
+            ("dcp workspace delete", "delete"),
+            ("dcp workspace list", "list"),
+        ],
+    )
+    def test_run_dcp_WS_REGISTRAR(self, input_cmd, expected_ws_subcmd):
+        with patch("fast_dcp.main.registrar") as mock_registrar:
+            mock_registrar.return_value = 0
+            with patch("sys.argv", input_cmd.split()):
+                with pytest.raises(SystemExit) as exc_info:
+                    main()
+            mock_registrar.assert_called_once()
+            args = mock_registrar.call_args[0][0]
+            assert args.ws_subcmd == expected_ws_subcmd
+            assert exc_info.value.code == 0
+
+    @pytest.mark.parametrize(
         "input_cmd",
         [
             "dcp ps --status",
