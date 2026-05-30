@@ -408,6 +408,16 @@ class TestMain:
                 mock_help.assert_called_once_with()
                 assert exc_info.value.code == 0
 
+    @pytest.mark.parametrize("input_cmd", ["dcp ws"])
+    def test_run_dcp_SUBCMD_WS_AND_WS_SUBCMD_IS_NONE(self, input_cmd):
+        with patch("fast_dcp.main.ArgumentParser.print_help") as mock_help:
+            mock_help.return_value = MagicMock()
+            with patch("sys.argv", input_cmd.split()):
+                with pytest.raises(SystemExit) as exc_info:
+                    main()
+                mock_help.assert_called_once_with()
+                assert exc_info.value.code == 0
+
     @pytest.mark.parametrize(
         "input_cmd,multiple",
         [
