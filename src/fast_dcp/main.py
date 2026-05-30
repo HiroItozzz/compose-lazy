@@ -23,9 +23,9 @@ def main() -> None:
 
     base_parser = ArgumentParser(
         allow_abbrev=False,
-        usage="dcp <command> [options]",
+        usage="dcp <SUBCOMMAND> [options]",
         description="Shorthand aliases for docker compose commands.",
-        epilog="See also: `dcpu -h`, `dcpe -h`",
+        epilog="See also: `dcpu -h`, `dcpe -h`, `dcp ws -h`",
     )
     base_parser.add_argument("--version", action="version", version=f"fast-dcp {VERSION}")
 
@@ -38,7 +38,7 @@ def main() -> None:
         allow_abbrev=False,
         usage="dcp up(u) [SERVICE_NAME ...] [options]",
         description="Shorthand for `docker compose up`.",
-        help="docker compose `up`",
+        help="docker compose `up`, also available as: dcpu",
     )
     (
         ArgBuilder(_up)
@@ -73,7 +73,7 @@ def main() -> None:
         allow_abbrev=False,
         usage="dcp exec(e) <SERVICE_NAME> [BASH|commands] [options]",
         description="Shorthand for `docker compose exec`.",
-        help="docker compose `exec`",
+        help="docker compose `exec`, also available as: dcpe",
     )
     (
         ArgBuilder(_exec)
@@ -197,7 +197,7 @@ def main() -> None:
         aliases=["reg"],
         allow_abbrev=False,
         usage="dcp ws register(reg)",
-        description="Register a new repository to a workspace interactively. A workspace is a user-defined named group of repositories.",
+        description="Register a new repository to a workspace interactively.",
         help="Register a new repo to a workspace.",
     ).set_defaults(func=registrar)
 

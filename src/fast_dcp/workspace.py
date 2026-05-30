@@ -72,7 +72,7 @@ class YamlHandler:
                 self.path.parent.mkdir(parents=True, exist_ok=True)
                 self.path.touch()
                 config = AttrDict()
-        # For developpers
+        # For developers
         except ScannerError:
             print(f"❌ Couldn't load yaml: {self.path}", file=sys.stderr)
             sys.exit(1)
@@ -234,7 +234,7 @@ class WorkspaceRegistrar(AbstractWsExecutor):
                 f"Oops, `{str(new_repo)}` is already in `{workspace_name}`.",
                 file=sys.stderr,
             )
-        print("💡 Hint: To get workspace lists, run `dcp ws -li/--list`.")
+        print("💡 Hint: To get workspace lists, run `dcp ws list(li)`.")
         return 0
 
     def delete_repo(self) -> int:
@@ -250,11 +250,11 @@ class WorkspaceRegistrar(AbstractWsExecutor):
         )
         target_workspace = workspace_dict[target_workspace_name]
 
-        prompt = "☑ Found {} director{}."
+        msg = "☑ Found {} director{}."
         if (length := len(target_workspace)) == 1:
-            print(prompt.format(length, "y"))
+            print(msg.format(length, "y"))
         elif length >= 2:
-            print(prompt.format(length, "ies"))
+            print(msg.format(length, "ies"))
 
         for idx, choice in enumerate(target_workspace, start=1):
             print(f"{idx:>5}. {choice}")
