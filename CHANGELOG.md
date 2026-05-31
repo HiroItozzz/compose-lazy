@@ -1,3 +1,15 @@
+## v0.6.1 - 2026-05-31
+
+### Added
+- `dcp ws register(reg)` now allows entering `0` to input a new workspace name when existing workspaces are listed
+- `dcp ws up/restart/stop/down` now shows a clear error message when a registered workspace directory no longer exists, instead of silently failing
+
+### Fixed
+- Fix partial selections persisting across retries in interactive selection
+- Fix misleading "Docker is not found." error when workspace directory is missing or stale
+- Fix unexpected errors being silently dropped; now logged at DEBUG level when `FAST_DCP_DEBUG=true`
+- Fix debug logging being active unconditionally; `StreamHandler` is now only added when `FAST_DCP_DEBUG=true`
+
 ## v0.6.0 - 2026-05-30
  
 ### Added
