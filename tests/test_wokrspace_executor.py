@@ -1,5 +1,6 @@
 import subprocess
 from argparse import Namespace
+from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
@@ -364,7 +365,8 @@ class TestExecutorCall(TestWsBase):
             ("down", ["docker", "compose", "down"]),
         ],
     )
-    def test_switch(self, ws_subcmd, expected_cmd):
+    def test_switch(self, ws_subcmd, expected_cmd, monkeypatch):
+        monkeypatch.setattr(Path, "is_dir", MagicMock(return_value=True))
         args = Namespace(ws_subcmd=ws_subcmd)
         code = self.executor._switch(args)
 
@@ -372,6 +374,16 @@ class TestExecutorCall(TestWsBase):
             expected_cmd, "/path/to/repo"
         )
         assert code == 0
+
+    def test_switch_path_NOT_exists(self, capsys, monkeypatch):
+        monkeypatch.setattr(Path, "is_dir", MagicMock(return_value=False))
+        args = Namespace(ws_subcmd="up")
+        code = self.executor._switch(args)
+        _, err = capsys.readouterr()
+
+        self.executor._execute_command.assert_not_called()
+        assert "directory not found" in err
+        assert code == 1
 
     def test_call_KEYBOARD_INTERRUPT(self, capsys):
         self.executor.get_target_workspace = MagicMock(side_effect=KeyboardInterrupt)
