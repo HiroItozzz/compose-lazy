@@ -11,7 +11,7 @@ except ImportError:
 
 DEBUG = os.environ.get("FAST_DCP_DEBUG", "False").lower() in ["true", "t"]
 
-LOG_LEVEL = "DEBUG" if DEBUG else "INFO"
+LOG_LEVEL = "DEBUG"
 
 
 def setup_logger(name: str) -> None:
@@ -29,4 +29,5 @@ def setup_logger(name: str) -> None:
     )
     ch.setFormatter(ch_formatter)
 
-    logger.addHandler(ch)
+    if DEBUG:
+        logger.addHandler(ch)

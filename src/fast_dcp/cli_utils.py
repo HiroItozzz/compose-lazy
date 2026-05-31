@@ -53,8 +53,6 @@ def interactive_select(
     )
 
     candidates = sorted(candidates)
-    args = []
-
     # Show choices
     for idx, candidate in enumerate(candidates, start=1):
         print(f"{idx:>5}. {candidate}")
@@ -64,6 +62,8 @@ def interactive_select(
 
     # User input
     while True:
+        args = []
+        
         try:
             if (choices_str := input(prompt)) in ["Q", "q"]:
                 print("\nCancelled.")

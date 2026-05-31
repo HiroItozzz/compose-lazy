@@ -82,9 +82,10 @@ class DockerCmdProcessor:
             print("Docker is not found.", file=sys.stderr)
             return 1
         except Exception:
+            logger.debug("An unexpected error occurred.", exc_info=True)
             print("An unexpected error occurred.", file=sys.stderr)
             return 1
-        
+
     def _create_up_cmd(self) -> None:
         self.cmd += (
             ["up"]

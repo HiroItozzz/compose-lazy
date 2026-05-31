@@ -304,6 +304,10 @@ class WorkspaceExecutor(AbstractWsExecutor):
         try:
             codes = []
             for workdir in self.get_target_workspace():
+                if not Path(workdir).is_dir():
+                    print(f"❌️ Workspace directory not found: {workdir}", file=sys.stderr)
+                    codes.append(1)
+                    continue
                 logger.debug(
                     f"\n---------workdir---------\n{workdir}\n----output docker cmd---- \n{cmd}"
                 )
@@ -312,10 +316,11 @@ class WorkspaceExecutor(AbstractWsExecutor):
         except KeyboardInterrupt:
             print("\nCancelled.")
             return 130
-        except FileNotFoundError:
+        except FileNotFoundError as e:
             print("Docker is not found.", file=sys.stderr)
             return 1
         except Exception:
+            logger.debug("An unexpected error occurred.", exc_info=True)
             print("An unexpected error occurred.", file=sys.stderr)
             return 1
 
