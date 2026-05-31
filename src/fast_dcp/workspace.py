@@ -174,12 +174,12 @@ class AbstractWsExecutor(ABC):
                         break
                     else:
                         print(
-                            "\n☓ Invalid selection. Please use a valid number.",
+                            "☓ Invalid selection. Please use a valid number.",
                             file=sys.stderr,
                         )
                 except IndexError:
                     print(
-                        "\n☓ Invalid selection. Please use a valid number.",
+                        "☓ Invalid selection. Please use a valid number.",
                         file=sys.stderr,
                     )
 
@@ -237,7 +237,7 @@ class WorkspaceRegistrar(AbstractWsExecutor):
         )
         if appended:
             self.handler.dump_and_write()
-            print(f"☑ Registered new path to {workspace_name}: {str(new_repo)}")
+            print(f"\n☑ Registered new path to {workspace_name}: {str(new_repo)}")
         else:
             print(
                 f"Oops, `{str(new_repo)}` is already in `{workspace_name}`.",
@@ -329,6 +329,12 @@ class WorkspaceExecutor(AbstractWsExecutor):
         except KeyboardInterrupt:
             print("\nCancelled.")
             return 130
+        except FileNotFoundError:
+            print("Docker is not found.", file=sys.stderr)
+            return 1
+        except Exception:
+            print("An unexpected error occurred.", file=sys.stderr)
+            return 1
 
         return next((c for c in codes if c != 0), 0)
 
