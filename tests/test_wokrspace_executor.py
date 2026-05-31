@@ -254,6 +254,25 @@ class TestRegisterRepo(TestWsBase):
         self.registrar.handler.dump_and_write.assert_not_called()
         assert code == 0
 
+    def test_VALID_PATH_SELECT_ZERO(self, capsys, monkeypatch, tmp_path):
+        self.registrar.handler._config = {"workspaces": {"ws1": []}}
+        self.registrar.handler.append_value = MagicMock(return_value=True)
+        self.registrar.handler.dump_and_write = MagicMock()
+        mock_input = MagicMock(side_effect=[str(tmp_path), "ws_new"])
+        monkeypatch.setattr("builtins.input", mock_input)
+        monkeypatch.setattr(
+            cli_utils,
+            "interactive_select",
+            MagicMock(return_value=None),
+        )
+
+        code = self.registrar.register_repo()
+
+        out, _ = capsys.readouterr()
+        assert "☑ Registered new path to ws_new" in out
+        self.registrar.handler.dump_and_write.assert_called_once()
+        assert code == 0
+
     def test_HINT_ALWAYS_PRINTED(self, capsys, monkeypatch, tmp_path):
         self.registrar.handler._config = {"workspaces": {}}
         self.registrar.handler.append_value = MagicMock(return_value=True)
