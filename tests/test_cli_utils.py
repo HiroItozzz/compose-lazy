@@ -8,54 +8,61 @@ from fast_dcp import cli_utils
 
 class TestInteraciveSelect:
     cases_f = (
-        ("1\n", "-f", True, ["-f", "choice_1"]),
-        ("2\n", "-f", True, ["-f", "choice_2"]),
-        ("1,2\n", "-f", True, ["-f", "choice_1", "-f", "choice_2"]),
+        ("1\n", "-f", True, False, ["-f", "choice_1"]),
+        ("2\n", "-f", True, False, ["-f", "choice_2"]),
+        ("1,2\n", "-f", True, False, ["-f", "choice_1", "-f", "choice_2"]),
         (
             "  1 , 2  \n",
             "-f",
             True,
+            False,
             ["-f", "choice_1", "-f", "choice_2"],
         ),
-        ("3\n1\n", "-f", True, ["-f", "choice_1"]),
+        ("3\n1\n", "-f", True, False, ["-f", "choice_1"]),
     )
     cases_pf = (
-        ("1\n", "-pf", True, ["-pf", "choice_1"]),
-        ("2\n", "-pf", True, ["-pf", "choice_2"]),
-        ("1,2\n", "-pf", True, ["-pf", "choice_1", "-pf", "choice_2"]),
+        ("1\n", "-pf", True, False, ["-pf", "choice_1"]),
+        ("2\n", "-pf", True, False, ["-pf", "choice_2"]),
+        ("1,2\n", "-pf", True, False, ["-pf", "choice_1", "-pf", "choice_2"]),
         (
             "  1 , 2  \n",
             "-pf",
             True,
+            False,
             ["-pf", "choice_1", "-pf", "choice_2"],
         ),
-        ("3\n1\n", "-pf", True, ["-pf", "choice_1"]),
+        ("3\n1\n", "-pf", True, False, ["-pf", "choice_1"]),
     )
     cases_s = (
-        ("1\n", None, True, ["choice_1"]),
-        ("2\n", None, True, ["choice_2"]),
-        ("1,2\n", None, True, ["choice_1", "choice_2"]),
+        ("1\n", None, True, False, ["choice_1"]),
+        ("2\n", None, True, False, ["choice_2"]),
+        ("1,2\n", None, True, False, ["choice_1", "choice_2"]),
         (
             "  1 , 2  \n",
             None,
             True,
+            False,
             ["choice_1", "choice_2"],
         ),
-        ("3\n1\n", None, True, ["choice_1"]),
+        ("3\n1\n", None, True, False, ["choice_1"]),
     )
     cases_MULTIPLE_False = (
-        ("1\n", None, False, ["choice_1"]),
-        ("3\n1\n", None, False, ["choice_1"]),
+        ("1\n", None, False, False, ["choice_1"]),
+        ("3\n1\n", None, False, False, ["choice_1"]),
     )
 
     @pytest.mark.parametrize(
-        "keys,flag,multiple,expected",
+        "keys,flag,multiple,allow_zero,expected",
         [*cases_f, *cases_pf, *cases_s, *cases_MULTIPLE_False],
     )
-    def test_interactive_select(self, keys, flag, multiple, expected, monkeypatch):
+    def test_interactive_select(
+        self, keys, flag, multiple, allow_zero, expected, monkeypatch
+    ):
         monkeypatch.setattr("sys.stdin", io.StringIO(keys))
         choices = ["choice_1", "choice_2"]
-        result = cli_utils.interactive_select(choices, flag, multiple=multiple)
+        result = cli_utils.interactive_select(
+            choices, flag, multiple=multiple, allow_zero=allow_zero
+        )
 
         assert result == expected
 
@@ -78,6 +85,30 @@ class TestInteraciveSelect:
         _, err = capsys.readouterr()
         assert "☓ Invalid selection. Please use a valid number." in err
         assert result == expected
+
+    cases_ALLOW_ZERO_True = (
+        ("1\n", None, False, True, ["choice_1"]),
+        ("0\n", None, False, True, None),
+        ("0\n", None, True, True, None),
+        ("0,1\n1\n", None, False, True, ["choice_1"]),
+        ("0,1\n1\n", None, True, True, ["choice_1"]),
+    )
+
+    @pytest.mark.parametrize(
+        "keys,flag,multiple,allow_zero,expected",
+        [*cases_ALLOW_ZERO_True],
+    )
+    def test_interactive_select_ALLO_ZERO(
+        self, keys, flag, multiple, allow_zero, expected, capsys, monkeypatch
+    ):
+        monkeypatch.setattr("sys.stdin", io.StringIO(keys))
+        choices = ["choice_1", "choice_2"]
+        result = cli_utils.interactive_select(
+            choices, flag, multiple=multiple, allow_zero=allow_zero
+        )
+        out, _ = capsys.readouterr()
+        assert result == expected
+        assert "Or 0 to enter an alternative choice." in out
 
     @pytest.mark.parametrize("keys", ["3\n1\n", "abc\n1\n", "0\n-1\n1\n"])
     def test_interactive_select_VALUE_ERROR(self, keys, capsys, monkeypatch):

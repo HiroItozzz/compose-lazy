@@ -1,18 +1,27 @@
+from logging import StreamHandler, getLogger
+
+from fast_dcp import config
+
+
 class TestSetupLogger:
     def teardown_method(self):
         import logging
 
         logging.getLogger("test").handlers = []
 
-    def test_setup_logger(self):
-        import logging
-        from logging import StreamHandler, getLogger
+    def test_setup_logger(self, monkeypatch):
 
-        from fast_dcp.config import setup_logger
+        monkeypatch.setattr(config, "DEBUG", True)
 
-        setup_logger("test")
+        config.setup_logger("test")
 
         assert len(getLogger("test").handlers) >= 1
-        assert any(
-            isinstance(h, StreamHandler) for h in getLogger("test").handlers
-        )
+        assert any(isinstance(h, StreamHandler) for h in getLogger("test").handlers)
+
+    def test_setup_logger_(self, monkeypatch):
+        monkeypatch.setattr(config, "DEBUG", False)
+
+        config.setup_logger("test")
+
+        assert len(getLogger("test").handlers) == 0
+        assert not any(isinstance(h, StreamHandler) for h in getLogger("test").handlers)

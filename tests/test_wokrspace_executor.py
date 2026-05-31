@@ -1,10 +1,13 @@
 import subprocess
 from argparse import Namespace
+from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
 
+from fast_dcp import cli_utils
 from fast_dcp.workspace import (
+    AbstractWsExecutor,
     WorkspaceExecutor,
     WorkspaceRegistrar,
     YamlHandler,
@@ -18,11 +21,11 @@ class TestWsBase:
 
 
 # ─────────────────────────────────────────────
-# WorkspaceRegistrar
+# AbstractWsExecutor
 # ─────────────────────────────────────────────
 
 
-class TestRegistrarCall(TestWsBase):
+class TestCommonMethods(TestWsBase):
     def test_call(self, monkeypatch):
         monkeypatch.setattr(YamlHandler, "setup_config", MagicMock())
         monkeypatch.setattr(WorkspaceRegistrar, "_switch", MagicMock(return_value=0))
@@ -33,6 +36,103 @@ class TestRegistrarCall(TestWsBase):
         getattr(WorkspaceRegistrar, "_switch").assert_called_once_with(args)
         assert code == 0
 
+    def test_select_or_create_NO_WORKSPACES(self, monkeypatch):
+        mock_input = MagicMock(return_value="ws1")
+        monkeypatch.setattr("builtins.input", mock_input)
+        prompt = "Please enter a new workspace name: "
+        workspaces = {}
+        result = self.registrar._select_workspace_or_create(workspaces)
+
+        mock_input.assert_called_once_with(prompt)
+        assert result == "ws1"
+
+    def test_select_or_create_WORKSPACE_EXISTS(self, monkeypatch):
+        monkeypatch.setattr(
+            WorkspaceRegistrar,
+            "_display_intro",
+            MagicMock(),
+        )
+        monkeypatch.setattr(
+            cli_utils,
+            "interactive_select",
+            MagicMock(return_value=["ws2"]),
+        )
+        workspaces = {"ws1": [], "ws2": []}
+        result = self.registrar._select_workspace_or_create(workspaces)
+
+        WorkspaceRegistrar._display_intro.assert_called_once()
+        getattr(cli_utils, "interactive_select").assert_called_once_with(
+            list(workspaces), multiple=False, allow_zero=True
+        )
+        assert result == "ws2"
+
+    def test_select_or_create_WORKSPACE_EXISTS_AND_SELECT_0(
+        self, capsys, monkeypatch, tmp_path
+    ):
+        mock_input = MagicMock(return_value="ws99")
+        monkeypatch.setattr("builtins.input", mock_input)
+        monkeypatch.setattr(
+            WorkspaceRegistrar,
+            "_display_intro",
+            MagicMock(),
+        )
+        monkeypatch.setattr(
+            cli_utils,
+            "interactive_select",
+            MagicMock(return_value=None),
+        )
+        prompt = "Please enter a new workspace name: "
+        workspaces = {"ws1": [], "ws2": []}
+        result = self.registrar._select_workspace_or_create(workspaces)
+
+        WorkspaceRegistrar._display_intro.assert_called_once()
+        getattr(cli_utils, "interactive_select").assert_called_once_with(
+            list(workspaces), multiple=False, allow_zero=True
+        )
+        mock_input.assert_called_once_with(prompt)
+        assert result == "ws99"
+
+    def test_select_simply(self, monkeypatch):
+        monkeypatch.setattr(
+            WorkspaceRegistrar,
+            "_display_intro",
+            MagicMock(),
+        )
+        monkeypatch.setattr(
+            cli_utils,
+            "interactive_select",
+            MagicMock(return_value=["ws2"]),
+        )
+        workspaces = {"ws1": [], "ws2": []}
+        result = self.registrar._select_workspace_simply(workspaces)
+
+        WorkspaceRegistrar._display_intro.assert_called_once()
+        getattr(cli_utils, "interactive_select").assert_called_once_with(
+            list(workspaces), multiple=False
+        )
+        assert result == "ws2"
+
+    def test_display_intro_LENGTH_IS_1(self, capsys):
+        workspaces = {"ws1": []}
+        self.registrar._display_intro(workspaces)
+
+        out, _ = capsys.readouterr()
+        assert "☑ Found 1 registered workspace." in out
+
+    def test_display_intro_LENGTH_OVER_2(self, capsys):
+        workspaces = {"ws1": [], "ws2": []}
+        self.registrar._display_intro(workspaces)
+
+        out, _ = capsys.readouterr()
+        assert "☑ Found 2 registered workspaces." in out
+
+
+# ─────────────────────────────────────────────
+# WorkspaceRegistrar
+# ─────────────────────────────────────────────
+
+
+class TestRegistrarCall(TestWsBase):
     @pytest.mark.parametrize(
         "ws_subcmd,expected_method",
         [
@@ -125,7 +225,7 @@ class TestRegisterRepo(TestWsBase):
         self.registrar.handler.dump_and_write = MagicMock()
         monkeypatch.setattr(
             WorkspaceRegistrar,
-            "_select_workspace_name",
+            "_select_workspace_or_create",
             MagicMock(return_value="ws1"),
         )
         monkeypatch.setattr("builtins.input", MagicMock(return_value=str(tmp_path)))
@@ -143,7 +243,7 @@ class TestRegisterRepo(TestWsBase):
         self.registrar.handler.dump_and_write = MagicMock()
         monkeypatch.setattr(
             WorkspaceRegistrar,
-            "_select_workspace_name",
+            "_select_workspace_or_create",
             MagicMock(return_value="ws1"),
         )
         monkeypatch.setattr("builtins.input", MagicMock(return_value=str(tmp_path)))
@@ -154,6 +254,22 @@ class TestRegisterRepo(TestWsBase):
         assert "already in" in err
         self.registrar.handler.dump_and_write.assert_not_called()
         assert code == 0
+
+    def test_HINT_ALWAYS_PRINTED(self, capsys, monkeypatch, tmp_path):
+        self.registrar.handler._config = {"workspaces": {}}
+        self.registrar.handler.append_value = MagicMock(return_value=True)
+        self.registrar.handler.dump_and_write = MagicMock()
+        monkeypatch.setattr(
+            WorkspaceRegistrar,
+            "_select_workspace_or_create",
+            MagicMock(return_value="ws1"),
+        )
+        monkeypatch.setattr("builtins.input", MagicMock(return_value=str(tmp_path)))
+
+        self.registrar.register_repo()
+
+        out, _ = capsys.readouterr()
+        assert "💡 Hint" in out
 
 
 class TestDeleteRepo(TestWsBase):
@@ -171,7 +287,7 @@ class TestDeleteRepo(TestWsBase):
         self.registrar.handler.dump_and_write = MagicMock()
         monkeypatch.setattr(
             WorkspaceRegistrar,
-            "_select_workspace_name",
+            "_select_workspace_simply",
             MagicMock(return_value="ws1"),
         )
         monkeypatch.setattr("builtins.input", MagicMock(return_value="1"))
@@ -189,7 +305,7 @@ class TestDeleteRepo(TestWsBase):
         self.registrar.handler.dump_and_write = MagicMock()
         monkeypatch.setattr(
             WorkspaceRegistrar,
-            "_select_workspace_name",
+            "_select_workspace_simply",
             MagicMock(return_value="ws1"),
         )
         monkeypatch.setattr("builtins.input", MagicMock(return_value="1"))
@@ -205,7 +321,7 @@ class TestDeleteRepo(TestWsBase):
         self.registrar.handler.dump_and_write = MagicMock()
         monkeypatch.setattr(
             WorkspaceRegistrar,
-            "_select_workspace_name",
+            "_select_workspace_simply",
             MagicMock(return_value="ws1"),
         )
         monkeypatch.setattr("builtins.input", MagicMock(side_effect=commands))
@@ -249,7 +365,8 @@ class TestExecutorCall(TestWsBase):
             ("down", ["docker", "compose", "down"]),
         ],
     )
-    def test_switch(self, ws_subcmd, expected_cmd):
+    def test_switch(self, ws_subcmd, expected_cmd, monkeypatch):
+        monkeypatch.setattr(Path, "is_dir", MagicMock(return_value=True))
         args = Namespace(ws_subcmd=ws_subcmd)
         code = self.executor._switch(args)
 
@@ -257,6 +374,16 @@ class TestExecutorCall(TestWsBase):
             expected_cmd, "/path/to/repo"
         )
         assert code == 0
+
+    def test_switch_path_NOT_exists(self, capsys, monkeypatch):
+        monkeypatch.setattr(Path, "is_dir", MagicMock(return_value=False))
+        args = Namespace(ws_subcmd="up")
+        code = self.executor._switch(args)
+        _, err = capsys.readouterr()
+
+        self.executor._execute_command.assert_not_called()
+        assert "directory not found" in err
+        assert code == 1
 
     def test_call_KEYBOARD_INTERRUPT(self, capsys):
         self.executor.get_target_workspace = MagicMock(side_effect=KeyboardInterrupt)
@@ -275,6 +402,24 @@ class TestExecutorCall(TestWsBase):
         args = Namespace(ws_subcmd="up")
         code = self.executor(args)
 
+        assert code == 1
+
+    def test_FILE_NOT_FOUND(self, capsys):
+        self.executor.get_target_workspace = MagicMock(side_effect=FileNotFoundError)
+        args = Namespace(ws_subcmd="up")
+        code = self.executor(args)
+
+        _, err = capsys.readouterr()
+        assert "Docker is not found." in err
+        assert code == 1
+
+    def test_UNEXPECTED_ERROR(self, capsys):
+        self.executor.get_target_workspace = MagicMock(side_effect=RuntimeError)
+        args = Namespace(ws_subcmd="up")
+        code = self.executor(args)
+
+        _, err = capsys.readouterr()
+        assert "An unexpected error occurred." in err
         assert code == 1
 
 
@@ -300,64 +445,10 @@ class TestGetTargetWorkspace(TestWsBase):
         self.executor.handler._config = {"workspaces": workspaces}
         monkeypatch.setattr(
             WorkspaceExecutor,
-            "_select_workspace_name",
+            "_select_workspace_simply",
             MagicMock(return_value="ws1"),
         )
 
         result = self.executor.get_target_workspace()
 
         assert result == ["/repo1", "/repo2"]
-
-
-# ─────────────────────────────────────────────
-# AbstractWsExecutor._select_workspace_name
-# ─────────────────────────────────────────────
-
-
-class TestSelectWorkspaceName(TestWsBase):
-    cases_number = (
-        ("1\n", {"ws1": [], "ws2": []}, True, "ws1"),
-        ("2\n", {"ws1": [], "ws2": []}, True, "ws2"),
-        ("3\n1\n", {"ws1": [], "ws2": []}, True, "ws1"),  # invalid then valid
-        ("3\n1\n", {"ws1": [], "ws2": []}, False, "ws1"),  # allow_add=False
-    )
-
-    @pytest.mark.parametrize("keys,workspace_dict,allow_add,expected", cases_number)
-    def test_number_input(self, keys, workspace_dict, allow_add, expected, monkeypatch):
-        monkeypatch.setattr("sys.stdin", __import__("io").StringIO(keys))
-        result = self.registrar._select_workspace_name(
-            workspace_dict, allow_add=allow_add
-        )
-        assert result == expected
-
-    def test_string_input_allow_add(self, monkeypatch):
-        """Return the string as a new workspace name when allow_add=True."""
-        monkeypatch.setattr("sys.stdin", __import__("io").StringIO("new_ws\n"))
-        result = self.registrar._select_workspace_name({"ws1": []}, allow_add=True)
-        assert result == "new_ws"
-
-    def test_string_input_not_allow_add(self, capsys, monkeypatch):
-        """Show error message on string input when allow_add=False, then accept a valid number."""
-        monkeypatch.setattr("sys.stdin", __import__("io").StringIO("abc\n1\n"))
-        result = self.registrar._select_workspace_name({"ws1": []}, allow_add=False)
-        _, err = capsys.readouterr()
-        assert "Invalid selection" in err
-        assert result == "ws1"
-
-    def test_empty_workspace_dict(self, monkeypatch):
-        """Return the string as a new workspace name when workspace_dict is empty."""
-        monkeypatch.setattr("sys.stdin", __import__("io").StringIO("new_ws\n"))
-        result = self.registrar._select_workspace_name({}, allow_add=True)
-        assert result == "new_ws"
-
-    def test_single_workspace_message(self, capsys, monkeypatch):
-        monkeypatch.setattr("sys.stdin", __import__("io").StringIO("1\n"))
-        self.registrar._select_workspace_name({"ws1": []})
-        out, _ = capsys.readouterr()
-        assert "Found 1 registered workspace." in out
-
-    def test_multiple_workspaces_message(self, capsys, monkeypatch):
-        monkeypatch.setattr("sys.stdin", __import__("io").StringIO("1\n"))
-        self.registrar._select_workspace_name({"ws1": [], "ws2": []})
-        out, _ = capsys.readouterr()
-        assert "Found 2 registered workspaces." in out

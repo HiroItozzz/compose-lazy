@@ -6,5 +6,6 @@ from importlib.metadata import version
 __version__ = version("fast-dcp")
 
 
-logger = logging.getLogger("fast-dcp")
+logger = logging.getLogger("fast_dcp")
 logger.addHandler(logging.NullHandler())
+logger.propagate = False
