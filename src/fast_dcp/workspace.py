@@ -147,7 +147,7 @@ class AbstractWsExecutor(ABC):
     def _switch(self, args: Namespace) -> int: ...
 
     def _select_workspace_or_create(self, candidates: Iterable[str]) -> str:
-        candidates = sorted(candidates)
+        candidates = list(candidates)
         if not candidates:
             return input("Please enter a new workspace name: ").strip()
         self._display_intro(candidates)
@@ -160,7 +160,7 @@ class AbstractWsExecutor(ABC):
         return choices[0]
 
     def _select_workspace_simply(self, candidates: Iterable[str]) -> str:
-        candidates = sorted(candidates)
+        candidates = list(candidates)
         self._display_intro(candidates)
         choices: list[str] = cli_utils.interactive_select(candidates, multiple=False)
         return choices[0]

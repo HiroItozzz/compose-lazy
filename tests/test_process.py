@@ -96,8 +96,8 @@ class TestProcessorCall(TestDCPBase):
         self.processor._execute_command.assert_called_once()
 
 
-class TestRunSubprocess(TestDCPBase):
-    def test_run_subprocess(self):
+class TestExecuteCommand(TestDCPBase):
+    def test_execute_command(self):
         result = MagicMock()
         result.returncode = 1
         subprocess.run = MagicMock(return_value=result)
@@ -109,7 +109,7 @@ class TestRunSubprocess(TestDCPBase):
         subprocess.run.assert_called_once_with(test_cmd)
         assert self.processor._execute_command() == 1
 
-    def test_run_subprocess_KEYBOARD_INTERRUPT(self):
+    def test_KEYBOARD_INTERRUPT(self):
         subprocess.run = MagicMock(side_effect=KeyboardInterrupt())
 
         test_cmd = ["docker", "compose", "up"]
@@ -119,6 +119,23 @@ class TestRunSubprocess(TestDCPBase):
         assert code == 130
         subprocess.run.assert_called_once_with(test_cmd)
 
+    def test_FILE_NOT_FOUND(self, capsys, monkeypatch):
+        monkeypatch.setattr(subprocess, "run", MagicMock(side_effect=FileNotFoundError))
+        self.processor.cmd = ["docker", "compose", "up", "-d"]
+        code = self.processor._execute_command()
+
+        _, err = capsys.readouterr()
+        assert "Docker is not found." in err
+        assert code == 1
+
+    def test_UNEXPECTED_ERROR(self, capsys, monkeypatch):
+        monkeypatch.setattr(subprocess, "run", MagicMock(side_effect=RuntimeError))
+        self.processor.cmd = ["docker", "compose", "up", "-d"]
+        code = self.processor._execute_command()
+
+        _, err = capsys.readouterr()
+        assert "An unexpected error occurred." in err
+        assert code == 1
 
 class TestAdjustServiceName(TestDCPBase):
     @pytest.mark.parametrize("service_name", [None, []])
