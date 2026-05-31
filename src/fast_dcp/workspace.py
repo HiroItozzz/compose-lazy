@@ -165,7 +165,7 @@ class AbstractWsExecutor(ABC):
         choices: list[str] = cli_utils.interactive_select(candidates, multiple=False)
         return choices[0]
 
-    def _display_intro(self, candidates: Iterable[str]) -> None:
+    def _display_intro(self, candidates: list[str]) -> None:
         msg = "☑ Found {} registered workspace{}."
 
         length = len(candidates)
@@ -285,7 +285,7 @@ class WorkspaceRegistrar(AbstractWsExecutor):
         return 0
 
 
-class WorkspaceExecutor(AbstractWsExecutor):
+class WorkspaceProcessor(AbstractWsExecutor):
     def _switch(self, args: Namespace) -> int:
         cmd = []
         match args.ws_subcmd:

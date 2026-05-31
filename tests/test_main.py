@@ -399,7 +399,7 @@ class TestMain:
         ],
     )
     def test_run_dcp_WS_EXECUTOR(self, input_cmd, expected_ws_subcmd):
-        with patch("fast_dcp.main.executor") as mock_executor:
+        with patch("fast_dcp.main.ws_processor") as mock_executor:
             mock_executor.return_value = 0
             with patch("sys.argv", input_cmd.split()):
                 with pytest.raises(SystemExit) as exc_info:
@@ -424,7 +424,7 @@ class TestMain:
         ],
     )
     def test_run_dcp_WS_REGISTRAR(self, input_cmd, expected_ws_subcmd):
-        with patch("fast_dcp.main.registrar") as mock_registrar:
+        with patch("fast_dcp.main.ws_registrar") as mock_registrar:
             mock_registrar.return_value = 0
             with patch("sys.argv", input_cmd.split()):
                 with pytest.raises(SystemExit) as exc_info:

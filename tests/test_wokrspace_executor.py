@@ -7,8 +7,7 @@ import pytest
 
 from fast_dcp import cli_utils
 from fast_dcp.workspace import (
-    AbstractWsExecutor,
-    WorkspaceExecutor,
+    WorkspaceProcessor,
     WorkspaceRegistrar,
     YamlHandler,
 )
@@ -17,7 +16,7 @@ from fast_dcp.workspace import (
 class TestWsBase:
     def setup_method(self):
         self.registrar = WorkspaceRegistrar()
-        self.executor = WorkspaceExecutor()
+        self.executor = WorkspaceProcessor()
 
 
 # ─────────────────────────────────────────────
@@ -345,12 +344,12 @@ class TestExecutorCall(TestWsBase):
 
     def test_call(self, monkeypatch):
         monkeypatch.setattr(YamlHandler, "setup_config", MagicMock())
-        monkeypatch.setattr(WorkspaceExecutor, "_switch", MagicMock(return_value=0))
+        monkeypatch.setattr(WorkspaceProcessor, "_switch", MagicMock(return_value=0))
         args = Namespace(subcmd="ws", ws_subcmd="test")
         code = self.executor(args)
 
         getattr(YamlHandler, "setup_config").assert_called_once_with("workspaces")
-        getattr(WorkspaceExecutor, "_switch").assert_called_once_with(args)
+        getattr(WorkspaceProcessor, "_switch").assert_called_once_with(args)
         assert code == 0
 
     @pytest.mark.parametrize(
@@ -444,7 +443,7 @@ class TestGetTargetWorkspace(TestWsBase):
         workspaces = {"ws1": ["/repo1", "/repo2"]}
         self.executor.handler._config = {"workspaces": workspaces}
         monkeypatch.setattr(
-            WorkspaceExecutor,
+            WorkspaceProcessor,
             "_select_workspace_simply",
             MagicMock(return_value="ws1"),
         )
