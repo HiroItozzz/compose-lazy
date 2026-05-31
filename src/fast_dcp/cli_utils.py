@@ -41,9 +41,6 @@ def interactive_select(
     Returns:
         list[str] | None: The list of candidate name(s) user selected, or None when `0` inputed.
     """
-
-    candidates = sorted(candidates)
-    args = []
     prompt = (
         "\nEnter your choices (e.g., 1,3,4) or 'q' to quit: "
         if multiple
@@ -55,9 +52,15 @@ def interactive_select(
         else "☓ Invalid selection. Please use a valid number."
     )
 
+    candidates = sorted(candidates)
+    args = []
+
     # Show choices
     for idx, candidate in enumerate(candidates, start=1):
         print(f"{idx:>5}. {candidate}")
+
+    if allow_zero:
+        print("\nOr 0 to enter an alternative choice.", end="")
 
     # User input
     while True:

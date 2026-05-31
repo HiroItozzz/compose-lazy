@@ -4,9 +4,12 @@ import sys
 from abc import ABC, abstractmethod
 from argparse import Namespace
 from pathlib import Path
+from typing import Iterable
 
 import yaml
 from yaml.scanner import ScannerError
+
+from . import cli_utils
 
 logger = logging.getLogger(__name__)
 
@@ -143,50 +146,33 @@ class AbstractWsExecutor(ABC):
     @abstractmethod
     def _switch(self, args: Namespace) -> int: ...
 
-    def _select_workspace_name(self, workspace_dict: dict, allow_add=True) -> str:
-        if workspace_dict:
-            length = len(workspace_dict)
-            intro = "☑ Found {} registered workspace{}."
-            if length >= 2:
-                print(intro.format(length, "s"))
-            else:
-                print(intro.format(length, ""))
+    def _select_workspace_or_create(self, candidates: Iterable[str]) -> str:
+        candidates = sorted(candidates)
+        if not candidates:
+            return input("Please enter a new workspace name: ").strip()
+        self._display_intro(candidates)
+        choices: list[str] | None = cli_utils.interactive_select(
+            candidates, multiple=False, allow_zero=True
+        )
+        if choices is None:
+            return input("Please enter a new workspace name: ").strip()
 
-            if allow_add:
-                prompt = "\nEnter your choice or input new workspace name: "
-            else:
-                prompt = "\nEnter your choice: "
+        return choices[0]
 
-            for idx, choice in enumerate(workspace_dict, start=1):
-                print(f"{idx:>5}. {choice}")
+    def _select_workspace_simply(self, candidates: Iterable[str]) -> str:
+        candidates = sorted(candidates)
+        self._display_intro(candidates)
+        choices: list[str] = cli_utils.interactive_select(candidates, multiple=False)
+        return choices[0]
 
-            while True:
-                user_input_workspace = input(prompt)
-                try:
-                    target_workspace_number = int(user_input_workspace.strip()) - 1
-                    target_workspace_name = list(workspace_dict.keys())[
-                        target_workspace_number
-                    ]
-                    break
-                except ValueError:
-                    if allow_add:
-                        target_workspace_name = user_input_workspace
-                        break
-                    else:
-                        print(
-                            "☓ Invalid selection. Please use a valid number.",
-                            file=sys.stderr,
-                        )
-                except IndexError:
-                    print(
-                        "☓ Invalid selection. Please use a valid number.",
-                        file=sys.stderr,
-                    )
+    def _display_intro(self, candidates: Iterable[str]) -> None:
+        msg = "☑ Found {} registered workspace{}."
 
+        length = len(candidates)
+        if length > 1:
+            print(msg.format(length, "s"))
         else:
-            target_workspace_name = input("Please enter a new workspace name: ").strip()
-
-        return target_workspace_name
+            print(msg.format(length, ""))
 
 
 class WorkspaceRegistrar(AbstractWsExecutor):
@@ -230,8 +216,7 @@ class WorkspaceRegistrar(AbstractWsExecutor):
             return 1
 
         workspace_dict = self.handler.config[self._WORKSPACE_KEY]
-        # User input
-        workspace_name = self._select_workspace_name(workspace_dict)
+        workspace_name = self._select_workspace_or_create(workspace_dict)
         appended = self.handler.append_value(
             self._WORKSPACE_KEY, workspace_name, str(new_repo)
         )
@@ -254,9 +239,7 @@ class WorkspaceRegistrar(AbstractWsExecutor):
             return 1
 
         # User input
-        target_workspace_name = self._select_workspace_name(
-            workspace_dict, allow_add=False
-        )
+        target_workspace_name = self._select_workspace_simply(workspace_dict)
         target_workspace = workspace_dict[target_workspace_name]
 
         msg = "☑ Found {} director{}."
@@ -340,7 +323,7 @@ class WorkspaceExecutor(AbstractWsExecutor):
 
     def get_target_workspace(self) -> list[str]:
         workspaces: dict = self.handler.config[self._WORKSPACE_KEY]
-        workspace_name: str = self._select_workspace_name(workspaces, allow_add=False)
+        workspace_name: str = self._select_workspace_simply(workspaces)
         return workspaces[workspace_name]
 
     def _execute_command(self, cmd: list[str], workdir: str) -> int:
