@@ -37,8 +37,8 @@ dcpu = "compose_lazy.main:dcpu_main"
 dcpe = "compose_lazy.main:dcpe_main"
 
 [project.urls]
-Repository = "https://github.com/HiroItozzz/fast-dcp"
-Issues = "https://github.com/HiroItozzz/fast-dcp/issues"
+Repository = "https://github.com/HiroItozzz/compose-lazy"
+Issues = "https://github.com/HiroItozzz/compose-lazy/issues"
 
 [dependency-groups]
 dev = [
