@@ -1,3 +1,23 @@
+## v0.7.0 - 2026-06-01
+
+### Breaking Change
+- Rename package from `fast-dcp` to `compose-lazy`
+- Rename environment variable from `FAST_DCP_DEBUG` to `COMPOSE_LAZY_DEBUG`
+- Config directory changed from `~/.config/fast-dcp` to `~/.config/compose-lazy`
+
+### Added
+- `dcp ws register(reg)` now allows entering `0` to input a new workspace name when existing workspaces are listed
+- `dcp ws up/restart/stop/down` now shows a clear error message when a registered workspace directory no longer exists
+
+### Fixed
+- Fix partial selections persisting across retries in interactive selection
+- Fix misleading "Docker is not found." error when workspace directory is missing or stale
+- Fix unexpected errors being silently dropped; now logged at DEBUG level when `COMPOSE_LAZY_DEBUG=true`
+- Fix debug logging being active unconditionally; `StreamHandler` is now only added when `COMPOSE_LAZY_DEBUG=true`
+
+### Inner Change
+- Rename `WorkspaceExecutor` to `WorkspaceProcessor` for consistency
+
 ## v0.6.1 - 2026-05-31
 
 ### Added
