@@ -11,10 +11,15 @@ except ImportError:
 
 DEBUG = os.environ.get("COMPOSE_LAZY_DEBUG", "False").lower() in ["true", "t"]
 
-LOG_LEVEL = "DEBUG"
+LOG_LEVEL = "DEBUG" if DEBUG else "INFO"
 
 
 def setup_logger(name: str) -> None:
+    """Add console handler only when "DEBUG" is active.
+
+    :param name: the name of this package
+    :return: None
+    """
     logger = logging.getLogger(name)
     logger.setLevel(logging.DEBUG)
     logger.propagate = False

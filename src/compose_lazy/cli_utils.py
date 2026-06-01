@@ -7,20 +7,22 @@ logger = logging.getLogger(__name__)
 
 @overload
 def interactive_select(
-    choice_list, flag=..., *, multiple=..., allow_zero: Literal[True]
+        candidates, flag=..., *, multiple=..., allow_zero: Literal[True]
 ) -> None | list[str]: ...
+
+
 @overload
 def interactive_select(
-    choice_list, flag=..., *, multiple=..., allow_zero: Literal[False] = ...
+        candidates, flag=..., *, multiple=..., allow_zero: Literal[False] = ...
 ) -> list[str]: ...
 
 
 def interactive_select(
-    candidates: Iterable[str],
-    flag: str | None = None,
-    *,
-    multiple: bool = True,
-    allow_zero: bool = False,
+        candidates: Iterable[str],
+        flag: str | None = None,
+        *,
+        multiple: bool = True,
+        allow_zero: bool = False,
 ) -> list[str] | None:
     """Starts general interactive session.
 
@@ -63,7 +65,7 @@ def interactive_select(
     # User input
     while True:
         args = []
-        
+
         try:
             if (choices_str := input(prompt)) in ["Q", "q"]:
                 print("\nCancelled.")

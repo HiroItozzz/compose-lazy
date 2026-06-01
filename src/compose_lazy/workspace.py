@@ -42,7 +42,6 @@ class YamlHandler:
 
         Args:
             path (Path): Path to the configuration file.
-            keys (str): Top level keys to be initialized in configuration file.
         """
         yaml.add_representer(
             AttrDict,
@@ -67,6 +66,8 @@ class YamlHandler:
     def setup_config(self, *keys: str) -> None:
         """Load configuration or create basic structure in configuration file.
 
+        Args:
+            keys (str): Top level keys to be initialized in configuration file.
         Returns:
             AttrDict: Loaded YAML configuration.
         """

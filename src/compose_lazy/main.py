@@ -26,6 +26,7 @@ def main() -> None:
         description="Shorthand aliases for docker compose commands.",
         epilog="See also: `dcpu -h`, `dcpe -h`, `dcp ws -h`",
     )
+    base_parser.suggest_on_error = True
     base_parser.add_argument("--version", action="version", version=f"compose-lazy {VERSION}")
 
     root_subparsers = base_parser.add_subparsers(dest="subcmd")
