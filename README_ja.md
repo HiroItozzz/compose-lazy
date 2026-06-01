@@ -5,7 +5,7 @@
 
 `docker compose` コマンドの使用頻度の高い開発者の作業を補助するためのCLIツールです。  
 よく使われるコマンドの短縮エイリアスに加え、composeファイル・プロファイル・サービス名のインタラクティブ選択や、複数リポジトリを一括操作するワークスペース管理機能を実装しています。    
-PyPIで公開しており、`pipx install fast-dcp`または`uv tool install fast-dcp`で即座に使用できます。
+PyPIで公開しており、`pipx install compose-lazy`または`uv tool install compose-lazy`で即座に使用できます。
 
 ## 主な機能
 
@@ -40,7 +40,7 @@ Enter your choice: 1
 ▷ Executing `docker compose up -d` in `/path/to/repo`.
 ```
  
-設定は `~/.config/fast-dcp` に保存されます。
+設定は `~/.config/compose-lazy` に保存されます。
 
 
 ### インタラクティブ機能
@@ -86,10 +86,10 @@ Enter your choice or 'q' to quit: 1
 
 ```bash
 # pipx
-pipx install fast-dcp
+pipx install compose-lazy
 
 # uv
-uv tool install fast-dcp
+uv tool install compose-lazy
 ```
 
 

@@ -3,9 +3,8 @@
 import logging
 from importlib.metadata import version
 
-__version__ = version("fast-dcp")
+__version__ = version("compose-lazy")
 
-
-logger = logging.getLogger("fast_dcp")
+logger = logging.getLogger("compose_lazy")
 logger.addHandler(logging.NullHandler())
 logger.propagate = False

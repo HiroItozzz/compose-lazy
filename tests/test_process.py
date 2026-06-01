@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from fast_dcp.process import DockerCmdProcessor as Processor
+from compose_lazy.process import DockerCmdProcessor as Processor
 
 
 class TestDCPBase:
@@ -23,7 +23,7 @@ class TestDCPSetup(TestDCPBase):
             MagicMock(return_value=["test"]),
         )
 
-        from fast_dcp.process import _BASE_CMD
+        from compose_lazy.process import _BASE_CMD
 
         args = Namespace(test="result", project="", file="", profile="")
         self.processor._setup(args)
@@ -137,6 +137,7 @@ class TestExecuteCommand(TestDCPBase):
         assert "An unexpected error occurred." in err
         assert code == 1
 
+
 class TestAdjustServiceName(TestDCPBase):
     @pytest.mark.parametrize("service_name", [None, []])
     def test_NO_ARGS(self, service_name):
@@ -190,7 +191,6 @@ class TestCreateOptions(TestDCPBase):
         self.processor._args = MagicMock()
 
     def test_create_common_compose_options(self, monkeypatch):
-
         monkeypatch.setattr(Processor, "_create_project_option", MagicMock())
         monkeypatch.setattr(Processor, "_create_file_option", MagicMock())
         monkeypatch.setattr(Processor, "_create_profile_option", MagicMock())
@@ -209,12 +209,12 @@ class TestCreateOptions(TestDCPBase):
             (["compose.yaml"], ["-f", "compose.yaml"]),
             (["compose.yml"], ["-f", "compose.yml"]),
             (
-                ["compose.yaml", "compose_2.yaml"],
-                ["-f", "compose.yaml", "-f", "compose_2.yaml"],
+                    ["compose.yaml", "compose_2.yaml"],
+                    ["-f", "compose.yaml", "-f", "compose_2.yaml"],
             ),
             (
-                ["compose.yml", "compose_2.yml"],
-                ["-f", "compose.yml", "-f", "compose_2.yml"],
+                    ["compose.yml", "compose_2.yml"],
+                    ["-f", "compose.yml", "-f", "compose_2.yml"],
             ),
         ],
     )
@@ -249,8 +249,8 @@ class TestCreateOptions(TestDCPBase):
     def test_create_file_option_ERROR_RAISED(self, exception):
         self.processor._args.file = []
         with patch(
-            "fast_dcp.process.DockerCmdProcessor._get_file_choices",
-            MagicMock(side_effect=exception),
+                "compose_lazy.process.DockerCmdProcessor._get_file_choices",
+                MagicMock(side_effect=exception),
         ):
             with pytest.raises(SystemExit):
                 self.processor._create_file_option()
@@ -262,8 +262,8 @@ class TestCreateOptions(TestDCPBase):
             (None, []),
             (["test"], ["--profile", "test"]),
             (
-                ["test", "test_2"],
-                ["--profile", "test", "--profile", "test_2"],
+                    ["test", "test_2"],
+                    ["--profile", "test", "--profile", "test_2"],
             ),
         ],
     )
@@ -279,8 +279,8 @@ class TestCreateOptions(TestDCPBase):
     def test_create_profile_option_ERROR_RAISED(self, exception):
         self.processor._args.profile = []
         with patch(
-            "fast_dcp.process.DockerCmdProcessor._get_profile_choices",
-            MagicMock(side_effect=exception),
+                "compose_lazy.process.DockerCmdProcessor._get_profile_choices",
+                MagicMock(side_effect=exception),
         ):
             with pytest.raises(SystemExit):
                 self.processor._create_profile_option()
@@ -290,7 +290,7 @@ class TestCreateOptions(TestDCPBase):
         "project_value,expected_value",
         [
             ("", []),
-            ("fast-dcp", ["-p", "fast-dcp"]),
+            ("compose-lazy", ["-p", "compose-lazy"]),
         ],
     )
     def test_create_project_option(self, project_value, expected_value):
@@ -356,7 +356,7 @@ class TestCreateServiceOption(TestDCPBase):
 class TestGetServiceChoices(TestDCPBase):
     def test_get_service_choices_NO_FILE(self, capsys):
         with patch(
-            "fast_dcp.process.DockerCmdProcessor._get_compose_file_paths"
+                "compose_lazy.process.DockerCmdProcessor._get_compose_file_paths"
         ) as mock_paths:
             mock_paths.return_value = []
 
@@ -373,7 +373,7 @@ class TestGetServiceChoices(TestDCPBase):
         monkeypatch.chdir(tmp_path)
         (tmp_path / file_name).write_text(content)
         with patch(
-            "fast_dcp.process.DockerCmdProcessor._get_compose_file_paths"
+                "compose_lazy.process.DockerCmdProcessor._get_compose_file_paths"
         ) as mock_paths:
             mock_paths.return_value = [file_name]
 
@@ -394,7 +394,7 @@ services:
         monkeypatch.chdir(tmp_path)
         (tmp_path / file_name).write_text(content)
         with patch(
-            "fast_dcp.process.DockerCmdProcessor._get_compose_file_paths"
+                "compose_lazy.process.DockerCmdProcessor._get_compose_file_paths"
         ) as mock_paths:
             mock_paths.return_value = [file_name]
             result = self.processor._get_service_choices()
@@ -415,10 +415,10 @@ services:
         monkeypatch.chdir(tmp_path)
         (tmp_path / file_name).write_text(content)
         with patch(
-            "fast_dcp.process.DockerCmdProcessor._get_compose_file_paths"
+                "compose_lazy.process.DockerCmdProcessor._get_compose_file_paths"
         ) as mock_paths:
             mock_paths.return_value = [file_name]
-            with patch("fast_dcp.cli_utils.interactive_select") as mock_select:
+            with patch("compose_lazy.cli_utils.interactive_select") as mock_select:
                 self.processor._get_service_choices()
 
         captured = capsys.readouterr()
@@ -429,7 +429,7 @@ services:
 class TestFileChoices(TestDCPBase):
     def test_get_file_choices_EMPTY(self, capsys):
         with patch(
-            "fast_dcp.process.DockerCmdProcessor._get_compose_file_paths"
+                "compose_lazy.process.DockerCmdProcessor._get_compose_file_paths"
         ) as mock_paths:
             mock_paths.return_value = []
 
@@ -442,7 +442,7 @@ class TestFileChoices(TestDCPBase):
     def test_get_file_choices_SINGLE(self, capsys):
         file_name = "docker-compose.yml"
         with patch(
-            "fast_dcp.process.DockerCmdProcessor._get_compose_file_paths"
+                "compose_lazy.process.DockerCmdProcessor._get_compose_file_paths"
         ) as mock_paths:
             mock_paths.return_value = [file_name]
 
@@ -455,10 +455,10 @@ class TestFileChoices(TestDCPBase):
     def test_get_file_choices_MULTIPLE(self):
         file_names = ["docker-compose.yml", "docker-compose.prod.yml"]
         with patch(
-            "fast_dcp.process.DockerCmdProcessor._get_compose_file_paths"
+                "compose_lazy.process.DockerCmdProcessor._get_compose_file_paths"
         ) as mock_paths:
             mock_paths.return_value = file_names
-            with patch("fast_dcp.cli_utils.interactive_select") as mock_select:
+            with patch("compose_lazy.cli_utils.interactive_select") as mock_select:
                 self.processor._get_file_choices()
 
         mock_select.assert_called_once_with(file_names, "-f")
@@ -467,7 +467,7 @@ class TestFileChoices(TestDCPBase):
 class TestProfileChoices(TestDCPBase):
     def test_get_profile_choices_NO_FILE(self, capsys):
         with patch(
-            "fast_dcp.process.DockerCmdProcessor._get_compose_file_paths"
+                "compose_lazy.process.DockerCmdProcessor._get_compose_file_paths"
         ) as mock_paths:
             mock_paths.return_value = []
 
@@ -487,7 +487,7 @@ services:
         monkeypatch.chdir(tmp_path)
         (tmp_path / file_name).write_text(content)
         with patch(
-            "fast_dcp.process.DockerCmdProcessor._get_compose_file_paths"
+                "compose_lazy.process.DockerCmdProcessor._get_compose_file_paths"
         ) as mock_paths:
             mock_paths.return_value = [file_name]
             with pytest.raises(SystemExit):
@@ -512,7 +512,7 @@ services:
         monkeypatch.chdir(tmp_path)
         (tmp_path / file_name).write_text(content)
         with patch(
-            "fast_dcp.process.DockerCmdProcessor._get_compose_file_paths"
+                "compose_lazy.process.DockerCmdProcessor._get_compose_file_paths"
         ) as mock_paths:
             mock_paths.return_value = [file_name]
             result = self.processor._get_profile_choices()
@@ -538,10 +538,10 @@ services:
         monkeypatch.chdir(tmp_path)
         (tmp_path / file_name).write_text(content)
         with patch(
-            "fast_dcp.process.DockerCmdProcessor._get_compose_file_paths"
+                "compose_lazy.process.DockerCmdProcessor._get_compose_file_paths"
         ) as mock_paths:
             mock_paths.return_value = [file_name]
-            with patch("fast_dcp.cli_utils.interactive_select") as mock_select:
+            with patch("compose_lazy.cli_utils.interactive_select") as mock_select:
                 self.processor._get_profile_choices()
 
         captured = capsys.readouterr()

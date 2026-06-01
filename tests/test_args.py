@@ -3,13 +3,12 @@ from unittest import TestCase
 
 import pytest
 
-from fast_dcp.args import ArgBuilder
+from compose_lazy.args import ArgBuilder
 
 
 # unittest
 class ArgBuilderTestBase(TestCase):
     def setUp(self):
-
         parser = ArgumentParser()
         self.builder = ArgBuilder(parser)
 
@@ -17,7 +16,7 @@ class ArgBuilderTestBase(TestCase):
 # pytest
 class PytestArgBuilderBase:
     def setup_method(self):
-        from fast_dcp.args import ArgBuilder
+        from compose_lazy.args import ArgBuilder
 
         parser = ArgumentParser()
         self.builder = ArgBuilder(parser)
@@ -39,7 +38,7 @@ class TestSetDefaults(ArgBuilderTestBase):
         self.assertEqual(args.func(args), 1)
 
     def test_set_defaults_NO_ATTR(self):
-        from fast_dcp.process import DockerCmdProcessor
+        from compose_lazy.process import DockerCmdProcessor
 
         self.builder.set_defaults()
         args = self.builder.parser.parse_args([])
@@ -50,7 +49,6 @@ class TestSetDefaults(ArgBuilderTestBase):
 
 class TestAddCommonComposeOptions(ArgBuilderTestBase):
     def test_add_common_compose_options_ADD_CORRECT_ARGUMENTS(self):
-
         self.builder.add_common_compose_options()
 
         actions = [a.dest for a in self.builder.parser._actions]
@@ -221,15 +219,15 @@ class TestAddProfileArgs(ArgBuilderTestBase):
 class TestAddProjectArgs(ArgBuilderTestBase):
     def test_add_project_args_ABBREV(self):
         self.builder._add_project_args()
-        args = self.builder.parser.parse_args(["-p", "fast-dcp"])
+        args = self.builder.parser.parse_args(["-p", "compose-lazy"])
 
-        self.assertEqual(args.project, "fast-dcp")
+        self.assertEqual(args.project, "compose-lazy")
 
     def test_add_project_args_LONG(self):
         self.builder._add_project_args()
-        args = self.builder.parser.parse_args(["--project", "fast-dcp"])
+        args = self.builder.parser.parse_args(["--project", "compose-lazy"])
 
-        self.assertEqual(args.project, "fast-dcp")
+        self.assertEqual(args.project, "compose-lazy")
 
     def test_add_project_args_ABBREV_WITH_NO_ARGS(self):
         self.builder._add_project_args()

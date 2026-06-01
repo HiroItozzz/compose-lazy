@@ -3,8 +3,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from fast_dcp.main import dcpe_main, dcpu_main, main
-from fast_dcp.process import DockerCmdProcessor as Processor
+from compose_lazy.main import dcpe_main, dcpu_main, main
+from compose_lazy.process import DockerCmdProcessor as Processor
 
 
 class TestMain:
@@ -104,7 +104,7 @@ class TestMain:
         ("dcp ps --status dead", "docker compose ps --status dead"),
         ("dcp ps --status dead service1", "docker compose ps service1 --status dead"),
         ("dcp ps service1 service2", "docker compose ps service1 service2"),
-        ("dcp ps service1 service2 -a", "docker compose ps service1 service2 --all"),        
+        ("dcp ps service1 service2 -a", "docker compose ps service1 service2 --all"),
         ("dcp ps -a service1 service2", "docker compose ps service1 service2 --all"),
         ("dcp ps -a service1 service2 --status exited", "docker compose ps service1 service2 --all --status exited"),
         ("dcp ps --status running -a service1 service2", "docker compose ps service1 service2 --all --status running"),
@@ -151,6 +151,7 @@ class TestMain:
         ("dcp down -pf dev", "docker compose --profile dev down"),
         ("dcp down --profile dev", "docker compose --profile dev down"),
     )
+
     # @fmt:on
 
     @pytest.mark.parametrize("input_cmd,expected_cmd", [
@@ -165,7 +166,7 @@ class TestMain:
         *testcases_DCP_DOWN_SINGLE_OPTION,
     ])
     def test_run_dcp(self, input_cmd, expected_cmd):
-        with patch("fast_dcp.process.subprocess.run") as mock_run:
+        with patch("compose_lazy.process.subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(returncode=0)
             with patch("sys.argv", input_cmd.split()):
                 with pytest.raises(SystemExit) as exc_info:
@@ -202,6 +203,7 @@ class TestMain:
         ("dcp run service -pf dev", "docker compose --profile dev run service bash"),
         ("dcp run service --profile dev", "docker compose --profile dev run service bash"),
     )
+
     # fmt:on
 
     @pytest.mark.parametrize(
@@ -215,7 +217,7 @@ class TestMain:
         """Tests which requires yaml files."""
         monkeypatch.chdir(tmp_path)
         (tmp_path / "compose.test.yml").write_text("services:\n  service:")
-        with patch("fast_dcp.process.subprocess.run") as mock_run:
+        with patch("compose_lazy.process.subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(returncode=0)
             with patch("sys.argv", input_cmd.split()):
                 with pytest.raises(SystemExit) as exc_info:
@@ -243,6 +245,7 @@ class TestMain:
         ("dcpu -pf dev", "docker compose --profile dev up"),
         ("dcpu --profile dev", "docker compose --profile dev up"),
     )
+
     # @fmt:on
     @pytest.mark.parametrize(
         "input_cmd,expected_cmd",
@@ -253,7 +256,7 @@ class TestMain:
     def test_run_dcpu(self, input_cmd, expected_cmd, tmp_path, monkeypatch):
         monkeypatch.chdir(tmp_path)
         (tmp_path / "compose.test.yml").write_text("services:\n  service:")
-        with patch("fast_dcp.process.subprocess.run") as mock_run:
+        with patch("compose_lazy.process.subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(returncode=0)
             with patch("sys.argv", input_cmd.split()):
                 with pytest.raises(SystemExit) as exc_info:
@@ -273,6 +276,7 @@ class TestMain:
         ("dcpe service -pf dev", "docker compose --profile dev exec service bash"),
         ("dcpe service -pf dev prod", "docker compose --profile dev --profile prod exec service bash"),
     )
+
     # @fmt:on
     @pytest.mark.parametrize(
         "input_cmd,expected_cmd",
@@ -283,7 +287,7 @@ class TestMain:
     def test_run_dcpe(self, input_cmd, expected_cmd, tmp_path, monkeypatch):
         monkeypatch.chdir(tmp_path)
         (tmp_path / "compose.test.yml").write_text("services:\n  service:")
-        with patch("fast_dcp.process.subprocess.run") as mock_run:
+        with patch("compose_lazy.process.subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(returncode=0)
             with patch("sys.argv", input_cmd.split()):
                 with pytest.raises(SystemExit) as exc_info:
@@ -293,26 +297,27 @@ class TestMain:
 
     # fmt:off
     testcases_DCP_EXEC_INTERACTION = (
-        ("dcp e", "2\n","docker compose exec web bash"),
-        ("dcp e uv run pytest", "2\n","docker compose exec web uv run pytest"),
-        ("dcp e -f test.yaml", "2\n","docker compose -f test.yaml exec web bash"),
-        ("dcp e uv run pytest -f test.yaml", "2\n","docker compose -f test.yaml exec web uv run pytest"),
-        ("dcp e -p testproject", "2\n","docker compose -p testproject exec web bash"),
-        ("dcp e uv run pytest -p testproject", "2\n","docker compose -p testproject exec web uv run pytest"),
-        ("dcp e -pf dev", "2\n","docker compose --profile dev exec web bash"),
-        ("dcp e --profile dev", "2\n","docker compose --profile dev exec web bash"),
+        ("dcp e", "2\n", "docker compose exec web bash"),
+        ("dcp e uv run pytest", "2\n", "docker compose exec web uv run pytest"),
+        ("dcp e -f test.yaml", "2\n", "docker compose -f test.yaml exec web bash"),
+        ("dcp e uv run pytest -f test.yaml", "2\n", "docker compose -f test.yaml exec web uv run pytest"),
+        ("dcp e -p testproject", "2\n", "docker compose -p testproject exec web bash"),
+        ("dcp e uv run pytest -p testproject", "2\n", "docker compose -p testproject exec web uv run pytest"),
+        ("dcp e -pf dev", "2\n", "docker compose --profile dev exec web bash"),
+        ("dcp e --profile dev", "2\n", "docker compose --profile dev exec web bash"),
     )
 
     testcases_DCP_RUN_INTERACTION = (
-        ("dcp run", "2\n","docker compose run web bash"),
-        ("dcp run uv run pytest", "2\n","docker compose run web uv run pytest"),
-        ("dcp run -f test.yaml", "2\n","docker compose -f test.yaml run web bash"),
-        ("dcp run uv run pytest -f test.yaml", "2\n","docker compose -f test.yaml run web uv run pytest"),
-        ("dcp run -p testproject", "2\n","docker compose -p testproject run web bash"),
-        ("dcp run uv run pytest -p testproject", "2\n","docker compose -p testproject run web uv run pytest"),
-        ("dcp run -pf dev", "2\n","docker compose --profile dev run web bash"),
-        ("dcp run --profile dev", "2\n","docker compose --profile dev run web bash"),
+        ("dcp run", "2\n", "docker compose run web bash"),
+        ("dcp run uv run pytest", "2\n", "docker compose run web uv run pytest"),
+        ("dcp run -f test.yaml", "2\n", "docker compose -f test.yaml run web bash"),
+        ("dcp run uv run pytest -f test.yaml", "2\n", "docker compose -f test.yaml run web uv run pytest"),
+        ("dcp run -p testproject", "2\n", "docker compose -p testproject run web bash"),
+        ("dcp run uv run pytest -p testproject", "2\n", "docker compose -p testproject run web uv run pytest"),
+        ("dcp run -pf dev", "2\n", "docker compose --profile dev run web bash"),
+        ("dcp run --profile dev", "2\n", "docker compose --profile dev run web bash"),
     )
+
     # fmt:on
 
     @pytest.mark.parametrize(
@@ -323,14 +328,14 @@ class TestMain:
         ],
     )
     def test_run_INTERACTION_EXEC_RUN(
-        self, input_cmd, users_choice, expected_cmd, tmp_path, capsys, monkeypatch
+            self, input_cmd, users_choice, expected_cmd, tmp_path, capsys, monkeypatch
     ):
         monkeypatch.setattr("sys.stdin", io.StringIO(users_choice))
         monkeypatch.chdir(tmp_path)
         # #1 is `db`, #2 is `web`.
         (tmp_path / "compose.test.yml").write_text("services:\n  web:\n  db:")
 
-        with patch("fast_dcp.process.subprocess.run") as mock_run:
+        with patch("compose_lazy.process.subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(returncode=0)
             with patch("sys.argv", input_cmd.split()):
                 with pytest.raises(SystemExit) as exc_info:
@@ -343,23 +348,24 @@ class TestMain:
 
     # fmt:off
     testcases_INTERACTION_GENERAL = (
-        ("dcp up -f", "2\n","docker compose -f compose.test_2.yml up"),
-        ("dcp up -pf", "2\n","docker compose --profile prod up"),
-        ("dcp up -s", "2\n","docker compose up frontend"),
-        ("dcp up -f", "99\n2\n","docker compose -f compose.test_2.yml up"),
-        ("dcp up -pf", "99\n2\n","docker compose --profile prod up"),
-        ("dcp up -s", "99\n2\n","docker compose up frontend"),
-        ("dcp up -f", "1,2\n","docker compose -f compose.test.yml -f compose.test_2.yml up"),
-        ("dcp up -pf", "1,2\n","docker compose --profile dev --profile prod up"),
-        ("dcp up -s", "1,2\n","docker compose up db frontend"),
+        ("dcp up -f", "2\n", "docker compose -f compose.test_2.yml up"),
+        ("dcp up -pf", "2\n", "docker compose --profile prod up"),
+        ("dcp up -s", "2\n", "docker compose up frontend"),
+        ("dcp up -f", "99\n2\n", "docker compose -f compose.test_2.yml up"),
+        ("dcp up -pf", "99\n2\n", "docker compose --profile prod up"),
+        ("dcp up -s", "99\n2\n", "docker compose up frontend"),
+        ("dcp up -f", "1,2\n", "docker compose -f compose.test.yml -f compose.test_2.yml up"),
+        ("dcp up -pf", "1,2\n", "docker compose --profile dev --profile prod up"),
+        ("dcp up -s", "1,2\n", "docker compose up db frontend"),
     )
+
     # fmt:on
 
     @pytest.mark.parametrize(
         "input_cmd,users_choice,expected_cmd", [*testcases_INTERACTION_GENERAL]
     )
     def test_run_INTERACTION_MULTIPLE(
-        self, input_cmd, users_choice, expected_cmd, tmp_path, capsys, monkeypatch
+            self, input_cmd, users_choice, expected_cmd, tmp_path, capsys, monkeypatch
     ):
         monkeypatch.setattr("sys.stdin", io.StringIO(users_choice))
         monkeypatch.chdir(tmp_path)
@@ -371,7 +377,7 @@ class TestMain:
         (tmp_path / "compose.test.yml").write_text(yml)
         (tmp_path / "compose.test_2.yml").write_text(yml_2)
 
-        with patch("fast_dcp.process.subprocess.run") as mock_run:
+        with patch("compose_lazy.process.subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(returncode=0)
             with patch("sys.argv", input_cmd.split()):
                 with pytest.raises(SystemExit) as exc_info:
@@ -399,7 +405,7 @@ class TestMain:
         ],
     )
     def test_run_dcp_WS_EXECUTOR(self, input_cmd, expected_ws_subcmd):
-        with patch("fast_dcp.main.ws_processor") as mock_executor:
+        with patch("compose_lazy.main.ws_processor") as mock_executor:
             mock_executor.return_value = 0
             with patch("sys.argv", input_cmd.split()):
                 with pytest.raises(SystemExit) as exc_info:
@@ -424,7 +430,7 @@ class TestMain:
         ],
     )
     def test_run_dcp_WS_REGISTRAR(self, input_cmd, expected_ws_subcmd):
-        with patch("fast_dcp.main.ws_registrar") as mock_registrar:
+        with patch("compose_lazy.main.ws_registrar") as mock_registrar:
             mock_registrar.return_value = 0
             with patch("sys.argv", input_cmd.split()):
                 with pytest.raises(SystemExit) as exc_info:
@@ -443,7 +449,7 @@ class TestMain:
         ],
     )
     def test_run_dcp_ERROR(self, input_cmd):
-        with patch("fast_dcp.process.subprocess.run") as mock_run:
+        with patch("compose_lazy.process.subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(returncode=0)
             with patch("sys.argv", input_cmd.split()):
                 with pytest.raises(SystemExit) as exc_info:
@@ -452,7 +458,7 @@ class TestMain:
 
     @pytest.mark.parametrize("input_cmd", ["dcp"])
     def test_run_dcp_SUBCMD_IS_NONE(self, input_cmd):
-        with patch("fast_dcp.main.ArgumentParser.print_help") as mock_help:
+        with patch("compose_lazy.main.ArgumentParser.print_help") as mock_help:
             mock_help.return_value = MagicMock()
             with patch("sys.argv", input_cmd.split()):
                 with pytest.raises(SystemExit) as exc_info:
@@ -462,7 +468,7 @@ class TestMain:
 
     @pytest.mark.parametrize("input_cmd", ["dcp ws"])
     def test_run_dcp_SUBCMD_WS_AND_WS_SUBCMD_IS_NONE(self, input_cmd):
-        with patch("fast_dcp.main.ArgumentParser.print_help") as mock_help:
+        with patch("compose_lazy.main.ArgumentParser.print_help") as mock_help:
             mock_help.return_value = MagicMock()
             with patch("sys.argv", input_cmd.split()):
                 with pytest.raises(SystemExit) as exc_info:
@@ -484,16 +490,16 @@ class TestMain:
         ],
     )
     def test_service_multiple_consistency(
-        self, input_cmd, multiple, tmp_path, monkeypatch
+            self, input_cmd, multiple, tmp_path, monkeypatch
     ):
         """Attribute `multiple` in add_service_name_subcmd and _create_service_option are consistent."""
         monkeypatch.chdir(tmp_path)
         (tmp_path / "compose.test.yml").write_text("services:\n  web:")
 
         with patch(
-            "fast_dcp.process.DockerCmdProcessor._create_service_option", return_value=[]
+                "compose_lazy.process.DockerCmdProcessor._create_service_option", return_value=[]
         ) as mock_service:
-            with patch("fast_dcp.process.subprocess.run") as mock_run:
+            with patch("compose_lazy.process.subprocess.run") as mock_run:
                 mock_run.return_value = MagicMock(returncode=0)
                 with patch("sys.argv", input_cmd.split()):
                     with pytest.raises(SystemExit):

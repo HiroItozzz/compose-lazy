@@ -9,7 +9,7 @@ try:
 except ImportError:
     pass
 
-DEBUG = os.environ.get("FAST_DCP_DEBUG", "False").lower() in ["true", "t"]
+DEBUG = os.environ.get("COMPOSE_LAZY_DEBUG", "False").lower() in ["true", "t"]
 
 LOG_LEVEL = "DEBUG"
 
