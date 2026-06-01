@@ -5,7 +5,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from compose_lazy import cli_utils
+from compose_lazy import utils
 from compose_lazy.workspace import (
     WorkspaceProcessor,
     WorkspaceRegistrar,
@@ -52,7 +52,7 @@ class TestCommonMethods(TestWsBase):
             MagicMock(),
         )
         monkeypatch.setattr(
-            cli_utils,
+            utils,
             "interactive_select",
             MagicMock(return_value=["ws2"]),
         )
@@ -60,7 +60,7 @@ class TestCommonMethods(TestWsBase):
         result = self.registrar._select_workspace_or_create(workspaces)
 
         WorkspaceRegistrar._display_intro.assert_called_once()
-        getattr(cli_utils, "interactive_select").assert_called_once_with(
+        getattr(utils, "interactive_select").assert_called_once_with(
             list(workspaces), multiple=False, allow_zero=True
         )
         assert result == "ws2"
@@ -76,7 +76,7 @@ class TestCommonMethods(TestWsBase):
             MagicMock(),
         )
         monkeypatch.setattr(
-            cli_utils,
+            utils,
             "interactive_select",
             MagicMock(return_value=None),
         )
@@ -85,7 +85,7 @@ class TestCommonMethods(TestWsBase):
         result = self.registrar._select_workspace_or_create(workspaces)
 
         WorkspaceRegistrar._display_intro.assert_called_once()
-        getattr(cli_utils, "interactive_select").assert_called_once_with(
+        getattr(utils, "interactive_select").assert_called_once_with(
             list(workspaces), multiple=False, allow_zero=True
         )
         mock_input.assert_called_once_with(prompt)
@@ -98,7 +98,7 @@ class TestCommonMethods(TestWsBase):
             MagicMock(),
         )
         monkeypatch.setattr(
-            cli_utils,
+            utils,
             "interactive_select",
             MagicMock(return_value=["ws2"]),
         )
@@ -106,7 +106,7 @@ class TestCommonMethods(TestWsBase):
         result = self.registrar._select_workspace_simply(workspaces)
 
         WorkspaceRegistrar._display_intro.assert_called_once()
-        getattr(cli_utils, "interactive_select").assert_called_once_with(
+        getattr(utils, "interactive_select").assert_called_once_with(
             list(workspaces), multiple=False
         )
         assert result == "ws2"
@@ -261,7 +261,7 @@ class TestRegisterRepo(TestWsBase):
         mock_input = MagicMock(side_effect=[str(tmp_path), "ws_new"])
         monkeypatch.setattr("builtins.input", mock_input)
         monkeypatch.setattr(
-            cli_utils,
+            utils,
             "interactive_select",
             MagicMock(return_value=None),
         )

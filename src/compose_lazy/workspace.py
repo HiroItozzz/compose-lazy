@@ -9,7 +9,7 @@ from typing import Iterable
 import yaml
 from yaml.scanner import ScannerError
 
-from . import cli_utils
+from . import utils
 
 logger = logging.getLogger(__name__)
 
@@ -145,15 +145,14 @@ class AbstractWsExecutor(ABC):
         return code
 
     @abstractmethod
-    def _switch(self, args: Namespace) -> int:
-        ...
+    def _switch(self, args: Namespace) -> int: ...
 
     def _select_workspace_or_create(self, candidates: Iterable[str]) -> str:
         candidates = list(candidates)
         if not candidates:
             return input("Please enter a new workspace name: ").strip()
         self._display_intro(candidates)
-        choices: list[str] | None = cli_utils.interactive_select(
+        choices: list[str] | None = utils.interactive_select(
             candidates, multiple=False, allow_zero=True
         )
         if choices is None:
@@ -164,7 +163,7 @@ class AbstractWsExecutor(ABC):
     def _select_workspace_simply(self, candidates: Iterable[str]) -> str:
         candidates = list(candidates)
         self._display_intro(candidates)
-        choices: list[str] = cli_utils.interactive_select(candidates, multiple=False)
+        choices: list[str] = utils.interactive_select(candidates, multiple=False)
         return choices[0]
 
     def _display_intro(self, candidates: list[str]) -> None:
