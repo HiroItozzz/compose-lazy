@@ -13,7 +13,7 @@ from . import cli_utils
 
 logger = logging.getLogger(__name__)
 
-CONFIG_PATH = Path.home() / ".config" / "fast-dcp"
+CONFIG_PATH = Path.home() / ".config" / "compose-lazy"
 
 
 class AttrDict(dict):
@@ -144,7 +144,8 @@ class AbstractWsExecutor(ABC):
         return code
 
     @abstractmethod
-    def _switch(self, args: Namespace) -> int: ...
+    def _switch(self, args: Namespace) -> int:
+        ...
 
     def _select_workspace_or_create(self, candidates: Iterable[str]) -> str:
         candidates = list(candidates)

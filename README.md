@@ -1,17 +1,17 @@
-# Fast DCP
+# Compose Lazy
 > 🚀 A smart CLI wrapper for `docker compose` — with interactive file, profile, and service selection.
 
 ## Overview
 A CLI tool designed to streamline workflows for developers who frequently use `docker compose`.  
 In addition to short aliases for common commands, it features interactive selection of compose files, profiles, and services, and multi-repository workspace management.   
-Available on PyPI — install instantly with `pipx install fast-dcp` or `uv tool install fast-dcp`.
+Available on PyPI — install instantly with `pipx install compose-lazy` or `uv tool install compose-lazy`.
 
 [日本語版README](README_ja.md)もあります。
 
 ## Highlights
 
 ### Basic Commands
-Installing fast-dcp adds three commands to your PATH automatically.
+Installing compose-lazy adds three commands to your PATH automatically.
 
 | Command | Description |
 |---|---|
@@ -40,7 +40,7 @@ Enter your choice: 1
 ▷ Executing `docker compose up -d` in `/path/to/repo`.
 ```
  
-Workspace configuration is stored in `~/.config/fast-dcp`.
+Workspace configuration is stored in `~/.config/compose-lazy`.
 
 
 ### Interactive Selection
@@ -83,13 +83,13 @@ Enter your choice or 'q' to quit: 1
 ```
 
 
-## 🔧 Install fast-dcp
+## 🔧 Install compose-lazy
 ### Quick Install
 ```bash
 # Using pipx
-pipx install fast-dcp
+pipx install compose-lazy
 # OR using uv
-uv tool install fast-dcp
+uv tool install compose-lazy
 ```
 ### Not familiar with Python tooling?
 
@@ -102,7 +102,7 @@ If you don't have `pipx` or `uv` installed yet:
 python -m pip install --user pipx
 python -m pipx ensurepath
 # Restart terminal, then:
-pipx install fast-dcp
+pipx install compose-lazy
 ```
 </details>
 
@@ -112,7 +112,7 @@ pipx install fast-dcp
 ```bash
 brew install pipx
 pipx ensurepath
-pipx install fast-dcp
+pipx install compose-lazy
 ```
 </details>
 
@@ -122,7 +122,7 @@ pipx install fast-dcp
 ```bash
 pip install pipx
 pipx ensurepath
-pipx install fast-dcp
+pipx install compose-lazy
 ```
 </details>
 
@@ -137,7 +137,7 @@ pipx install fast-dcp
 ## FAQ
 ### Why use pipx or uv tool instead of pip?
 
-Both `pipx` and `uv tool` install CLI tools in isolated environments, so fast-dcp won't conflict with other Python packages. The commands (`dcp`, `dcpu`, `dcpe`) are available globally without activating a virtual environment. `uv tool` is the faster alternative if you already use uv.
+Both `pipx` and `uv tool` install CLI tools in isolated environments, so compose-lazy won't conflict with other Python packages. The commands (`dcp`, `dcpu`, `dcpe`) are available globally without activating a virtual environment. `uv tool` is the faster alternative if you already use uv.
 
 ## Requirements
 
@@ -150,7 +150,7 @@ Both `pipx` and `uv tool` install CLI tools in isolated environments, so fast-dc
 > **Common options** (available for all commands): `-s`, `-f FILE...`, `-pf PROFILE...`, `-p PROJECT`
 >
 > ⚠️ Note: `-f`, `-pf`, `-p` are passed before the subcommand in the actual docker compose syntax,  
-> but in fast-dcp they are specified after the subcommand (e.g. `dcp up -f FILE`).
+> but in compose-lazy they are specified after the subcommand (e.g. `dcp up -f FILE`).
 
 | Bash Command                         | Executed Docker Command                                  |
 |--------------------------------------|----------------------------------------------------------|

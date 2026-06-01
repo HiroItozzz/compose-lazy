@@ -5,7 +5,7 @@ import pytest
 import yaml
 from yaml.scanner import ScannerError
 
-from fast_dcp.workspace import (
+from compose_lazy.workspace import (
     AttrDict,
     YamlHandler,
 )
@@ -92,10 +92,10 @@ class TestYamlHandlerInit:
     @pytest.mark.parametrize(
         "error,msg",
         (
-            [
-                (ScannerError, "❌ Couldn't load yaml: "),
-                (FileNotFoundError, "❌ Couldn't find directory: "),
-            ]
+                [
+                    (ScannerError, "❌ Couldn't load yaml: "),
+                    (FileNotFoundError, "❌ Couldn't find directory: "),
+                ]
         ),
     )
     def test_setup_config_ERROR(self, error, msg, capsys, tmp_path, monkeypatch):

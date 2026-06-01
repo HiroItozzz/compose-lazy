@@ -32,9 +32,9 @@ dependencies = [
 ]
 
 [project.scripts]
-dcp = "fast_dcp.main:main"
-dcpu = "fast_dcp.main:dcpu_main"
-dcpe = "fast_dcp.main:dcpe_main"
+dcp = "compose_lazy.main:main"
+dcpu = "compose_lazy.main:dcpu_main"
+dcpe = "compose_lazy.main:dcpe_main"
 
 [project.urls]
 Repository = "https://github.com/HiroItozzz/fast-dcp"

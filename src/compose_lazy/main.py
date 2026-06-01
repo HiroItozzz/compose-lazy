@@ -8,10 +8,9 @@ from .args import ArgBuilder
 from .process import DockerCmdProcessor
 from .workspace import WorkspaceProcessor, WorkspaceRegistrar
 
-VERSION = version("fast_dcp")
+VERSION = version("compose_lazy")
 
 logger = logging.getLogger(__name__)
-
 
 processor = DockerCmdProcessor()
 ws_registrar = WorkspaceRegistrar()
@@ -19,7 +18,7 @@ ws_processor = WorkspaceProcessor()
 
 
 def main() -> None:
-    config.setup_logger("fast_dcp")
+    config.setup_logger("compose_lazy")
 
     base_parser = ArgumentParser(
         allow_abbrev=False,
@@ -27,7 +26,7 @@ def main() -> None:
         description="Shorthand aliases for docker compose commands.",
         epilog="See also: `dcpu -h`, `dcpe -h`, `dcp ws -h`",
     )
-    base_parser.add_argument("--version", action="version", version=f"fast-dcp {VERSION}")
+    base_parser.add_argument("--version", action="version", version=f"compose-lazy {VERSION}")
 
     root_subparsers = base_parser.add_subparsers(dest="subcmd")
 
@@ -273,7 +272,7 @@ def main() -> None:
 
 
 def dcpu_main() -> None:
-    config.setup_logger("fast_dcp")
+    config.setup_logger("compose_lazy")
 
     parser = ArgumentParser(
         allow_abbrev=False,
@@ -294,7 +293,7 @@ def dcpu_main() -> None:
     )
 
     parser.add_argument(
-        "-v", "--version", action="version", version=f"fast-dcp {VERSION}"
+        "-v", "--version", action="version", version=f"compose-lazy {VERSION}"
     )
 
     args = parser.parse_args()
@@ -303,7 +302,7 @@ def dcpu_main() -> None:
 
 
 def dcpe_main() -> None:
-    config.setup_logger("fast_dcp")
+    config.setup_logger("compose_lazy")
 
     parser = ArgumentParser(
         allow_abbrev=False,
@@ -322,7 +321,7 @@ def dcpe_main() -> None:
     )
 
     parser.add_argument(
-        "-v", "--version", action="version", version=f"fast-dcp {VERSION}"
+        "-v", "--version", action="version", version=f"compose-lazy {VERSION}"
     )
 
     args = parser.parse_args()

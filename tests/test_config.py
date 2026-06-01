@@ -1,6 +1,6 @@
 from logging import StreamHandler, getLogger
 
-from fast_dcp import config
+from compose_lazy import config
 
 
 class TestSetupLogger:
@@ -10,7 +10,6 @@ class TestSetupLogger:
         logging.getLogger("test").handlers = []
 
     def test_setup_logger(self, monkeypatch):
-
         monkeypatch.setattr(config, "DEBUG", True)
 
         config.setup_logger("test")
