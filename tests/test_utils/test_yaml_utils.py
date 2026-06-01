@@ -5,7 +5,7 @@ import pytest
 import yaml
 from yaml.scanner import ScannerError
 
-from compose_lazy.workspace import (
+from compose_lazy.utils import (
     AttrDict,
     YamlHandler,
 )
@@ -92,10 +92,10 @@ class TestYamlHandlerInit:
     @pytest.mark.parametrize(
         "error,msg",
         (
-                [
-                    (ScannerError, "❌ Couldn't load yaml: "),
-                    (FileNotFoundError, "❌ Couldn't find directory: "),
-                ]
+            [
+                (ScannerError, "❌ Couldn't load yaml: "),
+                (FileNotFoundError, "❌ Couldn't find directory: "),
+            ]
         ),
     )
     def test_setup_config_ERROR(self, error, msg, capsys, tmp_path, monkeypatch):
@@ -130,6 +130,23 @@ class TestYamlHandlerInit:
         content = config_path.read_text(encoding="utf-8")
         assert "key" in content
         assert "value" in content
+
+
+class TestYamlHandlerGetValues:
+    def setup_method(self):
+        self.handler = YamlHandler.__new__(YamlHandler)
+        self.values = ["val1", "val2"]
+        self.handler._config = {"key1": {"key2": self.values}}
+
+    def test_valid(self):
+        result = self.handler.get_values("key1", "key2")
+
+        assert result == self.values
+
+    def test_invalid(self):
+        result = self.handler.get_values("key1", "key100")
+
+        assert result is None
 
 
 class TestYamlHandlerAppendValue:

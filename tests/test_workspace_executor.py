@@ -6,10 +6,10 @@ from unittest.mock import MagicMock
 import pytest
 
 from compose_lazy import utils
+from compose_lazy.utils import YamlHandler
 from compose_lazy.workspace import (
     WorkspaceProcessor,
     WorkspaceRegistrar,
-    YamlHandler,
 )
 
 
@@ -66,7 +66,7 @@ class TestCommonMethods(TestWsBase):
         assert result == "ws2"
 
     def test_select_or_create_WORKSPACE_EXISTS_AND_SELECT_0(
-            self, capsys, monkeypatch, tmp_path
+        self, capsys, monkeypatch, tmp_path
     ):
         mock_input = MagicMock(return_value="ws99")
         monkeypatch.setattr("builtins.input", mock_input)
