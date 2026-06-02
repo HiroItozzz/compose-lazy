@@ -31,8 +31,8 @@ class DockerCmdProcessor:
             self._adjust_service_name()
 
     def __call__(self, args: Namespace) -> int:
-        self._setup(args)
         try:
+            self._setup(args)
             match args.subcmd:
                 case "up" | "u":
                     self._create_up_cmd()

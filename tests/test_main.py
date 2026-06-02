@@ -8,8 +8,6 @@ from compose_lazy import utils
 
 
 class TestMain:
-    def teardown_method(self):
-        utils.get_compose_file_paths.cache_clear()
 
     # fmt:off
     testcases_DCP_U_SINGLE_OPTION = (

@@ -1,5 +1,4 @@
 import logging
-from functools import lru_cache
 from pathlib import Path
 
 import yaml
@@ -28,7 +27,6 @@ def get_profiles(file_paths: list[Path]) -> set[str]:
     return profiles
 
 
-@lru_cache
 def get_compose_file_paths(path: Path | None = None) -> list[Path]:
     path: Path = path or Path.cwd()
     return [*path.glob("*compose*.yml"), *path.glob("*compose*.yaml")]
