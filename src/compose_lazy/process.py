@@ -155,6 +155,46 @@ class DockerCmdProcessor:
             return []
         return ["-p", self.args.project]
 
+    # File option
+    def _create_file_option(self) -> list[str]:
+        input_args: list[str] | None = self.args.file
+        if input_args is None:
+            return []  # Do nothing
+
+        if input_args:
+            file_args = []
+            for f in input_args:
+                if Path(f).suffix in [".yaml", ".yml"]:  # noqa: E713
+                    file_args += ["-f", f]
+                    # if invalid file input, start interactive selection.
+                else:
+                    print(
+                        f"Invalid file type: {f}. Please select interactively.",
+                        file=sys.stderr,
+                    )
+                    break
+            else:
+                return file_args
+
+        file_list = utils.get_file_choices()
+
+        return self._format_as_flag_args(file_list, "-f")
+
+    # Profile option
+    def _create_profile_option(self) -> list[str]:
+        input_args: list[str] | None = self.args.profile
+        if input_args is None:
+            return []  # Do nothing
+
+        if input_args:
+            profile_args = []
+            for pf in input_args:
+                profile_args += ["--profile", pf]
+            return profile_args
+
+        profile_list = utils.get_profile_choices()
+        return self._format_as_flag_args(profile_list, "--profile")
+
     # Service option
     def _create_service_option(self, multiple: bool = True) -> list[str]:
         """Return service name args for docker compose command.
@@ -175,108 +215,7 @@ class DockerCmdProcessor:
             if not self.args.service:
                 return input_args
 
-        return self._get_service_choices(multiple=multiple)
-
-    def _get_service_choices(self, multiple: bool = True) -> list[str]:
-        """Execute interactive session to get service names."""
-        file_paths = utils.get_compose_file_paths()
-        if not file_paths:
-            print("❌ No compose files found.", file=sys.stderr)
-            raise SystemExit
-
-        services = utils.get_services(file_paths)
-
-        if not services:
-            print("❌ No services found.", file=sys.stderr)
-            raise SystemExit
-
-        if len(services) == 1:
-            s = services.pop()
-            print(f"☑ Service found: {s}")
-            return [s]
-
-        # Interactive session: select number(s) to get file args or press "Q" to quit.
-        print(f"\n☑ Found {len(services)} services!")
-
-        return utils.interactive_select(services, multiple=multiple)
-
-    # File option
-    def _create_file_option(self) -> list[str]:
-        input_args: list[str] | None = self.args.file
-        if input_args is None:
-            return []  # Do nothing
-
-        if input_args:
-            file_args = []
-            for f in input_args:
-                if not (Path(f).suffix in [".yaml", ".yml"]):  # noqa: E713
-                    # if invalid file input, start interactive selection.
-                    print(
-                        f"Invalid file type: {f}. Please select interactively.",
-                        file=sys.stderr,
-                    )
-                    break
-                file_args += ["-f", f]
-            else:
-                return file_args
-
-        return self._get_file_choices()
-
-    def _get_file_choices(self) -> list[str]:
-        """Execute interactive session to create -f args."""
-
-        # List up docker-compose files
-        file_names: list[str] = [
-            f.name for f in utils.get_compose_file_paths() if f
-        ]
-
-        if not file_names:
-            print("❌ No compose files found.", file=sys.stderr)
-            raise SystemExit
-
-        if (file_count := len(file_names)) == 1:
-            print(f"☑ Compose file found: {file_names[0]}")
-            return ["-f"] + file_names
-
-        print(f"\n☑ Found {file_count} docker-compose files!")
-
-        return utils.interactive_select(file_names, "-f")
-
-    # Profile option
-    def _create_profile_option(self) -> list[str]:
-        input_args: list[str] | None = self.args.profile
-        if input_args is None:
-            return []  # Do nothing
-
-        if input_args:
-            profile_args = []
-            for pf in input_args:
-                profile_args += ["--profile", pf]
-            return profile_args
-
-        return self._get_profile_choices()
-
-    def _get_profile_choices(self) -> list[str]:
-        """Execute interactive session to create --profile args."""
-        file_paths = utils.get_compose_file_paths()
-        if not file_paths:
-            print("❌ No compose files found.", file=sys.stderr)
-            raise SystemExit
-
-        profiles = utils.get_profiles(file_paths)
-        if not profiles:
-            print("❌ No profiles found.", file=sys.stderr)
-            raise SystemExit
-
-        if len(profiles) == 1:
-            p = profiles.pop()
-            print(f"☑ Profile found: {p}")
-            return ["--profile", p]
-
-        # Interactive session: select number(s) to get file args or press "Q" to quit.
-        print(f"\n☑ Found {len(profiles)} profiles!")
-
-        return utils.interactive_select(profiles, "--profile")
+        return utils.get_service_choices(multiple=multiple)
 
     def _adjust_service_name(self) -> None:
         """Move service_name to inner_bash_cmd if it doesn't match any declared service.
@@ -304,3 +243,11 @@ class DockerCmdProcessor:
 
         logger.debug(f"\n----adjusted args----\n{self.args}")
         return
+
+    @staticmethod
+    def _format_as_flag_args(values: list[str], flag: str) -> list[str]:
+        """Convert value list to ['flag', 'value1', 'flag', 'value2'] format."""
+        args = []
+        for v in values:
+            args += [flag, v]
+        return args
