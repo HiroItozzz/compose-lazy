@@ -58,7 +58,7 @@ def interactive_select(
         print(f"{idx:>5}. {candidate}")
 
     if allow_zero:
-        print("\nOr 0 to enter an alternative choice.", end="")
+        print("\nOr '0' for a new entry.")
 
     # User input
     while True:

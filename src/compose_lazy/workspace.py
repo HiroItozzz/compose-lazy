@@ -1,4 +1,5 @@
 import logging
+import shutil
 import subprocess
 import sys
 from abc import ABC, abstractmethod
@@ -82,14 +83,15 @@ class WorkspaceRegistrar(AbstractWsExecutor):
         if not (workspaces := config[self._WORKSPACE_KEY]):
             print("☓ No workspaces registered yet.")
             return 1
+        width, _ = shutil.get_terminal_size()
         for ws_key in workspaces:
-            print(f"{'─' * 25} Workspace: {ws_key} {'─' * 25}")
+            print(f"───── {ws_key} ".ljust(min(width, 100), "─"))
             repos_dict: dict[str, list[str]] = workspaces[ws_key]
             if not repos_dict:
                 print("☓ No repos registered yet.")
             for idx, repo_name in enumerate(repos_dict, start=1):
-                print(f"{'Path[' + str(idx) + ']':>10}: {repo_name}")
-                print(f"{'Files':>10}: {', '.join(repos_dict[repo_name])}")
+                print(f"{'📁 PATH[' + str(idx) + ']':>9}: {repo_name}")
+                print(f"{'FILES':>10}: {', '.join(repos_dict[repo_name])}")
         return 0
 
     def register_repo(self) -> int:
@@ -178,30 +180,37 @@ class WorkspaceRegistrar(AbstractWsExecutor):
 
 
 class WorkspaceProcessor(AbstractWsExecutor):
+    BASE_COMMAND = ["docker", "compose"]
+
     def _switch(self, args: Namespace) -> int:
-        cmd = ["docker", "compose"]
-        # TODO: ["-f", "ファイル名"]を挿入
         match args.ws_subcmd:
             case "up" | "u":
-                cmd += ["up", "-d"]
+                subcommand = ["up", "-d"]
             case "restart" | "re":
-                cmd += ["restart"]
+                subcommand = ["restart"]
             case "stop" | "s":
-                cmd += ["stop"]
+                subcommand = ["stop"]
             case "down":
-                cmd += ["down"]
+                subcommand = ["down"]
             case _:  # pragma: no cover
                 # Unreachable branch
                 return 1  # pragma: no cover
 
         try:
             codes = []
-            for workdir in self.get_target_workspace():
+            workdirs = self.get_target_workspace().items()
+            for workdir, yaml_names in workdirs:
                 if not Path(workdir).is_dir():
                     print(f"❌️ Workspace directory not found: {workdir}", file=sys.stderr)
                     codes.append(1)
                     continue
-                # TODO: コンポーズファイル有無のガード節？
+                for y in yaml_names:
+                    if not (Path(workdir) / y).exists():
+                        print(f"❌️ Compose file not found: {workdir}", file=sys.stderr)
+
+                optional_args = utils.format_as_flag_args(yaml_names, "-f")
+                cmd = self.BASE_COMMAND + optional_args + subcommand
+
                 logger.debug(
                     f"\n---------workdir---------\n{workdir}\n----output docker cmd---- \n{cmd}"
                 )
@@ -220,12 +229,20 @@ class WorkspaceProcessor(AbstractWsExecutor):
 
         return next((c for c in codes if c != 0), 0)
 
-    def get_target_workspace(self) -> list[str]:
+    def get_target_workspace(self) -> dict[str, list[str]]:
+        """Let the user select workspace and returns all paths in it.
+
+        Returns:
+            list[str]: All paths in a workspace user selected.
+        """
         workspaces: dict = self.handler.config[self._WORKSPACE_KEY]
         workspace_name: str = self._select_workspace_simply(workspaces)
         return workspaces[workspace_name]
 
     def _execute_command(self, cmd: list[str], workdir: str) -> int:
-        print(f"▷ Executing `{' '.join(cmd)}` in `{workdir}`.")
+        repo_name = Path(workdir).name
+        width, _ = shutil.get_terminal_size()
+        print(f"───── {repo_name} ".ljust(width, "─"))
+        print(f"▷ Executing `{' '.join(cmd)}` in {repo_name.upper()}.")
         result = subprocess.run(cmd, cwd=workdir)
         return result.returncode
