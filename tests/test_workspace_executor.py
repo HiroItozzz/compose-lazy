@@ -116,14 +116,14 @@ class TestCommonMethods(TestWsBase):
         self.registrar._display_intro(workspaces)
 
         out, _ = capsys.readouterr()
-        assert "☑ Found 1 registered workspace." in out
+        assert "Found 1 registered workspace" in out
 
     def test_display_intro_LENGTH_OVER_2(self, capsys):
         workspaces = {"ws1": [], "ws2": []}
         self.registrar._display_intro(workspaces)
 
         out, _ = capsys.readouterr()
-        assert "☑ Found 2 registered workspaces." in out
+        assert "Found 2 registered workspaces" in out
 
 
 # ─────────────────────────────────────────────
@@ -188,7 +188,10 @@ class TestShowList(TestWsBase):
     def test_WITH_WORKSPACES(self, capsys):
         self.registrar.handler._config = {
             "workspaces": {
-                "ws1": ["/path/to/repo1", "/path/to/repo2"],
+                "ws1": {
+                    "/path/to/repo1": ["compose1.yml"],
+                    "/path/to/repo2": ["compose2.yml"],
+                },
             }
         }
         code = self.registrar.show_list()
@@ -196,6 +199,7 @@ class TestShowList(TestWsBase):
         out, _ = capsys.readouterr()
         assert "ws1" in out
         assert "/path/to/repo1" in out
+        assert "compose2.yml" in out
         assert code == 0
 
     def test_EMPTY_WORKSPACE(self, capsys):
@@ -218,10 +222,17 @@ class TestRegisterRepo(TestWsBase):
         assert "❌ The path doesn't exists" in err
         assert code == 1
 
-    def test_VALID_PATH_NEW(self, capsys, monkeypatch, tmp_path):
+    @pytest.mark.parametrize(
+        "selected_yamls",
+        [["compose.test.yml"], ["compose.test.yaml", "compose.test2.yml"]],
+    )
+    def test_VALID_PATH_NEW(self, selected_yamls, capsys, monkeypatch, tmp_path):
         self.registrar.handler._config = {"workspaces": {}}
         self.registrar.handler.append_value = MagicMock(return_value=True)
         self.registrar.handler.dump_and_write = MagicMock()
+        monkeypatch.setattr(
+            utils, "get_file_choices", MagicMock(return_value=selected_yamls)
+        )
         monkeypatch.setattr(
             WorkspaceRegistrar,
             "_select_workspace_or_create",
@@ -233,13 +244,20 @@ class TestRegisterRepo(TestWsBase):
 
         out, _ = capsys.readouterr()
         assert "☑ Registered new path" in out
-        self.registrar.handler.dump_and_write.assert_called_once()
+        assert str(tmp_path) in out
+        assert all((f in out for f in selected_yamls))
+        self.registrar.handler.dump_and_write.assert_called()
+        utils.get_file_choices.assert_called_once_with(tmp_path)
         assert code == 0
 
     def test_VALID_PATH_DUPLICATE(self, capsys, monkeypatch, tmp_path):
+        (tmp_path / "compose.test.yml").touch()
         self.registrar.handler._config = {"workspaces": {}}
         self.registrar.handler.append_value = MagicMock(return_value=False)
         self.registrar.handler.dump_and_write = MagicMock()
+        monkeypatch.setattr(
+            utils, "get_file_choices", MagicMock(return_value=["compose.test.yml"])
+        )
         monkeypatch.setattr(
             WorkspaceRegistrar,
             "_select_workspace_or_create",
@@ -251,6 +269,7 @@ class TestRegisterRepo(TestWsBase):
 
         _, err = capsys.readouterr()
         assert "already in" in err
+        assert "compose.test.yml" in err
         self.registrar.handler.dump_and_write.assert_not_called()
         assert code == 0
 
@@ -265,11 +284,15 @@ class TestRegisterRepo(TestWsBase):
             "interactive_select",
             MagicMock(return_value=None),
         )
+        monkeypatch.setattr(
+            utils, "get_file_choices", MagicMock(return_value=["compose.test.yml"])
+        )
 
         code = self.registrar.register_repo()
 
         out, _ = capsys.readouterr()
         assert "☑ Registered new path to ws_new" in out
+        assert "compose.test.yml" in out
         self.registrar.handler.dump_and_write.assert_called_once()
         assert code == 0
 
@@ -277,6 +300,10 @@ class TestRegisterRepo(TestWsBase):
         self.registrar.handler._config = {"workspaces": {}}
         self.registrar.handler.append_value = MagicMock(return_value=True)
         self.registrar.handler.dump_and_write = MagicMock()
+
+        monkeypatch.setattr(
+            utils, "get_file_choices", MagicMock(return_value=["compose.test.yml"])
+        )
         monkeypatch.setattr(
             WorkspaceRegistrar,
             "_select_workspace_or_create",
@@ -300,7 +327,12 @@ class TestDeleteRepo(TestWsBase):
         assert code == 1
 
     def test_DELETE(self, capsys, monkeypatch):
-        workspaces = {"ws1": ["/path/to/repo1", "/path/to/repo2"]}
+        workspaces = {
+            "ws1": {
+                "/path/to/repo1": ["compose1.yml"],
+                "/path/to/repo2": ["compose2.yml"],
+            },
+        }
         self.registrar.handler._config = {"workspaces": workspaces}
         self.registrar.handler.dump_and_write = MagicMock()
         monkeypatch.setattr(
@@ -318,7 +350,11 @@ class TestDeleteRepo(TestWsBase):
         assert code == 0
 
     def test_DELETE_ALL_REMOVES_WORKSPACE(self, monkeypatch):
-        workspaces = {"ws1": ["/path/to/repo1"]}
+        workspaces = {
+            "ws1": {
+                "/path/to/repo1": ["compose1.yml"],
+            }
+        }
         self.registrar.handler._config = {"workspaces": workspaces}
         self.registrar.handler.dump_and_write = MagicMock()
         monkeypatch.setattr(
@@ -334,7 +370,12 @@ class TestDeleteRepo(TestWsBase):
 
     @pytest.mark.parametrize("commands", [("3", "1"), ("0", "1"), ("-1", "1")])
     def test_DELETE_OUT_OF_RANGE(self, commands, capsys, monkeypatch):
-        workspaces = {"ws1": ["/path/to/repo1", "/path/to/repo2"]}
+        workspaces = {
+            "ws1": {
+                "/path/to/repo1": ["compose1.yml"],
+                "/path/to/repo2": ["compose2.yml"],
+            },
+        }
         self.registrar.handler._config = {"workspaces": workspaces}
         self.registrar.handler.dump_and_write = MagicMock()
         monkeypatch.setattr(
