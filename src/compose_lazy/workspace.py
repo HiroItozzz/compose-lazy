@@ -49,7 +49,7 @@ class AbstractWsExecutor(ABC):
         return choices[0]
 
     def _display_intro(self, candidates: list[str]) -> None:
-        msg = "☑ Found {} registered workspace{}."
+        msg = "☑ Found {} registered workspace{}!"
 
         length = len(candidates)
         if length > 1:
@@ -82,35 +82,44 @@ class WorkspaceRegistrar(AbstractWsExecutor):
         if not (workspaces := config[self._WORKSPACE_KEY]):
             print("☓ No workspaces registered yet.")
             return 1
-        for key in workspaces:
-            print(f"{key}")
-            if not workspaces[key]:
+        for ws_key in workspaces:
+            print(f"{'─' * 25} Workspace: {ws_key} {'─' * 25}")
+            repos_dict: dict[str, list[str]] = workspaces[ws_key]
+            if not repos_dict:
                 print("☓ No repos registered yet.")
-            for value in workspaces[key]:
-                print(f"  - {value}")
+            for idx, repo_name in enumerate(repos_dict, start=1):
+                print(f"{'Path[' + str(idx) + ']':>10}: {repo_name}")
+                print(f"{'Files':>10}: {', '.join(repos_dict[repo_name])}")
         return 0
 
     def register_repo(self) -> int:
         # User input
-        new_repo = Path(input("Please enter a new directory path: ")).resolve()
+        new_repo = (
+            Path(input("Please enter a new directory path: ")).expanduser().resolve()
+        )
 
         if not new_repo.is_dir():
             print(f"❌ The path doesn't exists: {str(new_repo)}", file=sys.stderr)
             return 1
 
+        selected_yamls = utils.get_file_choices(new_repo)
+
         workspace_dict = self.handler.config[self._WORKSPACE_KEY]
         workspace_name = self._select_workspace_or_create(workspace_dict)
-        appended = self.handler.append_value(
-            self._WORKSPACE_KEY, workspace_name, str(new_repo)
-        )
-        if appended:
-            self.handler.dump_and_write()
-            print(f"\n☑ Registered new path to {workspace_name}: {str(new_repo)}")
-        else:
-            print(
-                f"Oops, `{str(new_repo)}` is already in `{workspace_name}`.",
-                file=sys.stderr,
+        for yaml_name in selected_yamls:
+            appended = self.handler.append_value(
+                self._WORKSPACE_KEY, workspace_name, str(new_repo), yaml_name
             )
+            if appended:
+                self.handler.dump_and_write()
+                print(
+                    f"☑ Registered new path to {workspace_name}: {str(new_repo)} ({yaml_name})"
+                )
+            else:
+                print(
+                    f"Oops, `{str(new_repo)} ({yaml_name})` is already in `{workspace_name}`.",
+                    file=sys.stderr,
+                )
         print("💡 Hint: To get workspace lists, run `dcp ws list(li)`.")
         return 0
 
@@ -157,8 +166,8 @@ class WorkspaceRegistrar(AbstractWsExecutor):
                 break
 
         for i in choices:
-            name = target_workspace[i]
-            del target_workspace[i]
+            name = list(target_workspace)[i]
+            del target_workspace[name]
             print(f"☑ Deleted: {name}")
 
         if not target_workspace:
@@ -170,16 +179,17 @@ class WorkspaceRegistrar(AbstractWsExecutor):
 
 class WorkspaceProcessor(AbstractWsExecutor):
     def _switch(self, args: Namespace) -> int:
-        cmd = []
+        cmd = ["docker", "compose"]
+        # TODO: ["-f", "ファイル名"]を挿入
         match args.ws_subcmd:
             case "up" | "u":
-                cmd = ["docker", "compose", "up", "-d"]
+                cmd += ["up", "-d"]
             case "restart" | "re":
-                cmd = ["docker", "compose", "restart"]
+                cmd += ["restart"]
             case "stop" | "s":
-                cmd = ["docker", "compose", "stop"]
+                cmd += ["stop"]
             case "down":
-                cmd = ["docker", "compose", "down"]
+                cmd += ["down"]
             case _:  # pragma: no cover
                 # Unreachable branch
                 return 1  # pragma: no cover
@@ -191,6 +201,7 @@ class WorkspaceProcessor(AbstractWsExecutor):
                     print(f"❌️ Workspace directory not found: {workdir}", file=sys.stderr)
                     codes.append(1)
                     continue
+                # TODO: コンポーズファイル有無のガード節？
                 logger.debug(
                     f"\n---------workdir---------\n{workdir}\n----output docker cmd---- \n{cmd}"
                 )

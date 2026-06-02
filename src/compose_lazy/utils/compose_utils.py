@@ -8,6 +8,12 @@ from . import cli_utils
 
 logger = logging.getLogger(__name__)
 
+def format_as_flag_args(values: list[str], flag: str) -> list[str]:
+    """Convert value list to ['flag', 'value1', 'flag', 'value2'] format."""
+    args = []
+    for v in values:
+        args += [flag, v]
+    return args
 
 def get_compose_file_paths(path: Path | None = None) -> list[Path]:
     path: Path = path or Path.cwd()

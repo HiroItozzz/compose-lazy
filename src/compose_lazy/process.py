@@ -178,7 +178,7 @@ class DockerCmdProcessor:
 
         file_list = utils.get_file_choices()
 
-        return self._format_as_flag_args(file_list, "-f")
+        return utils.format_as_flag_args(file_list, "-f")
 
     # Profile option
     def _create_profile_option(self) -> list[str]:
@@ -193,7 +193,7 @@ class DockerCmdProcessor:
             return profile_args
 
         profile_list = utils.get_profile_choices()
-        return self._format_as_flag_args(profile_list, "--profile")
+        return utils.format_as_flag_args(profile_list, "--profile")
 
     # Service option
     def _create_service_option(self, multiple: bool = True) -> list[str]:
@@ -243,11 +243,3 @@ class DockerCmdProcessor:
 
         logger.debug(f"\n----adjusted args----\n{self.args}")
         return
-
-    @staticmethod
-    def _format_as_flag_args(values: list[str], flag: str) -> list[str]:
-        """Convert value list to ['flag', 'value1', 'flag', 'value2'] format."""
-        args = []
-        for v in values:
-            args += [flag, v]
-        return args
