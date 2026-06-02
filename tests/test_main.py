@@ -4,12 +4,10 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from compose_lazy.main import dcpe_main, dcpu_main, main
-from compose_lazy.process import DockerCmdProcessor as Processor
+from compose_lazy import utils
 
 
 class TestMain:
-    def teardown_method(self):
-        Processor._get_compose_file_paths.cache_clear()
 
     # fmt:off
     testcases_DCP_U_SINGLE_OPTION = (
@@ -328,7 +326,7 @@ class TestMain:
         ],
     )
     def test_run_INTERACTION_EXEC_RUN(
-            self, input_cmd, users_choice, expected_cmd, tmp_path, capsys, monkeypatch
+        self, input_cmd, users_choice, expected_cmd, tmp_path, capsys, monkeypatch
     ):
         monkeypatch.setattr("sys.stdin", io.StringIO(users_choice))
         monkeypatch.chdir(tmp_path)
@@ -365,7 +363,7 @@ class TestMain:
         "input_cmd,users_choice,expected_cmd", [*testcases_INTERACTION_GENERAL]
     )
     def test_run_INTERACTION_MULTIPLE(
-            self, input_cmd, users_choice, expected_cmd, tmp_path, capsys, monkeypatch
+        self, input_cmd, users_choice, expected_cmd, tmp_path, capsys, monkeypatch
     ):
         monkeypatch.setattr("sys.stdin", io.StringIO(users_choice))
         monkeypatch.chdir(tmp_path)
@@ -490,14 +488,15 @@ class TestMain:
         ],
     )
     def test_service_multiple_consistency(
-            self, input_cmd, multiple, tmp_path, monkeypatch
+        self, input_cmd, multiple, tmp_path, monkeypatch
     ):
         """Attribute `multiple` in add_service_name_subcmd and _create_service_option are consistent."""
         monkeypatch.chdir(tmp_path)
         (tmp_path / "compose.test.yml").write_text("services:\n  web:")
 
         with patch(
-                "compose_lazy.process.DockerCmdProcessor._create_service_option", return_value=[]
+            "compose_lazy.process.DockerCmdProcessor._create_service_option",
+            return_value=[],
         ) as mock_service:
             with patch("compose_lazy.process.subprocess.run") as mock_run:
                 mock_run.return_value = MagicMock(returncode=0)

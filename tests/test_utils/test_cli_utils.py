@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from compose_lazy import cli_utils
+from compose_lazy.utils import cli_utils
 
 
 class TestInteraciveSelect:
@@ -56,7 +56,7 @@ class TestInteraciveSelect:
         [*cases_f, *cases_pf, *cases_s, *cases_MULTIPLE_False],
     )
     def test_interactive_select(
-            self, keys, flag, multiple, allow_zero, expected, monkeypatch
+        self, keys, flag, multiple, allow_zero, expected, monkeypatch
     ):
         monkeypatch.setattr("sys.stdin", io.StringIO(keys))
         choices = ["choice_1", "choice_2"]
@@ -76,7 +76,7 @@ class TestInteraciveSelect:
         [("1,2\n2\n", None, False, ["choice_2"])],
     )
     def test_MULTIPLE_False_TO_MULTIPLE_ARGS(
-            self, keys, flag, multiple, expected, capsys, monkeypatch
+        self, keys, flag, multiple, expected, capsys, monkeypatch
     ):
         monkeypatch.setattr("sys.stdin", io.StringIO(keys))
         choices = ["choice_1", "choice_2"]
@@ -99,7 +99,7 @@ class TestInteraciveSelect:
         [*cases_ALLOW_ZERO_True],
     )
     def test_interactive_select_ALLO_ZERO(
-            self, keys, flag, multiple, allow_zero, expected, capsys, monkeypatch
+        self, keys, flag, multiple, allow_zero, expected, capsys, monkeypatch
     ):
         monkeypatch.setattr("sys.stdin", io.StringIO(keys))
         choices = ["choice_1", "choice_2"]

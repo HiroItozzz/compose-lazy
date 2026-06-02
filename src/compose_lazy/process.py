@@ -1,15 +1,12 @@
-import glob
 import logging
 import subprocess
 import sys
 from argparse import Namespace
-from functools import lru_cache
 from pathlib import Path
-from typing import Callable
 
 import yaml
 
-from . import cli_utils
+from . import utils
 
 logger = logging.getLogger(__name__)
 
@@ -34,29 +31,34 @@ class DockerCmdProcessor:
             self._adjust_service_name()
 
     def __call__(self, args: Namespace) -> int:
-        self._setup(args)
-        match args.subcmd:
-            case "up" | "u":
-                self._create_up_cmd()
-            case "build" | "b":
-                self._create_build_cmd()
-            case "exec" | "e":
-                self._create_exec_cmd()
-            case "run":
-                self._create_run_cmd()
-            case "restart" | "re":
-                self._create_restart_cmd()
-            case "ps":
-                self._create_ps_cmd()
-            case "logs" | "l":
-                self._create_logs_cmd()
-            case "stop" | "s":
-                self._create_stop_cmd()
-            case "down":
-                self._create_down_cmd()
-            case _:  # pragma: no cover
-                # Unreachable branch
-                return 1  # pragma: no cover
+        try:
+            self._setup(args)
+            match args.subcmd:
+                case "up" | "u":
+                    self._create_up_cmd()
+                case "build" | "b":
+                    self._create_build_cmd()
+                case "exec" | "e":
+                    self._create_exec_cmd()
+                case "run":
+                    self._create_run_cmd()
+                case "restart" | "re":
+                    self._create_restart_cmd()
+                case "ps":
+                    self._create_ps_cmd()
+                case "logs" | "l":
+                    self._create_logs_cmd()
+                case "stop" | "s":
+                    self._create_stop_cmd()
+                case "down":
+                    self._create_down_cmd()
+                case _:  # pragma: no cover
+                    # Unreachable branch
+                    return 1  # pragma: no cover
+        except KeyboardInterrupt:
+            return 130
+        except SystemExit:
+            return 1
         return self._execute_command()
 
     def call_dcpu(self, args: Namespace) -> int:
@@ -153,14 +155,6 @@ class DockerCmdProcessor:
             return []
         return ["-p", self.args.project]
 
-    def _call_safely(self, func: Callable[[], list[str]]) -> list[str]:
-        try:
-            return func()
-        except KeyboardInterrupt:
-            sys.exit(130)
-        except SystemExit:
-            sys.exit(0)
-
     # Service option
     def _create_service_option(self, multiple: bool = True) -> list[str]:
         """Return service name args for docker compose command.
@@ -181,21 +175,16 @@ class DockerCmdProcessor:
             if not self.args.service:
                 return input_args
 
-        return self._call_safely(lambda: self._get_service_choices(multiple=multiple))
+        return self._get_service_choices(multiple=multiple)
 
     def _get_service_choices(self, multiple: bool = True) -> list[str]:
         """Execute interactive session to get service names."""
-        file_paths = self._get_compose_file_paths()
+        file_paths = utils.get_compose_file_paths()
         if not file_paths:
             print("❌ No compose files found.", file=sys.stderr)
             raise SystemExit
 
-        services = set()
-        for path in file_paths:
-            with open(path) as f:
-                data = yaml.safe_load(f)
-            for services_name in (data or {}).get("services", {}).keys():
-                services.add(services_name)
+        services = utils.get_services(file_paths)
 
         if not services:
             print("❌ No services found.", file=sys.stderr)
@@ -209,7 +198,7 @@ class DockerCmdProcessor:
         # Interactive session: select number(s) to get file args or press "Q" to quit.
         print(f"\n☑ Found {len(services)} services!")
 
-        return cli_utils.interactive_select(services, multiple=multiple)
+        return utils.interactive_select(services, multiple=multiple)
 
     # File option
     def _create_file_option(self) -> list[str]:
@@ -231,25 +220,27 @@ class DockerCmdProcessor:
             else:
                 return file_args
 
-        return self._call_safely(self._get_file_choices)
+        return self._get_file_choices()
 
     def _get_file_choices(self) -> list[str]:
         """Execute interactive session to create -f args."""
 
         # List up docker-compose files
-        file_paths: list[str] = self._get_compose_file_paths()
+        file_names: list[str] = [
+            f.name for f in utils.get_compose_file_paths() if f
+        ]
 
-        if not file_paths:
+        if not file_names:
             print("❌ No compose files found.", file=sys.stderr)
             raise SystemExit
 
-        if (file_count := len(file_paths)) == 1:
-            print(f"☑ Compose file found: {file_paths[0]}")
-            return ["-f"] + file_paths
+        if (file_count := len(file_names)) == 1:
+            print(f"☑ Compose file found: {file_names[0]}")
+            return ["-f"] + file_names
 
         print(f"\n☑ Found {file_count} docker-compose files!")
 
-        return cli_utils.interactive_select(file_paths, "-f")
+        return utils.interactive_select(file_names, "-f")
 
     # Profile option
     def _create_profile_option(self) -> list[str]:
@@ -263,23 +254,16 @@ class DockerCmdProcessor:
                 profile_args += ["--profile", pf]
             return profile_args
 
-        return self._call_safely(self._get_profile_choices)
+        return self._get_profile_choices()
 
     def _get_profile_choices(self) -> list[str]:
         """Execute interactive session to create --profile args."""
-        file_paths = self._get_compose_file_paths()
+        file_paths = utils.get_compose_file_paths()
         if not file_paths:
             print("❌ No compose files found.", file=sys.stderr)
             raise SystemExit
 
-        profiles = set()
-        for path in file_paths:
-            with open(path) as f:
-                data = yaml.safe_load(f)
-            for service in (data or {}).get("services", {}).values():
-                for p in (service or {}).get("profiles", []):
-                    profiles.add(p)
-
+        profiles = utils.get_profiles(file_paths)
         if not profiles:
             print("❌ No profiles found.", file=sys.stderr)
             raise SystemExit
@@ -292,7 +276,7 @@ class DockerCmdProcessor:
         # Interactive session: select number(s) to get file args or press "Q" to quit.
         print(f"\n☑ Found {len(profiles)} profiles!")
 
-        return cli_utils.interactive_select(profiles, "--profile")
+        return utils.interactive_select(profiles, "--profile")
 
     def _adjust_service_name(self) -> None:
         """Move service_name to inner_bash_cmd if it doesn't match any declared service.
@@ -303,7 +287,7 @@ class DockerCmdProcessor:
         if not (user_input := self.args.service_name):
             return
 
-        file_paths = self._get_compose_file_paths()
+        file_paths = utils.get_compose_file_paths()
         existing_services = set()
 
         for path in file_paths:
@@ -320,8 +304,3 @@ class DockerCmdProcessor:
 
         logger.debug(f"\n----adjusted args----\n{self.args}")
         return
-
-    @staticmethod
-    @lru_cache
-    def _get_compose_file_paths() -> list[str]:
-        return glob.glob("*compose*.yml") + glob.glob("*compose*.yaml")
