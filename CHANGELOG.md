@@ -1,3 +1,13 @@
+## v0.8.1 - 2026-06-03
+
+### Changed
+- Centralized cancellation handling for Docker and workspace commands, keeping `Ctrl+C` and interactive quit behavior consistent
+- Cached compose YAML reads during command processing to avoid redundant file I/O
+- Cleaned up interactive prompt spacing and workspace message formatting
+
+### Internal
+- Refactored service-name adjustment to reuse shared compose YAML parsing logic
+
 ## v0.8.0 - 2026-06-03
 
 ### Breaking Change
