@@ -471,6 +471,26 @@ class TestMain:
                 assert exc_info.value.code == 0
 
     @pytest.mark.parametrize(
+        "input_cmd,entrypoint",
+        [
+            ("dcp --version", main),
+            ("dcpu --version", dcpu_main),
+            ("dcpe --version", dcpe_main),
+        ],
+    )
+    def test_version_shows_migration_notice(self, input_cmd, entrypoint, capsys):
+        with patch("sys.argv", input_cmd.split()):
+            with pytest.raises(SystemExit) as exc_info:
+                entrypoint()
+
+        std, _ = capsys.readouterr()
+        assert exc_info.value.code == 0
+        assert "fast-dcp 0.6.1" in std
+        assert "fast-dcp has been renamed to compose-lazy" in std
+        assert "pipx install compose-lazy" in std
+        assert "uv tool install compose-" in std
+
+    @pytest.mark.parametrize(
         "input_cmd,multiple",
         [
             ("dcp up", True),

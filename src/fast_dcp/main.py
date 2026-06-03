@@ -9,6 +9,11 @@ from .process import DockerCmdProcessor
 from .workspace import WorkspaceProcessor, WorkspaceRegistrar
 
 VERSION = version("fast_dcp")
+MIGRATION_NOTICE = (
+    "Note: fast-dcp has been renamed to compose-lazy. "
+    "Install the new package with `pipx install compose-lazy` "
+    "or `uv tool install compose-lazy`."
+)
 
 logger = logging.getLogger(__name__)
 
@@ -25,9 +30,11 @@ def main() -> None:
         allow_abbrev=False,
         usage="dcp <SUBCOMMAND> [options]",
         description="Shorthand aliases for docker compose commands.",
-        epilog="See also: `dcpu -h`, `dcpe -h`, `dcp ws -h`",
+        epilog=f"{MIGRATION_NOTICE}\n\nSee also: `dcpu -h`, `dcpe -h`, `dcp ws -h`",
     )
-    base_parser.add_argument("--version", action="version", version=f"fast-dcp {VERSION}")
+    base_parser.add_argument(
+        "--version", action="version", version=f"fast-dcp {VERSION}\n{MIGRATION_NOTICE}"
+    )
 
     root_subparsers = base_parser.add_subparsers(dest="subcmd")
 
@@ -279,7 +286,7 @@ def dcpu_main() -> None:
         allow_abbrev=False,
         usage="dcpu [SERVICE_NAME] [options]",
         description="Shorthand for `docker compose up`.",
-        epilog="See also: `dcp -h`, `dcpe -h`",
+        epilog=f"{MIGRATION_NOTICE}\n\nSee also: `dcp -h`, `dcpe -h`",
     )
 
     # dcpu command
@@ -294,7 +301,10 @@ def dcpu_main() -> None:
     )
 
     parser.add_argument(
-        "-v", "--version", action="version", version=f"fast-dcp {VERSION}"
+        "-v",
+        "--version",
+        action="version",
+        version=f"fast-dcp {VERSION}\n{MIGRATION_NOTICE}",
     )
 
     args = parser.parse_args()
@@ -309,7 +319,7 @@ def dcpe_main() -> None:
         allow_abbrev=False,
         usage="dcpe <SERVICE_NAME> [BASH|commands] [options]",
         description="Shorthand for `docker compose exec`.",
-        epilog="See also: `dcp -h`, `dcpu -h`",
+        epilog=f"{MIGRATION_NOTICE}\n\nSee also: `dcp -h`, `dcpu -h`",
     )
 
     # dcpe command
@@ -322,7 +332,10 @@ def dcpe_main() -> None:
     )
 
     parser.add_argument(
-        "-v", "--version", action="version", version=f"fast-dcp {VERSION}"
+        "-v",
+        "--version",
+        action="version",
+        version=f"fast-dcp {VERSION}\n{MIGRATION_NOTICE}",
     )
 
     args = parser.parse_args()

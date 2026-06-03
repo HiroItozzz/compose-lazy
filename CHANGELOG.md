@@ -1,4 +1,9 @@
+## v0.6.2 - 2026-06-03
+> Added migration notice to help messages.
+
 ## v0.6.1 - 2026-05-31
+
+> Final release under the `fast-dcp` package name. Starting with v0.7.0, the package is published as `compose-lazy`.
 
 ### Added
 - `dcp ws register(reg)` now allows entering `0` to input a new workspace name when existing workspaces are listed
