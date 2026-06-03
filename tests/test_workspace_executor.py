@@ -484,6 +484,17 @@ class TestExecutorCall(TestWsBase):
         assert "Docker is not found." in err
         assert code == 1
 
+    def test_switch_MISSING_COMPOSE_FILE(self, capsys, monkeypatch):
+        monkeypatch.setattr(Path, "is_dir", MagicMock(return_value=True))
+        monkeypatch.setattr(Path, "exists", MagicMock(return_value=False))
+        args = Namespace(ws_subcmd="up")
+        code = self.executor._switch(args)
+
+        _, err = capsys.readouterr()
+        assert "❌️ Compose file not found" in err
+        assert code == 1
+        self.executor._execute_command.assert_not_called()
+
     def test_UNEXPECTED_ERROR(self, capsys):
         self.executor.get_target_workspace = MagicMock(side_effect=RuntimeError)
         args = Namespace(ws_subcmd="up")

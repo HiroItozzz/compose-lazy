@@ -167,8 +167,9 @@ class WorkspaceRegistrar(AbstractWsExecutor):
             else:
                 break
 
+        keys = list(target_workspace)
         for i in choices:
-            name = list(target_workspace)[i]
+            name = keys[i]
             del target_workspace[name]
             print(f"☑ Deleted: {name}")
 
@@ -206,12 +207,16 @@ class WorkspaceProcessor(AbstractWsExecutor):
                     print(f"❌️ Workspace directory not found: {workdir}", file=sys.stderr)
                     codes.append(1)
                     continue
-                for y in yaml_names:
-                    if not (Path(workdir) / y).exists():
-                        print(
-                            f"❌️ Compose file not found: {workdir}/{y}", file=sys.stderr
-                        )
-                        codes.append(1)
+
+                missing = [y for y in yaml_names if not (Path(workdir) / y).exists()]
+                if missing:
+                    # fmt: off
+                    for y in missing:
+                        print(f"❌️ Compose file not found: {Path(workdir) / y}", file=sys.stderr)
+                    print(f"⚠️  Skipping {Path(workdir).name} — re-register to fix.", file=sys.stderr)
+                    codes.append(1)
+                    continue
+                    # fmt: on
 
                 optional_args = utils.format_as_flag_args(yaml_names, "-f")
                 cmd = self.BASE_COMMAND + optional_args + subcommand
@@ -247,7 +252,7 @@ class WorkspaceProcessor(AbstractWsExecutor):
     def _execute_command(self, cmd: list[str], workdir: str) -> int:
         repo_name = Path(workdir).name
         width, _ = shutil.get_terminal_size()
-        print(f"───── 📂 {repo_name} ".ljust(width - 1, "─"))
+        print(f"───── 📂 {repo_name} ".ljust(min(width, 100) - 1, "─"))  # Subtract the count of full width chars
         print(f"▷ Executing `{' '.join(cmd)}`.")
         result = subprocess.run(cmd, cwd=workdir)
         return result.returncode
