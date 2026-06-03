@@ -272,6 +272,6 @@ class WorkspaceProcessor(AbstractWsExecutor):
         print(
             f"───── 📂 {repo_name} ".ljust(min(width, 100) - 1, "─")
         )  # Subtract the count of full width chars
-        print(f"▷ Executing `{' '.join(cmd)}`.")
+        print(f"▷ Executing `{' '.join(cmd)}` in {repo_name.upper()}.")
         result = subprocess.run(cmd, cwd=workdir)
         return result.returncode

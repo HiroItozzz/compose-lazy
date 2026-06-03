@@ -1,3 +1,18 @@
+## v0.8.0 - 2026-06-03
+
+### Breaking Change
+- Workspace config structure changed: each repository path now maps to a list of compose files instead of a flat list of paths. Delete `~/.config/compose-lazy/config.yml` and re-register your workspaces.
+
+### Added
+- `dcp ws register(reg)` now prompts to select specific compose files per repository path at registration time
+- `dcp ws build(b)` — new subcommand to run `docker compose build` across all repos in a workspace
+- Workspace list output now shows registered compose files per repository path
+
+### Changed
+- `dcp ws up/restart/stop/down/build` now executes `docker compose` with the registered compose files (`-f` flags) for each repository
+- Workspace list and execution output now shows per-repo headings for clearer visibility
+- Missing compose files in a workspace are now handled gracefully instead of causing errors
+
 ## v0.7.0 - 2026-06-01
 
 ### Breaking Change

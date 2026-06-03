@@ -23,21 +23,38 @@ PyPIで公開しており、`pipx install compose-lazy`または`uv tool install
 
 ### ワークスペース機能
  
-複数のリポジトリを「ワークスペース」としてまとめて登録し、一括で docker compose コマンドを実行できます。
+複数のリポジトリを「ワークスペース」としてまとめて登録し、一括で操作できます。
+リポジトリごとに使用する compose ファイルを登録時に指定できます。
  
+
 ```bash
-# リポジトリをワークスペースに登録
+
+# リポジトリを compose ファイル指定付きで登録する
 $ dcp ws register
 Please enter a new directory path: /path/to/repo
-Please enter a new workspace name: myproject
-☑ Registered new path to myproject: /path/to/repo
- 
-# ワークスペース内の全リポジトリを起動
-$ dcp ws up
-☑ Found 1 registered workspace.
+☑ Found 2 docker-compose files!
+    1. docker-compose.yml
+    2. docker-compose.prod.yml
+
+Enter your choices (e.g., 1,3,4) or 'q' to quit: 1
+
+☑ Found 1 registered workspace!
     1. myproject
-Enter your choice: 1
-▷ Executing `docker compose up -d` in `/path/to/repo`.
+
+Or '0' for a new entry.
+Enter your choice or 'q' to quit: 0
+Please enter a new workspace name: myproject
+
+☑ Registered new path to myproject: /path/to/repo (docker-compose.yml)
+
+# ワークスペース内の全リポジトリを登録済み compose ファイルで起動する
+$ dcp ws up
+☑ Found 1 registered workspace!
+    1. myproject
+Enter your choice or 'q' to quit: 1
+
+───── 📂 myproject ────────────────────────────────────────────────────────────────────────────────────
+▷ Executing `docker compose -f docker-compose.yml up -d` in REPO.
 ```
  
 設定は `~/.config/compose-lazy` に保存されます。

@@ -21,27 +21,40 @@ Installing compose-lazy adds three commands to your PATH automatically.
 
 Each command supports multiple options. See the [List of Commands](#list-of-commands) for details.
 
-
 ### Multi-Repo Workspace
 Register named groups of repositories as a *workspace* and operate all of them at once.
- 
+Each repository path can have specific compose files assigned at registration time.
+
 ```bash
-# Register repositories to a workspace
+# Register a repository with specific compose files
 $ dcp ws register
 Please enter a new directory path: /path/to/repo
-Please enter a new workspace name: myproject
-☑ Registered new path to myproject: /path/to/repo
- 
-# Launch all repos in a workspace
-$ dcp ws up
-☑ Found 1 registered workspace.
-    1. myproject
-Enter your choice: 1
-▷ Executing `docker compose up -d` in `/path/to/repo`.
-```
- 
-Workspace configuration is stored in `~/.config/compose-lazy`.
+☑ Found 2 docker-compose files!
+    1. docker-compose.yml
+    2. docker-compose.prod.yml
 
+Enter your choices (e.g., 1,3,4) or 'q' to quit: 1
+
+☑ Found 1 registered workspace!
+    1. myproject
+
+Or '0' for a new entry.
+Enter your choice or 'q' to quit: 0
+Please enter a new workspace name: myproject
+
+☑ Registered new path to myproject: /path/to/repo (docker-compose.yml)
+
+# Launch all repos in a workspace with their registered compose files
+$ dcp ws up
+☑ Found 1 registered workspace!
+    1. myproject
+Enter your choice or 'q' to quit: 1
+
+───── 📂 myproject ────────────────────────────────────────────────────────────────────────────────────
+▷ Executing `docker compose -f docker-compose.yml up -d` in REPO.
+```
+
+Workspace configuration is stored in `~/.config/compose-lazy`.
 
 ### Interactive Selection
 Running `-f`, `-pf`, or `-s` without arguments auto-detects compose files, profiles, and services, letting you choose interactively.
@@ -175,6 +188,7 @@ Both `pipx` and `uv tool` install CLI tools in isolated environments, so compose
 | dcp workspace(ws) delete(del)        | Delete a repo from a workspace interactively             |
 | dcp workspace(ws) list(li)           | List all registered workspaces                           |
 | dcp workspace(ws) up(u)              | docker compose up -d for each repo in a workspace        |
+| dcp workspace(ws) build(b)           | docker compose build for each repo in a workspace        |
 | dcp workspace(ws) restart(re)        | docker compose restart for each repo in a workspace      |
 | dcp workspace(ws) stop(s)            | docker compose stop for each repo in a workspace         |
 | dcp workspace(ws) down               | docker compose down for each repo in a workspace         |
