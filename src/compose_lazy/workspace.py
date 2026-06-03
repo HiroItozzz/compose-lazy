@@ -72,6 +72,14 @@ class WorkspaceRegistrar(AbstractWsExecutor):
                 case _:  # pragma: no cover
                     # Unreachable branch
                     return 1  # pragma: no cover
+        except (TypeError, KeyError, AttributeError):
+            logger.debug("Workspace config has unexpected structure.", exc_info=True)
+            print(
+                "❌️ Workspace config is invalid or outdated.\n"
+                "💡 Delete ~/.config/compose-lazy/config.yml and re-register your workspaces.",
+                file=sys.stderr,
+            )
+            return 1
         except KeyboardInterrupt:
             print("\nCancelled.")
             return 130
@@ -226,12 +234,21 @@ class WorkspaceProcessor(AbstractWsExecutor):
                 )
                 code = self._execute_command(cmd, workdir)
                 codes.append(code)
-        except KeyboardInterrupt:
-            print("\nCancelled.")
-            return 130
+
+        except (TypeError, KeyError, AttributeError):
+            logger.debug("Workspace config has unexpected structure.", exc_info=True)
+            print(
+                "❌️ Workspace config is invalid or outdated.\n"
+                "💡 Delete ~/.config/compose-lazy/config.yml and re-register your workspaces.",
+                file=sys.stderr,
+            )
+            return 1
         except FileNotFoundError:
             print("Docker is not found.", file=sys.stderr)
             return 1
+        except KeyboardInterrupt:
+            print("\nCancelled.")
+            return 130
         except Exception:
             logger.debug("An unexpected error occurred.", exc_info=True)
             print("An unexpected error occurred.", file=sys.stderr)
@@ -252,7 +269,9 @@ class WorkspaceProcessor(AbstractWsExecutor):
     def _execute_command(self, cmd: list[str], workdir: str) -> int:
         repo_name = Path(workdir).name
         width, _ = shutil.get_terminal_size()
-        print(f"───── 📂 {repo_name} ".ljust(min(width, 100) - 1, "─"))  # Subtract the count of full width chars
+        print(
+            f"───── 📂 {repo_name} ".ljust(min(width, 100) - 1, "─")
+        )  # Subtract the count of full width chars
         print(f"▷ Executing `{' '.join(cmd)}`.")
         result = subprocess.run(cmd, cwd=workdir)
         return result.returncode
