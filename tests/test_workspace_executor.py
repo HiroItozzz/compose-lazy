@@ -420,6 +420,8 @@ class TestExecutorCall(TestWsBase):
         [
             ("up", ["up", "-d"]),
             ("u", ["up", "-d"]),
+            ("build", ["build"]),
+            ("b", ["build"]),
             ("restart", ["restart"]),
             ("re", ["restart"]),
             ("stop", ["stop"]),

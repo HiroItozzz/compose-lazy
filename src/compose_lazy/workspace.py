@@ -186,6 +186,8 @@ class WorkspaceProcessor(AbstractWsExecutor):
         match args.ws_subcmd:
             case "up" | "u":
                 subcommand = ["up", "-d"]
+            case "build" | "b":
+                subcommand = ["build"]
             case "restart" | "re":
                 subcommand = ["restart"]
             case "stop" | "s":

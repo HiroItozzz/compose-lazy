@@ -229,8 +229,18 @@ def main() -> None:
         aliases=["u"],
         allow_abbrev=False,
         usage="dcp ws up(u)",
-        description="Run `docker compose up` for all repos in a selected workspace.",
+        description="Run `docker compose up -d` for all repos in a selected workspace.",
         help="docker compose `up` for each repo.",
+    ).set_defaults(func=ws_processor)
+
+    # dcp ws build command
+    ws_subparsers.add_parser(
+        "build",
+        aliases=["b"],
+        allow_abbrev=False,
+        usage="dcp ws build(b)",
+        description="Run `docker compose build` for all repos in a selected workspace.",
+        help="docker compose `build` for each repo.",
     ).set_defaults(func=ws_processor)
 
     # dcp ws restart command
