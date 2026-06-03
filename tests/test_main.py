@@ -391,6 +391,8 @@ class TestMain:
         [
             ("dcp ws up", "up"),
             ("dcp ws u", "u"),
+            ("dcp ws build", "build"),
+            ("dcp ws b", "b"),
             ("dcp ws restart", "restart"),
             ("dcp ws re", "re"),
             ("dcp ws stop", "stop"),

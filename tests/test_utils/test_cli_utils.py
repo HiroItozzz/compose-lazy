@@ -98,7 +98,7 @@ class TestInteraciveSelect:
         "keys,flag,multiple,allow_zero,expected",
         [*cases_ALLOW_ZERO_True],
     )
-    def test_interactive_select_ALLO_ZERO(
+    def test_interactive_select_ALLOW_ZERO(
         self, keys, flag, multiple, allow_zero, expected, capsys, monkeypatch
     ):
         monkeypatch.setattr("sys.stdin", io.StringIO(keys))
@@ -108,7 +108,7 @@ class TestInteraciveSelect:
         )
         out, _ = capsys.readouterr()
         assert result == expected
-        assert "Or 0 to enter an alternative choice." in out
+        assert "Or '0'" in out
 
     @pytest.mark.parametrize("keys", ["3\n1\n", "abc\n1\n", "0\n-1\n1\n"])
     def test_interactive_select_VALUE_ERROR(self, keys, capsys, monkeypatch):

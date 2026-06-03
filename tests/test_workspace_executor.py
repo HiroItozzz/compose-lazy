@@ -116,14 +116,14 @@ class TestCommonMethods(TestWsBase):
         self.registrar._display_intro(workspaces)
 
         out, _ = capsys.readouterr()
-        assert "☑ Found 1 registered workspace." in out
+        assert "Found 1 registered workspace" in out
 
     def test_display_intro_LENGTH_OVER_2(self, capsys):
         workspaces = {"ws1": [], "ws2": []}
         self.registrar._display_intro(workspaces)
 
         out, _ = capsys.readouterr()
-        assert "☑ Found 2 registered workspaces." in out
+        assert "Found 2 registered workspaces" in out
 
 
 # ─────────────────────────────────────────────
@@ -188,7 +188,10 @@ class TestShowList(TestWsBase):
     def test_WITH_WORKSPACES(self, capsys):
         self.registrar.handler._config = {
             "workspaces": {
-                "ws1": ["/path/to/repo1", "/path/to/repo2"],
+                "ws1": {
+                    "/path/to/repo1": ["compose1.yml"],
+                    "/path/to/repo2": ["compose2.yml"],
+                },
             }
         }
         code = self.registrar.show_list()
@@ -196,6 +199,7 @@ class TestShowList(TestWsBase):
         out, _ = capsys.readouterr()
         assert "ws1" in out
         assert "/path/to/repo1" in out
+        assert "compose2.yml" in out
         assert code == 0
 
     def test_EMPTY_WORKSPACE(self, capsys):
@@ -218,10 +222,17 @@ class TestRegisterRepo(TestWsBase):
         assert "❌ The path doesn't exists" in err
         assert code == 1
 
-    def test_VALID_PATH_NEW(self, capsys, monkeypatch, tmp_path):
+    @pytest.mark.parametrize(
+        "selected_yamls",
+        [["compose.test.yml"], ["compose.test.yaml", "compose.test2.yml"]],
+    )
+    def test_VALID_PATH_NEW(self, selected_yamls, capsys, monkeypatch, tmp_path):
         self.registrar.handler._config = {"workspaces": {}}
         self.registrar.handler.append_value = MagicMock(return_value=True)
         self.registrar.handler.dump_and_write = MagicMock()
+        monkeypatch.setattr(
+            utils, "get_file_choices", MagicMock(return_value=selected_yamls)
+        )
         monkeypatch.setattr(
             WorkspaceRegistrar,
             "_select_workspace_or_create",
@@ -233,13 +244,20 @@ class TestRegisterRepo(TestWsBase):
 
         out, _ = capsys.readouterr()
         assert "☑ Registered new path" in out
-        self.registrar.handler.dump_and_write.assert_called_once()
+        assert str(tmp_path) in out
+        assert all((f in out for f in selected_yamls))
+        self.registrar.handler.dump_and_write.assert_called()
+        utils.get_file_choices.assert_called_once_with(tmp_path)
         assert code == 0
 
     def test_VALID_PATH_DUPLICATE(self, capsys, monkeypatch, tmp_path):
+        (tmp_path / "compose.test.yml").touch()
         self.registrar.handler._config = {"workspaces": {}}
         self.registrar.handler.append_value = MagicMock(return_value=False)
         self.registrar.handler.dump_and_write = MagicMock()
+        monkeypatch.setattr(
+            utils, "get_file_choices", MagicMock(return_value=["compose.test.yml"])
+        )
         monkeypatch.setattr(
             WorkspaceRegistrar,
             "_select_workspace_or_create",
@@ -251,6 +269,7 @@ class TestRegisterRepo(TestWsBase):
 
         _, err = capsys.readouterr()
         assert "already in" in err
+        assert "compose.test.yml" in err
         self.registrar.handler.dump_and_write.assert_not_called()
         assert code == 0
 
@@ -265,11 +284,15 @@ class TestRegisterRepo(TestWsBase):
             "interactive_select",
             MagicMock(return_value=None),
         )
+        monkeypatch.setattr(
+            utils, "get_file_choices", MagicMock(return_value=["compose.test.yml"])
+        )
 
         code = self.registrar.register_repo()
 
         out, _ = capsys.readouterr()
         assert "☑ Registered new path to ws_new" in out
+        assert "compose.test.yml" in out
         self.registrar.handler.dump_and_write.assert_called_once()
         assert code == 0
 
@@ -277,6 +300,10 @@ class TestRegisterRepo(TestWsBase):
         self.registrar.handler._config = {"workspaces": {}}
         self.registrar.handler.append_value = MagicMock(return_value=True)
         self.registrar.handler.dump_and_write = MagicMock()
+
+        monkeypatch.setattr(
+            utils, "get_file_choices", MagicMock(return_value=["compose.test.yml"])
+        )
         monkeypatch.setattr(
             WorkspaceRegistrar,
             "_select_workspace_or_create",
@@ -300,7 +327,12 @@ class TestDeleteRepo(TestWsBase):
         assert code == 1
 
     def test_DELETE(self, capsys, monkeypatch):
-        workspaces = {"ws1": ["/path/to/repo1", "/path/to/repo2"]}
+        workspaces = {
+            "ws1": {
+                "/path/to/repo1": ["compose1.yml"],
+                "/path/to/repo2": ["compose2.yml"],
+            },
+        }
         self.registrar.handler._config = {"workspaces": workspaces}
         self.registrar.handler.dump_and_write = MagicMock()
         monkeypatch.setattr(
@@ -318,7 +350,11 @@ class TestDeleteRepo(TestWsBase):
         assert code == 0
 
     def test_DELETE_ALL_REMOVES_WORKSPACE(self, monkeypatch):
-        workspaces = {"ws1": ["/path/to/repo1"]}
+        workspaces = {
+            "ws1": {
+                "/path/to/repo1": ["compose1.yml"],
+            }
+        }
         self.registrar.handler._config = {"workspaces": workspaces}
         self.registrar.handler.dump_and_write = MagicMock()
         monkeypatch.setattr(
@@ -334,7 +370,12 @@ class TestDeleteRepo(TestWsBase):
 
     @pytest.mark.parametrize("commands", [("3", "1"), ("0", "1"), ("-1", "1")])
     def test_DELETE_OUT_OF_RANGE(self, commands, capsys, monkeypatch):
-        workspaces = {"ws1": ["/path/to/repo1", "/path/to/repo2"]}
+        workspaces = {
+            "ws1": {
+                "/path/to/repo1": ["compose1.yml"],
+                "/path/to/repo2": ["compose2.yml"],
+            },
+        }
         self.registrar.handler._config = {"workspaces": workspaces}
         self.registrar.handler.dump_and_write = MagicMock()
         monkeypatch.setattr(
@@ -358,7 +399,10 @@ class TestDeleteRepo(TestWsBase):
 class TestExecutorCall(TestWsBase):
     def setup_method(self):
         super().setup_method()
-        self.executor.get_target_workspace = MagicMock(return_value=["/path/to/repo"])
+        self.compose_files = ["compose.test.yml", "compose.test2.yml"]
+        self.executor.get_target_workspace = MagicMock(
+            return_value={"/path/to/repo": self.compose_files}
+        )
         self.executor._execute_command = MagicMock(return_value=0)
 
     def test_call(self, monkeypatch):
@@ -372,25 +416,34 @@ class TestExecutorCall(TestWsBase):
         assert code == 0
 
     @pytest.mark.parametrize(
-        "ws_subcmd,expected_cmd",
+        "ws_subcmd,executed_subcommand",
         [
-            ("up", ["docker", "compose", "up", "-d"]),
-            ("u", ["docker", "compose", "up", "-d"]),
-            ("restart", ["docker", "compose", "restart"]),
-            ("re", ["docker", "compose", "restart"]),
-            ("stop", ["docker", "compose", "stop"]),
-            ("s", ["docker", "compose", "stop"]),
-            ("down", ["docker", "compose", "down"]),
+            ("up", ["up", "-d"]),
+            ("u", ["up", "-d"]),
+            ("build", ["build"]),
+            ("b", ["build"]),
+            ("restart", ["restart"]),
+            ("re", ["restart"]),
+            ("stop", ["stop"]),
+            ("s", ["stop"]),
+            ("down", ["down"]),
         ],
     )
-    def test_switch(self, ws_subcmd, expected_cmd, monkeypatch):
+    def test_switch(self, ws_subcmd, executed_subcommand, monkeypatch):
+        base_command = ["docker", "compose"]
+        file_args = ["-f", "compose.test.yml", "-f", "compose.test2.yml"]
+        expected = base_command + file_args + executed_subcommand
+
         monkeypatch.setattr(Path, "is_dir", MagicMock(return_value=True))
+        monkeypatch.setattr(Path, "exists", MagicMock(return_value=True))
+        mock_formatter = MagicMock(return_value=file_args)
+        monkeypatch.setattr(utils, "format_as_flag_args", mock_formatter)
+
         args = Namespace(ws_subcmd=ws_subcmd)
         code = self.executor._switch(args)
 
-        self.executor._execute_command.assert_called_once_with(
-            expected_cmd, "/path/to/repo"
-        )
+        utils.format_as_flag_args.assert_called_once_with(self.compose_files, "-f")
+        self.executor._execute_command.assert_called_once_with(expected, "/path/to/repo")
         assert code == 0
 
     def test_switch_path_NOT_exists(self, capsys, monkeypatch):
@@ -430,6 +483,17 @@ class TestExecutorCall(TestWsBase):
         _, err = capsys.readouterr()
         assert "Docker is not found." in err
         assert code == 1
+
+    def test_switch_MISSING_COMPOSE_FILE(self, capsys, monkeypatch):
+        monkeypatch.setattr(Path, "is_dir", MagicMock(return_value=True))
+        monkeypatch.setattr(Path, "exists", MagicMock(return_value=False))
+        args = Namespace(ws_subcmd="up")
+        code = self.executor._switch(args)
+
+        _, err = capsys.readouterr()
+        assert "❌️ Compose file not found" in err
+        assert code == 1
+        self.executor._execute_command.assert_not_called()
 
     def test_UNEXPECTED_ERROR(self, capsys):
         self.executor.get_target_workspace = MagicMock(side_effect=RuntimeError)
