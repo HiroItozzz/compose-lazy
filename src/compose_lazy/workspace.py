@@ -242,7 +242,7 @@ class WorkspaceProcessor(AbstractWsExecutor):
     def _execute_command(self, cmd: list[str], workdir: str) -> int:
         repo_name = Path(workdir).name
         width, _ = shutil.get_terminal_size()
-        print(f"───── {repo_name} ".ljust(width, "─"))
-        print(f"▷ Executing `{' '.join(cmd)}` in {repo_name.upper()}.")
+        print(f"───── 📂 {repo_name} ".ljust(width - 1, "─"))
+        print(f"▷ Executing `{' '.join(cmd)}`.")
         result = subprocess.run(cmd, cwd=workdir)
         return result.returncode
