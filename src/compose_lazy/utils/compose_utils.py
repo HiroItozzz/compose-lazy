@@ -49,7 +49,7 @@ def get_file_choices(path: Path | None = None) -> list[str]:
 
     if not file_names:
         print("❌ No compose files found.", file=sys.stderr)
-        raise SystemExit
+        raise SystemExit(1)
 
     if (file_count := len(file_names)) == 1:
         print(f"☑ Compose file found: {file_names[0]}")
@@ -64,12 +64,12 @@ def get_profile_choices(path: Path | None = None) -> list[str]:
     file_paths = get_compose_file_paths(path)
     if not file_paths:
         print("❌ No compose files found.", file=sys.stderr)
-        raise SystemExit
+        raise SystemExit(1)
 
     profiles = get_profile_from_yamls(file_paths)
     if not profiles:
         print("❌ No profiles found.", file=sys.stderr)
-        raise SystemExit
+        raise SystemExit(1)
 
     if len(profiles) == 1:
         p = profiles.pop()
@@ -87,13 +87,13 @@ def get_service_choices(path: Path | None = None, *, multiple: bool = True) -> l
     file_paths = get_compose_file_paths(path)
     if not file_paths:
         print("❌ No compose files found.", file=sys.stderr)
-        raise SystemExit
+        raise SystemExit(1)
 
     services = get_service_from_yamls(file_paths)
 
     if not services:
         print("❌ No services found.", file=sys.stderr)
-        raise SystemExit
+        raise SystemExit(1)
 
     if len(services) == 1:
         s = services.pop()

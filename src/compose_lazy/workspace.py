@@ -75,8 +75,8 @@ class WorkspaceRegistrar(AbstractWsExecutor):
         except KeyboardInterrupt:
             print("\nCancelled.")
             return 130
-        except SystemExit:
-            return 0
+        except SystemExit as e:
+            return int(e.code or 0)
 
     def show_list(self) -> int:
         config = self.handler.config
@@ -208,7 +208,10 @@ class WorkspaceProcessor(AbstractWsExecutor):
                     continue
                 for y in yaml_names:
                     if not (Path(workdir) / y).exists():
-                        print(f"❌️ Compose file not found: {workdir}", file=sys.stderr)
+                        print(
+                            f"❌️ Compose file not found: {workdir}/{y}", file=sys.stderr
+                        )
+                        codes.append(1)
 
                 optional_args = utils.format_as_flag_args(yaml_names, "-f")
                 cmd = self.BASE_COMMAND + optional_args + subcommand
