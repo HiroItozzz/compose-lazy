@@ -1,8 +1,25 @@
 import logging
 import sys
-from typing import Iterable, Literal, overload
+from functools import wraps
+from typing import Callable, Iterable, Literal, ParamSpec, overload
 
 logger = logging.getLogger(__name__)
+
+P = ParamSpec("P")
+
+
+def call_safely(func: Callable[P, int]) -> Callable[P, int]:
+    @wraps(func)
+    def wrapper(*args: P.args, **kwargs: P.kwargs) -> int:
+        try:
+            return func(*args, **kwargs)
+        except KeyboardInterrupt:
+            print("\nCancelled.")
+            return 130
+        except SystemExit as e:
+            return int(e.code or 0)
+
+    return wrapper
 
 
 @overload
@@ -42,9 +59,9 @@ def interactive_select(
         list[str] | None: The list of candidate name(s) user selected, or None when `0` inputed.
     """
     prompt = (
-        "\nEnter your choices (e.g., 1,3,4) or 'q' to quit: "
+        "Enter your choices (e.g., 1,3,4) or 'q' to quit: "
         if multiple
-        else "\nEnter your choice or 'q' to quit: "
+        else "Enter your choice or 'q' to quit: "
     )
     err_msg = (
         "☓ Invalid selection. Please use valid numbers."
@@ -56,17 +73,17 @@ def interactive_select(
     # Show choices
     for idx, candidate in enumerate(candidates, start=1):
         print(f"{idx:>5}. {candidate}")
+    print()
 
     if allow_zero:
-        print("\nOr '0' for a new entry.", end="")
-
+        print("Or '0' for a new entry.")
     # User input
     while True:
         args = []
 
         try:
             if (choices_str := input(prompt)) in ["Q", "q"]:
-                print("\nCancelled.")
+                print("Cancelled.")
                 raise SystemExit
 
             choices = list(
@@ -94,10 +111,6 @@ def interactive_select(
 
         except (ValueError, IndexError):
             print(err_msg, file=sys.stderr)
-        except KeyboardInterrupt as e:
-            print("\nCancelled.")
-            raise e
         else:
-            print()
             break
     return args

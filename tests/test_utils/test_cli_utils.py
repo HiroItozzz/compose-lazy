@@ -1,9 +1,21 @@
 import io
-from unittest.mock import MagicMock
 
 import pytest
 
 from compose_lazy.utils import cli_utils
+
+
+@pytest.mark.parametrize(
+    "error,expected_code",
+    [(KeyboardInterrupt, 130), (SystemExit, 0), (SystemExit(1), 1)],
+)
+def test_call_safely_error_occures(error, expected_code):
+    @cli_utils.call_safely
+    def mock_func():
+        raise error
+
+    code = mock_func()
+    assert code == expected_code
 
 
 class TestInteraciveSelect:
@@ -119,22 +131,11 @@ class TestInteraciveSelect:
         _, err = capsys.readouterr()
         assert "☓ Invalid selection. Please use valid numbers." in err
 
-    def test_interactive_select_KEYBOARD_INTERRUPT(self, capsys, monkeypatch):
-        monkeypatch.setattr("builtins.input", MagicMock(side_effect=KeyboardInterrupt))
-        choices = ["test_1", "test_2"]
-
-        with pytest.raises(KeyboardInterrupt):
-            cli_utils.interactive_select(choices, "--test")
-
-        captured = capsys.readouterr()
-
-        assert "\nCancelled." in captured.out
-
     @pytest.mark.parametrize(
         "values",
         ["q\n", "Q\n"],
     )
-    def test_sinteractive_select_QUIT(self, values, capsys, monkeypatch):
+    def test_interactive_select_QUIT(self, values, capsys, monkeypatch):
         monkeypatch.setattr("sys.stdin", io.StringIO(values))
         choices = ["test_1", "test_2"]
 
@@ -142,5 +143,4 @@ class TestInteraciveSelect:
             cli_utils.interactive_select(choices, "--test")
 
         captured = capsys.readouterr()
-
-        assert "\nCancelled." in captured.out
+        assert "Cancelled." in captured.out

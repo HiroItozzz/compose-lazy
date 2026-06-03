@@ -35,12 +35,10 @@ Please enter a new directory path: /path/to/repo
 ☑ Found 2 docker-compose files!
     1. docker-compose.yml
     2. docker-compose.prod.yml
-
 Enter your choices (e.g., 1,3,4) or 'q' to quit: 1
 
 ☑ Found 1 registered workspace!
     1. myproject
-
 Or '0' for a new entry.
 Enter your choice or 'q' to quit: 0
 Please enter a new workspace name: myproject

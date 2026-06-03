@@ -4,24 +4,30 @@ from unittest.mock import patch
 import pytest
 
 from compose_lazy import utils
+from compose_lazy.utils import compose_utils
 
 
-def test_format_as_flag_args():
-    result = utils.format_as_flag_args(["val1", "val2"], flag="--profile")
-
-    assert result == ["--profile", "val1", "--profile", "val2"]
-
-
-def test_get_compose_file_paths(tmp_path, monkeypatch):
-    monkeypatch.chdir(tmp_path)
-    (tmp_path / "docker-compose.yml").touch()
-    (tmp_path / "docker-compose.prod.yaml").touch()
-
-    result = utils.get_compose_file_paths()
-    assert len(result) == 2
+class CacheClear:
+    def teardown_method(self):
+        compose_utils._read_yaml.cache_clear()
 
 
-class TestGetServiceChoices:
+class TestUtils(CacheClear):
+    def test_format_as_flag_args(self):
+        result = utils.format_as_flag_args(["val1", "val2"], flag="--profile")
+
+        assert result == ["--profile", "val1", "--profile", "val2"]
+
+    def test_get_compose_file_paths(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        (tmp_path / "docker-compose.yml").touch()
+        (tmp_path / "docker-compose.prod.yaml").touch()
+
+        result = utils.get_compose_file_paths()
+        assert len(result) == 2
+
+
+class TestGetServiceChoices(CacheClear):
     def test_get_service_choices_NO_FILE(self, capsys):
         with patch(
             "compose_lazy.utils.compose_utils.get_compose_file_paths"
@@ -94,7 +100,7 @@ services:
         mock_select.assert_called_once_with(services, multiple=True)
 
 
-class TestFileChoices:
+class TestFileChoices(CacheClear):
     def test_get_file_choices_EMPTY(self, capsys):
         with patch(
             "compose_lazy.utils.compose_utils.get_compose_file_paths"
@@ -133,7 +139,7 @@ class TestFileChoices:
         mock_select.assert_called_once_with(file_names)
 
 
-class TestProfileChoices:
+class TestProfileChoices(CacheClear):
     def test_get_profile_choices_NO_FILE(self, capsys):
         with patch(
             "compose_lazy.utils.compose_utils.get_compose_file_paths"

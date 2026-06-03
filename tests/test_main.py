@@ -4,7 +4,6 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from compose_lazy.main import dcpe_main, dcpu_main, main
-from compose_lazy import utils
 
 
 class TestMain:

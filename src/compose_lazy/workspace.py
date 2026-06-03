@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Iterable
 
 from . import utils
-from .utils import YamlHandler
+from .utils import YamlHandler, call_safely
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +34,7 @@ class AbstractWsExecutor(ABC):
         candidates = list(candidates)
         if not candidates:
             return input("Please enter a new workspace name: ").strip()
+
         self._display_intro(candidates)
         choices: list[str] | None = utils.interactive_select(
             candidates, multiple=False, allow_zero=True
@@ -51,8 +52,9 @@ class AbstractWsExecutor(ABC):
 
     def _display_intro(self, candidates: list[str]) -> None:
         msg = "☑ Found {} registered workspace{}!"
-
         length = len(candidates)
+
+        print()
         if length > 1:
             print(msg.format(length, "s"))
         else:
@@ -60,6 +62,7 @@ class AbstractWsExecutor(ABC):
 
 
 class WorkspaceRegistrar(AbstractWsExecutor):
+    @call_safely
     def _switch(self, args: Namespace) -> int:
         try:
             match args.ws_subcmd:
@@ -80,11 +83,6 @@ class WorkspaceRegistrar(AbstractWsExecutor):
                 file=sys.stderr,
             )
             return 1
-        except KeyboardInterrupt:
-            print("\nCancelled.")
-            return 130
-        except SystemExit as e:
-            return int(e.code or 0)
 
     def show_list(self) -> int:
         config = self.handler.config
@@ -144,7 +142,8 @@ class WorkspaceRegistrar(AbstractWsExecutor):
         target_workspace_name = self._select_workspace_simply(workspace_dict)
         target_workspace = workspace_dict[target_workspace_name]
 
-        msg = "☑ Found {} director{}."
+        print()
+        msg = "☑ Found {} director{}!"
         if (length := len(target_workspace)) == 1:
             print(msg.format(length, "y"))
         elif length >= 2:
@@ -191,6 +190,7 @@ class WorkspaceRegistrar(AbstractWsExecutor):
 class WorkspaceProcessor(AbstractWsExecutor):
     BASE_COMMAND = ["docker", "compose"]
 
+    @call_safely
     def _switch(self, args: Namespace) -> int:
         match args.ws_subcmd:
             case "up" | "u":
@@ -246,9 +246,6 @@ class WorkspaceProcessor(AbstractWsExecutor):
         except FileNotFoundError:
             print("Docker is not found.", file=sys.stderr)
             return 1
-        except KeyboardInterrupt:
-            print("\nCancelled.")
-            return 130
         except Exception:
             logger.debug("An unexpected error occurred.", exc_info=True)
             print("An unexpected error occurred.", file=sys.stderr)

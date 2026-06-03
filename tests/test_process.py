@@ -108,16 +108,6 @@ class TestExecuteCommand(TestDCPBase):
         subprocess.run.assert_called_once_with(test_cmd)
         assert self.processor._execute_command() == 1
 
-    def test_KEYBOARD_INTERRUPT(self):
-        subprocess.run = MagicMock(side_effect=KeyboardInterrupt())
-
-        test_cmd = ["docker", "compose", "up"]
-        self.processor.cmd = test_cmd
-        code = self.processor._execute_command()
-
-        assert code == 130
-        subprocess.run.assert_called_once_with(test_cmd)
-
     def test_FILE_NOT_FOUND(self, capsys, monkeypatch):
         monkeypatch.setattr(subprocess, "run", MagicMock(side_effect=FileNotFoundError))
         self.processor.cmd = ["docker", "compose", "up", "-d"]
@@ -153,7 +143,7 @@ class TestAdjustServiceName(TestDCPBase):
         monkeypatch.chdir(tmp_path)
         (tmp_path / file_name).write_text(content)
         monkeypatch.setattr(
-            utils, "get_compose_file_paths", MagicMock(return_value=[file_name])
+            utils, "get_compose_file_paths", MagicMock(return_value=[Path(file_name)])
         )
 
         # User input
@@ -171,7 +161,7 @@ class TestAdjustServiceName(TestDCPBase):
         monkeypatch.chdir(tmp_path)
         (tmp_path / file_name).write_text(content)
         monkeypatch.setattr(
-            utils, "get_compose_file_paths", MagicMock(return_value=[file_name])
+            utils, "get_compose_file_paths", MagicMock(return_value=[Path(file_name)])
         )
 
         # User input

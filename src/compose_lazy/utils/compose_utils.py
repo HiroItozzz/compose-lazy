@@ -1,5 +1,6 @@
 import logging
 import sys
+from functools import lru_cache
 from pathlib import Path
 
 import yaml
@@ -8,12 +9,20 @@ from . import cli_utils
 
 logger = logging.getLogger(__name__)
 
+
+@lru_cache
+def _read_yaml(path: Path):
+    """Only for files whose content don't change so often (like compose.yaml)."""
+    return yaml.safe_load(path.read_text(encoding="utf-8"))
+
+
 def format_as_flag_args(values: list[str], flag: str) -> list[str]:
     """Convert value list to ['flag', 'value1', 'flag', 'value2'] format."""
     args = []
     for v in values:
         args += [flag, v]
     return args
+
 
 def get_compose_file_paths(path: Path | None = None) -> list[Path]:
     path: Path = path or Path.cwd()
@@ -24,7 +33,7 @@ def get_service_from_yamls(file_paths: list[Path]) -> set[str]:
     """Extract unique docker-compose service names out of given YAML paths."""
     services = set()
     for path in file_paths:
-        data = yaml.safe_load(path.read_text(encoding="utf-8"))
+        data = _read_yaml(path)
         for services_name in (data or {}).get("services", {}).keys():
             services.add(services_name)
     return services
@@ -34,7 +43,7 @@ def get_profile_from_yamls(file_paths: list[Path]) -> set[str]:
     """Extract unique docker-compose profile names out of given YAML paths."""
     profiles = set()
     for path in file_paths:
-        data = yaml.safe_load(path.read_text(encoding="utf-8"))
+        data = _read_yaml(path)
         for service in (data or {}).get("services", {}).values():
             for p in (service or {}).get("profiles", []):
                 profiles.add(p)
@@ -55,7 +64,8 @@ def get_file_choices(path: Path | None = None) -> list[str]:
         print(f"☑ Compose file found: {file_names[0]}")
         return file_names
 
-    print(f"\n☑ Found {file_count} docker-compose files!")
+    print()
+    print(f"☑ Found {file_count} docker-compose files!")
     return cli_utils.interactive_select(file_names)
 
 
@@ -76,8 +86,8 @@ def get_profile_choices(path: Path | None = None) -> list[str]:
         print(f"☑ Profile found: {p}")
         return [p]
 
-    # Interactive session: select number(s) to get file args or press "Q" to quit.
-    print(f"\n☑ Found {len(profiles)} profiles!")
+    print()
+    print(f"☑ Found {len(profiles)} profiles!")
 
     return cli_utils.interactive_select(profiles)
 
@@ -100,7 +110,7 @@ def get_service_choices(path: Path | None = None, *, multiple: bool = True) -> l
         print(f"☑ Service found: {s}")
         return [s]
 
-    # Interactive session: select number(s) to get file args or press "Q" to quit.
-    print(f"\n☑ Found {len(services)} services!")
+    print()
+    print(f"☑ Found {len(services)} services!")
 
     return cli_utils.interactive_select(services, multiple=multiple)

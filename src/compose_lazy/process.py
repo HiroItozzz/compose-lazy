@@ -4,9 +4,8 @@ import sys
 from argparse import Namespace
 from pathlib import Path
 
-import yaml
-
 from . import utils
+from .utils import call_safely
 
 logger = logging.getLogger(__name__)
 
@@ -30,42 +29,40 @@ class DockerCmdProcessor:
         if hasattr(args, "inner_bash_cmd"):
             self._adjust_service_name()
 
+    @call_safely
     def __call__(self, args: Namespace) -> int:
-        try:
-            self._setup(args)
-            match args.subcmd:
-                case "up" | "u":
-                    self._create_up_cmd()
-                case "build" | "b":
-                    self._create_build_cmd()
-                case "exec" | "e":
-                    self._create_exec_cmd()
-                case "run":
-                    self._create_run_cmd()
-                case "restart" | "re":
-                    self._create_restart_cmd()
-                case "ps":
-                    self._create_ps_cmd()
-                case "logs" | "l":
-                    self._create_logs_cmd()
-                case "stop" | "s":
-                    self._create_stop_cmd()
-                case "down":
-                    self._create_down_cmd()
-                case _:  # pragma: no cover
-                    # Unreachable branch
-                    return 1  # pragma: no cover
-        except KeyboardInterrupt:
-            return 130
-        except SystemExit:
-            return 1
+        self._setup(args)
+        match args.subcmd:
+            case "up" | "u":
+                self._create_up_cmd()
+            case "build" | "b":
+                self._create_build_cmd()
+            case "exec" | "e":
+                self._create_exec_cmd()
+            case "run":
+                self._create_run_cmd()
+            case "restart" | "re":
+                self._create_restart_cmd()
+            case "ps":
+                self._create_ps_cmd()
+            case "logs" | "l":
+                self._create_logs_cmd()
+            case "stop" | "s":
+                self._create_stop_cmd()
+            case "down":
+                self._create_down_cmd()
+            case _:  # pragma: no cover
+                # Unreachable branch
+                return 1  # pragma: no cover
         return self._execute_command()
 
+    @call_safely
     def call_dcpu(self, args: Namespace) -> int:
         self._setup(args)
         self._create_up_cmd()
         return self._execute_command()
 
+    @call_safely
     def call_dcpe(self, args: Namespace) -> int:
         self._setup(args)
         self._create_exec_cmd()
@@ -78,8 +75,6 @@ class DockerCmdProcessor:
         try:
             result = subprocess.run(self.cmd)
             return result.returncode
-        except KeyboardInterrupt:
-            return 130
         except FileNotFoundError:
             print("Docker is not found.", file=sys.stderr)
             return 1
@@ -177,7 +172,6 @@ class DockerCmdProcessor:
                 return file_args
 
         file_list = utils.get_file_choices()
-
         return utils.format_as_flag_args(file_list, "-f")
 
     # Profile option
@@ -227,13 +221,7 @@ class DockerCmdProcessor:
             return
 
         file_paths = utils.get_compose_file_paths()
-        existing_services = set()
-
-        for path in file_paths:
-            with open(path) as f:
-                data = yaml.safe_load(f)
-            for services_name in (data or {}).get("services", {}).keys():
-                existing_services.add(services_name)
+        existing_services = utils.get_service_from_yamls(file_paths)
 
         if set(user_input) <= existing_services:
             return
