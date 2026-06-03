@@ -45,6 +45,8 @@
 
 ## v0.6.1 - 2026-05-31
 
+> Final release under the `fast-dcp` package name. Starting with v0.7.0, the package is published as `compose-lazy`.
+
 ### Added
 - `dcp ws register(reg)` now allows entering `0` to input a new workspace name when existing workspaces are listed
 - `dcp ws up/restart/stop/down` now shows a clear error message when a registered workspace directory no longer exists, instead of silently failing
