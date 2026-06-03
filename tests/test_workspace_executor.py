@@ -399,7 +399,10 @@ class TestDeleteRepo(TestWsBase):
 class TestExecutorCall(TestWsBase):
     def setup_method(self):
         super().setup_method()
-        self.executor.get_target_workspace = MagicMock(return_value=["/path/to/repo"])
+        self.compose_files = ["compose.test.yml", "compose.test2.yml"]
+        self.executor.get_target_workspace = MagicMock(
+            return_value={"/path/to/repo": self.compose_files}
+        )
         self.executor._execute_command = MagicMock(return_value=0)
 
     def test_call(self, monkeypatch):
@@ -413,25 +416,32 @@ class TestExecutorCall(TestWsBase):
         assert code == 0
 
     @pytest.mark.parametrize(
-        "ws_subcmd,expected_cmd",
+        "ws_subcmd,executed_subcommand",
         [
-            ("up", ["docker", "compose", "up", "-d"]),
-            ("u", ["docker", "compose", "up", "-d"]),
-            ("restart", ["docker", "compose", "restart"]),
-            ("re", ["docker", "compose", "restart"]),
-            ("stop", ["docker", "compose", "stop"]),
-            ("s", ["docker", "compose", "stop"]),
-            ("down", ["docker", "compose", "down"]),
+            ("up", ["up", "-d"]),
+            ("u", ["up", "-d"]),
+            ("restart", ["restart"]),
+            ("re", ["restart"]),
+            ("stop", ["stop"]),
+            ("s", ["stop"]),
+            ("down", ["down"]),
         ],
     )
-    def test_switch(self, ws_subcmd, expected_cmd, monkeypatch):
+    def test_switch(self, ws_subcmd, executed_subcommand, monkeypatch):
+        base_command = ["docker", "compose"]
+        file_args = ["-f", "compose.test.yml", "-f", "compose.test2.yml"]
+        expected = base_command + file_args + executed_subcommand
+
         monkeypatch.setattr(Path, "is_dir", MagicMock(return_value=True))
+        monkeypatch.setattr(Path, "exists", MagicMock(return_value=True))
+        mock_formatter = MagicMock(return_value=file_args)
+        monkeypatch.setattr(utils, "format_as_flag_args", mock_formatter)
+
         args = Namespace(ws_subcmd=ws_subcmd)
         code = self.executor._switch(args)
 
-        self.executor._execute_command.assert_called_once_with(
-            expected_cmd, "/path/to/repo"
-        )
+        utils.format_as_flag_args.assert_called_once_with(self.compose_files, "-f")
+        self.executor._execute_command.assert_called_once_with(expected, "/path/to/repo")
         assert code == 0
 
     def test_switch_path_NOT_exists(self, capsys, monkeypatch):
