@@ -468,7 +468,7 @@ class TestExecutorCall(TestWsBase):
     def test_returns_nonzero_on_failure(self):
         self.executor._execute_command = MagicMock(side_effect=[0, 1, 0])
         self.executor.get_target_workspace = MagicMock(
-            return_value=["/repo1", "/repo2", "/repo3"]
+            return_value={"/repo1": ["compose1.yml"], "/repo2": ["compose1.yml"], "/repo3": ["compose1.yml"]}
         )
         args = Namespace(ws_subcmd="up")
         code = self.executor(args)
