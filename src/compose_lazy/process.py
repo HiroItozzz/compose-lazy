@@ -26,7 +26,7 @@ class DockerCmdProcessor:
         self._args = args
         self.cmd = list(_BASE_CMD) + self._create_common_compose_options()
 
-        if hasattr(args, "inner_bash_cmd"):
+        if hasattr(args, "inner_cmd"):
             self._adjust_service_name()
 
     @call_safely
@@ -85,11 +85,11 @@ class DockerCmdProcessor:
 
     def _create_up_cmd(self) -> None:
         self.cmd += (
-            ["up"]
-            + (["--build"] if self.args.build else [])
-            + (["-d"] if self.args.detach else [])
-            + (["--wait"] if self.args.wait else [])
-            + self._create_service_option()
+                ["up"]
+                + (["--build"] if self.args.build else [])
+                + (["-d"] if self.args.detach else [])
+                + (["--wait"] if self.args.wait else [])
+                + self._create_service_option()
         )
 
     def _create_build_cmd(self) -> None:
@@ -97,16 +97,16 @@ class DockerCmdProcessor:
 
     def _create_exec_cmd(self) -> None:
         self.cmd += (
-            ["exec"]
-            + self._create_service_option(multiple=False)
-            + (self.args.inner_bash_cmd or ["bash"])
+                ["exec"]
+                + self._create_service_option(multiple=False)
+                + (self.args.inner_cmd or ["bash"])
         )
 
     def _create_run_cmd(self) -> None:
         self.cmd += (
-            ["run"]
-            + self._create_service_option(multiple=False)
-            + (self.args.inner_bash_cmd or ["bash"])
+                ["run"]
+                + self._create_service_option(multiple=False)
+                + (self.args.inner_cmd or ["bash"])
         )
 
     def _create_restart_cmd(self) -> None:
@@ -114,17 +114,17 @@ class DockerCmdProcessor:
 
     def _create_ps_cmd(self) -> None:
         self.cmd += (
-            ["ps"]
-            + self._create_service_option()
-            + (["--all"] if self.args.all else [])
-            + self._create_status_option()
+                ["ps"]
+                + self._create_service_option()
+                + (["--all"] if self.args.all else [])
+                + self._create_status_option()
         )
 
     def _create_logs_cmd(self) -> None:
         self.cmd += (
-            ["logs"]
-            + self._create_service_option()
-            + (["-f"] if self.args.follow else [])
+                ["logs"]
+                + self._create_service_option()
+                + (["-f"] if self.args.follow else [])
         )
 
     def _create_stop_cmd(self) -> None:
@@ -135,9 +135,9 @@ class DockerCmdProcessor:
 
     def _create_common_compose_options(self) -> list[str]:
         return (
-            self._create_project_option()
-            + self._create_file_option()
-            + self._create_profile_option()
+                self._create_project_option()
+                + self._create_file_option()
+                + self._create_profile_option()
         )
 
     def _create_status_option(self) -> list[str]:
@@ -212,7 +212,7 @@ class DockerCmdProcessor:
         return utils.get_service_choices(multiple=multiple)
 
     def _adjust_service_name(self) -> None:
-        """Move service_name to inner_bash_cmd if it doesn't match any declared service.
+        """Move service_name to inner_cmd if it doesn't match any declared service.
 
         Enables flows like `dcpe uv run pytest` where the first token is a command,
         not a service name — triggering interactive service selection automatically.
@@ -226,7 +226,7 @@ class DockerCmdProcessor:
         if set(user_input) <= existing_services:
             return
 
-        self.args.inner_bash_cmd = user_input + self.args.inner_bash_cmd
+        self.args.inner_cmd = user_input + self.args.inner_cmd
         self.args.service_name = []
 
         logger.debug(f"\n----adjusted args----\n{self.args}")

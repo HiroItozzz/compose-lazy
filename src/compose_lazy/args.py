@@ -50,9 +50,9 @@ class ArgBuilder:
             )
         return self
 
-    def add_inner_bash_cmd_args(self) -> Self:
+    def add_inner_cmd_args(self) -> Self:
         self.parser.add_argument(
-            "inner_bash_cmd",
+            "inner_cmd",
             nargs="*",
             default=[],
             help="command to run inside the service (default: bash)",

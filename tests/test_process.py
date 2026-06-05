@@ -131,11 +131,11 @@ class TestAdjustServiceName(TestDCPBase):
     @pytest.mark.parametrize("service_name", [None, []])
     def test_NO_ARGS(self, service_name):
         self.processor.args.service_name = service_name
-        self.processor.args.inner_bash_cmd = []
+        self.processor.args.inner_cmd = []
 
         self.processor._adjust_service_name()
         assert self.processor.args.service_name == service_name
-        assert self.processor.args.inner_bash_cmd == []
+        assert self.processor.args.inner_cmd == []
 
     def test_VALID_USER_INPUT(self, tmp_path, monkeypatch):
         file_name = "compose.yml"
@@ -148,12 +148,12 @@ class TestAdjustServiceName(TestDCPBase):
 
         # User input
         self.processor.args.service_name = ["db", "app"]
-        self.processor.args.inner_bash_cmd = []
+        self.processor.args.inner_cmd = []
 
         self.processor._adjust_service_name()
 
         assert self.processor.args.service_name == ["db", "app"]
-        assert self.processor.args.inner_bash_cmd == []
+        assert self.processor.args.inner_cmd == []
 
     def test_INVALID_USER_INPUT(self, tmp_path, monkeypatch):
         file_name = "compose.yml"
@@ -166,12 +166,12 @@ class TestAdjustServiceName(TestDCPBase):
 
         # User input
         self.processor.args.service_name = ["manage.py"]
-        self.processor.args.inner_bash_cmd = ["runserver"]
+        self.processor.args.inner_cmd = ["runserver"]
 
         self.processor._adjust_service_name()
 
         assert self.processor.args.service_name == []
-        assert self.processor.args.inner_bash_cmd == ["manage.py", "runserver"]
+        assert self.processor.args.inner_cmd == ["manage.py", "runserver"]
 
 
 class TestCreateOptions(TestDCPBase):
@@ -198,12 +198,12 @@ class TestCreateOptions(TestDCPBase):
             (["compose.yaml"], ["-f", "compose.yaml"]),
             (["compose.yml"], ["-f", "compose.yml"]),
             (
-                ["compose.yaml", "compose_2.yaml"],
-                ["-f", "compose.yaml", "-f", "compose_2.yaml"],
+                    ["compose.yaml", "compose_2.yaml"],
+                    ["-f", "compose.yaml", "-f", "compose_2.yaml"],
             ),
             (
-                ["compose.yml", "compose_2.yml"],
-                ["-f", "compose.yml", "-f", "compose_2.yml"],
+                    ["compose.yml", "compose_2.yml"],
+                    ["-f", "compose.yml", "-f", "compose_2.yml"],
             ),
         ],
     )
@@ -238,8 +238,8 @@ class TestCreateOptions(TestDCPBase):
     def test_create_file_option_ERROR_RAISED(self, exception):
         self.processor._args.file = []
         with patch(
-            "compose_lazy.utils.get_file_choices",
-            MagicMock(side_effect=exception),
+                "compose_lazy.utils.get_file_choices",
+                MagicMock(side_effect=exception),
         ):
             with pytest.raises((SystemExit, KeyboardInterrupt)):
                 self.processor._create_file_option()
@@ -251,8 +251,8 @@ class TestCreateOptions(TestDCPBase):
             (None, []),
             (["test"], ["--profile", "test"]),
             (
-                ["test", "test_2"],
-                ["--profile", "test", "--profile", "test_2"],
+                    ["test", "test_2"],
+                    ["--profile", "test", "--profile", "test_2"],
             ),
         ],
     )
@@ -268,8 +268,8 @@ class TestCreateOptions(TestDCPBase):
     def test_create_profile_option_ERROR_RAISED(self, exception):
         self.processor._args.profile = []
         with patch(
-            "compose_lazy.utils.get_profile_choices",
-            MagicMock(side_effect=exception),
+                "compose_lazy.utils.get_profile_choices",
+                MagicMock(side_effect=exception),
         ):
             with pytest.raises((SystemExit, KeyboardInterrupt)):
                 self.processor._create_profile_option()

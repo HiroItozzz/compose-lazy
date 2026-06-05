@@ -121,19 +121,19 @@ class TestAddServiceName(ArgBuilderTestBase):
 
 
 class TestAddInnerBashCmd(ArgBuilderTestBase):
-    def test_inner_bash_cmd_DEFAULT(self):
-        self.builder.add_inner_bash_cmd_args()
+    def test_inner_cmd_DEFAULT(self):
+        self.builder.add_inner_cmd_args()
         args = self.builder.parser.parse_args([])
 
         # Defaults to `bash`.
-        self.assertEqual(args.inner_bash_cmd, [])
+        self.assertEqual(args.inner_cmd, [])
 
-    def test_inner_bash_cmd_WITH_SOME_ARGS(self):
-        self.builder.add_inner_bash_cmd_args()
+    def test_inner_cmd_WITH_SOME_ARGS(self):
+        self.builder.add_inner_cmd_args()
         args = self.builder.parser.parse_args(["uv", "run", "pytest"])
 
         # Parses multiple args.
-        self.assertEqual(args.inner_bash_cmd, ["uv", "run", "pytest"])
+        self.assertEqual(args.inner_cmd, ["uv", "run", "pytest"])
 
 
 class TestAddFileArgs(ArgBuilderTestBase):

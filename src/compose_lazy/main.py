@@ -80,7 +80,7 @@ def main() -> None:
     (
         ArgBuilder(_exec)
         .add_service_name_subcmd(multiple=False)
-        .add_inner_bash_cmd_args()
+        .add_inner_cmd_args()
         .add_common_compose_options()
         .set_defaults(func=processor)
     )
@@ -96,7 +96,7 @@ def main() -> None:
     (
         ArgBuilder(_run)
         .add_service_name_subcmd(multiple=False)
-        .add_inner_bash_cmd_args()
+        .add_inner_cmd_args()
         .add_common_compose_options()
         .set_defaults(func=processor)
     )
@@ -328,7 +328,7 @@ def dcpe_main() -> None:
     (
         ArgBuilder(parser)
         .add_service_name_subcmd(multiple=False)
-        .add_inner_bash_cmd_args()
+        .add_inner_cmd_args()
         .add_common_compose_options()
         .set_defaults(func=processor.call_dcpe)
     )
