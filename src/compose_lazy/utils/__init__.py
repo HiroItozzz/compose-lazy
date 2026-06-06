@@ -8,7 +8,7 @@ from .compose_utils import (
     get_service_choices,
     get_service_from_yamls,
 )
-from .yaml_utils import AttrDict, YamlHandler
+from .yaml_utils import YamlHandler
 
 __all__ = [
     "call_safely",
@@ -22,5 +22,4 @@ __all__ = [
     "get_service_choices",
     "get_file_choices",
     "YamlHandler",
-    "AttrDict",
 ]

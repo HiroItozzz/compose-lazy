@@ -5,35 +5,34 @@ import sys
 from abc import ABC, abstractmethod
 from argparse import Namespace
 from pathlib import Path
-from typing import Iterable, TypeAlias, TypedDict
+from typing import Iterable, cast
 
 from . import utils
 from .config import CONFIG_PATH
-from .utils import YamlHandler, call_safely, handle_config, AttrDict
+from .types import ComposeLazyConfig, RepoPaths
+from .utils import YamlHandler, call_safely, handle_config
 
 logger = logging.getLogger(__name__)
 
 
-class RepoConfig(TypedDict):
-    files: list[str]
-
-
-RepoPaths: TypeAlias = dict[str, AttrDict[str,list[str]]]  # {path: [yaml_files]}
-WorkspaceConfig: TypeAlias = dict[str, RepoPaths]  # {workspace_name: RepoPaths}
-
-
 class AbstractWsExecutor(ABC):
-    _WORKSPACE_KEY = "workspaces"
-    _FILE_KEY = "files"
-    YAML_KEYS = (_WORKSPACE_KEY,)
-
     def __init__(self) -> None:
         self.handler = YamlHandler(CONFIG_PATH)
 
     def __call__(self, args: Namespace) -> int:
-        self.handler.setup_config(*self.YAML_KEYS)
+        self.handler.setup_config("workspaces")
         code = self._switch(args)
         return code
+
+    @property
+    def config(self) -> ComposeLazyConfig:
+        """Return the workspace configuration as a typed view.
+
+        Delegates to YamlHandler.config, which is lazily initialized on first access.
+        The cast is zero-cost at runtime; it exists solely to propagate the type
+        to subclasses without duplicating cast calls at each access site.
+        """
+        return cast(ComposeLazyConfig, self.handler.config)
 
     @abstractmethod
     def _switch(self, args: Namespace) -> int: ...
@@ -94,7 +93,7 @@ class WorkspaceRegistrar(AbstractWsExecutor):
                 return 1  # pragma: no cover
 
     def show_list(self) -> int:
-        workspaces: WorkspaceConfig = self.handler.config[self._WORKSPACE_KEY]
+        workspaces = self.config["workspaces"]
 
         if not workspaces:
             print("☓ No workspaces registered yet.")
@@ -107,7 +106,7 @@ class WorkspaceRegistrar(AbstractWsExecutor):
                 print("☓ No repos registered yet.")
             for idx, repo_name in enumerate(repos_dict, start=1):
                 print(f"{'📁 PATH[' + str(idx) + ']':>9}: {repo_name}")
-                print(f"{'FILES':>10}: {', '.join(repos_dict[repo_name].files)}")
+                print(f"{'FILES':>10}: {', '.join(repos_dict[repo_name]['files'])}")
         return 0
 
     def register_repo(self) -> int:
@@ -122,11 +121,11 @@ class WorkspaceRegistrar(AbstractWsExecutor):
 
         selected_yamls = utils.get_file_choices(new_repo)
 
-        workspaces: WorkspaceConfig = self.handler.config[self._WORKSPACE_KEY]
+        workspaces = self.config["workspaces"]
         workspace_name = self._select_workspace_or_create(workspaces)
         for yaml_name in selected_yamls:
             appended = self.handler.append_value(
-                self._WORKSPACE_KEY, workspace_name, str(new_repo), "files", yaml_name
+                "workspaces", workspace_name, str(new_repo), "files", yaml_name
             )
             if appended:
                 self.handler.dump_and_write()
@@ -142,8 +141,7 @@ class WorkspaceRegistrar(AbstractWsExecutor):
         return 0
 
     def delete_repo(self) -> int:
-        workspaces: WorkspaceConfig = self.handler.config[self._WORKSPACE_KEY]
-
+        workspaces = self.config["workspaces"]
         # User input
         if (
             workspace_name := self._select_workspace_simply(workspaces, skip=False)
@@ -230,7 +228,7 @@ class WorkspaceProcessor(AbstractWsExecutor):
         try:
             codes = []
             for workdir, v in workspace.items():
-                yaml_names = v.files
+                yaml_names = v["files"]
                 if not Path(workdir).is_dir():
                     print(f"❌️ Workspace directory not found: {workdir}", file=sys.stderr)
                     codes.append(1)
@@ -276,7 +274,8 @@ class WorkspaceProcessor(AbstractWsExecutor):
         Returns:
             list[str]: All paths in a workspace user selected.
         """
-        workspaces: WorkspaceConfig = self.handler.config[self._WORKSPACE_KEY]
+
+        workspaces = self.config["workspaces"]
         workspace_name = self._select_workspace_simply(workspaces)
         if workspace_name is None:
             return None
@@ -293,7 +292,7 @@ class WorkspaceProcessor(AbstractWsExecutor):
         new_workdirs: RepoPaths = {path: workspace[path]}
 
         services = utils.get_service_from_yamls(
-            [Path(path) / y for y in new_workdirs[path].files]
+            [Path(path) / y for y in new_workdirs[path]["files"]]
         )
         if not services:
             print(f"❌ No services found in `{path}`.", file=sys.stderr)
