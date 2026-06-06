@@ -1,3 +1,17 @@
+## v0.9.2 - 2026-06-06
+ 
+### Breaking Change
+- Workspace config structure changed: each repository path now maps to `{"files": [...]}` instead of a flat list. Delete `~/.config/compose-lazy` and re-register your workspaces.
+
+### Internal
+- Removed `AttrDict` — all YAML config is now handled as plain `dict`
+- Replaced `yaml.dump(..., Dumper=yaml.SafeDumper)` with `yaml.safe_dump`
+- Added `types.py` defining `RepoConfig`, `RepoPaths`, `WorkspaceConfig`, `ComposeLazyConfig` as `TypedDict` / `TypeAlias`
+- Added `config` property on `AbstractWsExecutor` to centralize typed access to workspace config (`cast` to `ComposeLazyConfig`)
+- Removed `_WORKSPACE_KEY` / `YAML_KEYS` class attributes — `"workspaces"` is now inlined as a literal
+- Added `skip` parameter to `_select_workspace_simply` — delete flow now always prompts even with a single workspace
+
+
 ## v0.9.1 - 2026-06-06
 
 ### Fixed
