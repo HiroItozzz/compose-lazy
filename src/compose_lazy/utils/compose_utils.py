@@ -1,7 +1,9 @@
 import logging
 import sys
 from functools import lru_cache
+from os import PathLike
 from pathlib import Path
+from typing import Iterable
 
 import yaml
 
@@ -11,9 +13,10 @@ logger = logging.getLogger(__name__)
 
 
 @lru_cache
-def _read_yaml(path: Path):
+def _read_yaml(path: str | PathLike):
     """Only for files whose content don't change so often (like compose.yaml)."""
-    return yaml.safe_load(path.read_text(encoding="utf-8"))
+    p = Path(path)
+    return yaml.safe_load(p.read_text(encoding="utf-8"))
 
 
 def format_as_flag_args(values: list[str], flag: str) -> list[str]:
@@ -29,20 +32,20 @@ def get_compose_file_paths(path: Path | None = None) -> list[Path]:
     return [*path.glob("*compose*.yml"), *path.glob("*compose*.yaml")]
 
 
-def get_service_from_yamls(file_paths: list[Path]) -> set[str]:
+def get_service_from_yamls(yaml_paths: Iterable[str | PathLike]) -> set[str]:
     """Extract unique docker-compose service names out of given YAML paths."""
     services = set()
-    for path in file_paths:
+    for path in yaml_paths:
         data = _read_yaml(path)
         for services_name in (data or {}).get("services", {}).keys():
             services.add(services_name)
     return services
 
 
-def get_profile_from_yamls(file_paths: list[Path]) -> set[str]:
+def get_profile_from_yamls(yaml_paths: Iterable[str | PathLike]) -> set[str]:
     """Extract unique docker-compose profile names out of given YAML paths."""
     profiles = set()
-    for path in file_paths:
+    for path in yaml_paths:
         data = _read_yaml(path)
         for service in (data or {}).get("services", {}).values():
             for p in (service or {}).get("profiles", []):

@@ -38,15 +38,22 @@ class AbstractWsExecutor(ABC):
         choices: list[str] | None = utils.interactive_select(
             candidates, multiple=False, allow_zero=True
         )
+
         if choices is None:
             return input("Please enter a new workspace name: ").strip()
 
         return choices[0]
 
-    def _select_workspace_simply(self, candidates: Iterable[str]) -> str:
+    def _select_workspace_simply(self, candidates: Iterable[str]) -> str | None:
         candidates = list(candidates)
-        self._display_intro(candidates)
-        choices: list[str] = utils.interactive_select(candidates, multiple=False)
+        if not candidates:
+            print("☓ No workspaces registered yet.", file=sys.stderr)
+            return None
+        elif len(candidates) == 1:
+            choices = candidates
+        else:
+            self._display_intro(candidates)
+            choices: list[str] = utils.interactive_select(candidates, multiple=False)
         return choices[0]
 
     def _display_intro(self, candidates: list[str]) -> None:
@@ -133,16 +140,15 @@ class WorkspaceRegistrar(AbstractWsExecutor):
     def delete_repo(self) -> int:
         config = self.handler.config
         workspace_dict = config[self._WORKSPACE_KEY]
-        if not workspace_dict:
-            print("☓ No workspaces registered yet.", file=sys.stderr)
-            return 1
 
         # User input
         target_workspace_name = self._select_workspace_simply(workspace_dict)
+        if target_workspace_name is None:
+            return 1
         target_workspace = workspace_dict[target_workspace_name]
 
         print()
-        msg = "☑ Found {} director{}!"
+        msg = "☑ Found {} repositor{}!"
         if (length := len(target_workspace)) == 1:
             print(msg.format(length, "y"))
         elif length >= 2:
@@ -191,6 +197,9 @@ class WorkspaceProcessor(AbstractWsExecutor):
 
     @call_safely
     def _switch(self, args: Namespace) -> int:
+
+        if (workdirs := self.get_target_workspace()) is None:
+            return 1
         match args.ws_subcmd:
             case "up" | "u":
                 subcommand = ["up", "-d"]
@@ -206,10 +215,14 @@ class WorkspaceProcessor(AbstractWsExecutor):
                 # Unreachable branch
                 return 1  # pragma: no cover
 
+        return self._iterate_execution(subcommand, workdirs)
+
+    def _iterate_execution(
+        self, subcommand: list[str], workdirs: dict[str, list[str]]
+    ) -> int:
         try:
             codes = []
-            workdirs = self.get_target_workspace().items()
-            for workdir, yaml_names in workdirs:
+            for workdir, yaml_names in workdirs.items():
                 if not Path(workdir).is_dir():
                     print(f"❌️ Workspace directory not found: {workdir}", file=sys.stderr)
                     codes.append(1)
@@ -228,9 +241,6 @@ class WorkspaceProcessor(AbstractWsExecutor):
                 optional_args = utils.format_as_flag_args(yaml_names, "-f")
                 cmd = self.BASE_COMMAND + optional_args + subcommand
 
-                logger.debug(
-                    f"\n---------workdir---------\n{workdir}\n----output docker cmd---- \n{cmd}"
-                )
                 code = self._execute_command(cmd, workdir)
                 codes.append(code)
 
@@ -252,22 +262,27 @@ class WorkspaceProcessor(AbstractWsExecutor):
 
         return next((c for c in codes if c != 0), 0)
 
-    def get_target_workspace(self) -> dict[str, list[str]]:
-        """Let the user select workspace and returns all paths in it.
-
-        Returns:
-            list[str]: All paths in a workspace user selected.
-        """
-        workspaces: dict = self.handler.config[self._WORKSPACE_KEY]
-        workspace_name: str = self._select_workspace_simply(workspaces)
-        return workspaces[workspace_name]
-
     def _execute_command(self, cmd: list[str], workdir: str) -> int:
         repo_name = Path(workdir).name
         width, _ = shutil.get_terminal_size()
+        logger.debug(
+            f"\n---------workdir---------\n{workdir}\n----output docker cmd---- \n{cmd}"
+        )
         print(
             f"───── 📂 {repo_name} ".ljust(min(width, 100) - 1, "─")
         )  # Subtract the count of full width chars
         print(f"▷ Executing `{' '.join(cmd)}` in {repo_name.upper()}.")
         result = subprocess.run(cmd, cwd=workdir)
         return result.returncode
+
+    def get_target_workspace(self) -> dict[str, list[str]] | None:
+        """Let the user select workspace and returns all paths in it.
+
+        Returns:
+            list[str]: All paths in a workspace user selected.
+        """
+        workspaces: dict = self.handler.config[self._WORKSPACE_KEY]
+        workspace_name = self._select_workspace_simply(workspaces)
+        if workspace_name is None:
+            return None
+        return workspaces[workspace_name]
