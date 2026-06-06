@@ -7,7 +7,6 @@ from compose_lazy.main import dcpe_main, dcpu_main, main
 
 
 class TestMain:
-
     # fmt:off
     testcases_DCP_U_SINGLE_OPTION = (
         ("dcp u", "docker compose up"),
@@ -392,6 +391,9 @@ class TestMain:
             ("dcp ws u", "u"),
             ("dcp ws build", "build"),
             ("dcp ws b", "b"),
+            ("dcp ws exec", "exec"),
+            ("dcp ws e", "e"),
+            ("dcp ws ps", "ps"),
             ("dcp ws restart", "restart"),
             ("dcp ws re", "re"),
             ("dcp ws stop", "stop"),

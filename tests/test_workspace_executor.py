@@ -457,6 +457,7 @@ class TestProcessorCall(TestWsBase):
             ("u", ["up", "-d"]),
             ("build", ["build"]),
             ("b", ["build"]),
+            ("ps", ["ps"]),
             ("restart", ["restart"]),
             ("re", ["restart"]),
             ("stop", ["stop"]),
@@ -472,6 +473,17 @@ class TestProcessorCall(TestWsBase):
         self.processor._iterate_execution.assert_called_once_with(
             executed_subcommand, self.workspace
         )
+
+    @pytest.mark.parametrize(
+        "ws_subcmd",
+        ["exec", "e"],
+    )
+    def test_switch_exec(self, ws_subcmd, monkeypatch):
+        monkeypatch.setattr(WorkspaceProcessor, "_get_exec_details", MagicMock())
+        args = Namespace(ws_subcmd=ws_subcmd)
+        self.processor._switch(args)
+
+        self.processor._get_exec_details.assert_called_once_with(self.workspace)
 
     def test_switch_returns_1(self, monkeypatch):
         self.processor.get_target_workspace = MagicMock(return_value=None)
@@ -572,7 +584,7 @@ class TestExecuteCommand(TestWsBase):
 
 class TestGetTargetWorkspace(TestWsBase):
     def test_get_target_workspace(self, monkeypatch):
-        workspaces = {"ws1": ["/repo1", "/repo2"]}
+        workspaces = {"ws1": {"/repo1": "test.yml"}, "ws2": {"/repo2": "test2.yml"}}
         self.processor.handler._config = {"workspaces": workspaces}
         monkeypatch.setattr(
             WorkspaceProcessor,
@@ -582,10 +594,10 @@ class TestGetTargetWorkspace(TestWsBase):
 
         result = self.processor.get_target_workspace()
 
-        assert result == ["/repo1", "/repo2"]
+        assert result == {"/repo1": "test.yml"}
 
     def test_returns_None(self, monkeypatch):
-        workspaces = {"ws1": ["/repo1", "/repo2"]}
+        workspaces = {"ws1": {"/repo1": "", "/repo2": ""}}
         self.processor.handler._config = {"workspaces": workspaces}
         monkeypatch.setattr(
             WorkspaceProcessor,
@@ -596,3 +608,79 @@ class TestGetTargetWorkspace(TestWsBase):
         result = self.processor.get_target_workspace()
 
         assert result is None
+
+
+class TestGetExecDetails(TestWsBase):
+    def test_get_exec_details(self, capsys, tmp_path_factory, monkeypatch):
+        dir1 = tmp_path_factory.mktemp("dir1")
+        dir2 = tmp_path_factory.mktemp("dir2")
+        content1 = "services:\n  app:\n  db:"
+        content2 = "services:\n  db:\n  frontend:"
+        (dir1 / "compose1.yml").write_text(content1)
+        (dir2 / "compose2.yml").write_text(content2)
+        workspace = {str(dir1): ["compose1.yml"], str(dir2): ["compose2.yml"]}
+        dir2_services = {"db", "frontend"}
+
+        mock_select = MagicMock(side_effect=[[str(dir2)], ["db"]])
+        monkeypatch.setattr(utils, "interactive_select", mock_select)
+        mock_get_service = MagicMock(return_value=dir2_services)
+        monkeypatch.setattr(utils, "get_service_from_yamls", mock_get_service)
+        mock_input = MagicMock(return_value="psql")
+        monkeypatch.setattr("builtins.input", mock_input)
+
+        expected_cmd = ["exec", "db", "psql"]
+        expected_workspace = {str(dir2): ["compose2.yml"]}
+
+        result = self.processor._get_exec_details(workspace=workspace)
+        out, _ = capsys.readouterr()
+
+        assert "repositories!" in out
+        mock_select.assert_any_call(workspace, multiple=False)
+        mock_get_service.assert_called_once_with([dir2 / "compose2.yml"])
+        assert "services!" in out
+        mock_select.assert_any_call(dir2_services, multiple=False)
+
+        assert result == (expected_cmd, expected_workspace)
+
+    def test_no_selection_empty_input(self, capsys, tmp_path_factory, monkeypatch):
+        dir1 = tmp_path_factory.mktemp("dir1")
+        content1 = "services:\n  app:"
+        (dir1 / "compose1.yml").write_text(content1)
+        workspace = {str(dir1): ["compose1.yml"]}
+        dir1_services = {"app"}
+
+        mock_select = MagicMock()
+        monkeypatch.setattr(utils, "interactive_select", mock_select)
+        mock_get_service = MagicMock(return_value=dir1_services)
+        monkeypatch.setattr(utils, "get_service_from_yamls", mock_get_service)
+        mock_input = MagicMock(return_value="")
+        monkeypatch.setattr("builtins.input", mock_input)
+
+        expected_cmd = ["exec", "app", "bash"]
+        expected_workspace = {str(dir1): ["compose1.yml"]}
+
+        result = self.processor._get_exec_details(workspace=workspace)
+        out, _ = capsys.readouterr()
+
+        assert "services!" not in out
+        assert "Found" not in out
+        mock_select.assert_not_called()
+        mock_get_service.assert_called_once_with([dir1 / "compose1.yml"])
+
+        assert result == (expected_cmd, expected_workspace)
+
+    def test_SystemExit(self, capsys, tmp_path_factory, monkeypatch):
+        dir1 = tmp_path_factory.mktemp("dir1")
+        content1 = "services:"
+        (dir1 / "compose1.yml").write_text(content1)
+        workspace = {str(dir1): ["compose1.yml"]}
+
+        mock_get_service = MagicMock(return_value={})
+        monkeypatch.setattr(utils, "get_service_from_yamls", mock_get_service)
+
+        with pytest.raises(SystemExit):
+            self.processor._get_exec_details(workspace=workspace)
+
+        _, err = capsys.readouterr()
+
+        assert "No services" in err

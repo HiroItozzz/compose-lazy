@@ -137,10 +137,9 @@ class WorkspaceRegistrar(AbstractWsExecutor):
         workspaces: WorkspaceConfig = self.handler.config[self._WORKSPACE_KEY]
 
         # User input
-        target_workspace_name = self._select_workspace_simply(workspaces)
-        if target_workspace_name is None:
+        if (workspace_name := self._select_workspace_simply(workspaces)) is None:
             return 1
-        target_workspace: RepoPaths = workspaces[target_workspace_name]
+        target_workspace: RepoPaths = workspaces[workspace_name]
 
         print()
         msg = "☑ Found {} repositor{}!"
@@ -181,7 +180,7 @@ class WorkspaceRegistrar(AbstractWsExecutor):
             print(f"☑ Deleted: {name}")
 
         if not target_workspace:
-            del workspaces[target_workspace_name]
+            del workspaces[workspace_name]
 
         self.handler.dump_and_write()
         return 0
