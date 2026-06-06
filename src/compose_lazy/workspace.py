@@ -288,24 +288,27 @@ class WorkspaceProcessor(AbstractWsExecutor):
         return workspaces[workspace_name]
 
     def _get_exec_details(self, workspace: RepoPaths) -> tuple[list[str], RepoPaths]:
-        if len(workspace) >= 2:
+        if len(workspace) == 1:
+            single_paths = list(workspace)
+        else:
             print()
             print(f"☑ Found {len(workspace)} repositories!")
             single_paths = utils.interactive_select(workspace, multiple=False)
-        else:
-            single_paths = list(workspace)
         path = single_paths[0]
-        new_workdirs: RepoPaths = {k: v for k, v in workspace.items() if k == path}
+        new_workdirs: RepoPaths = {path: workspace[path]}
 
         services = utils.get_service_from_yamls(
             [Path(path) / y for y in new_workdirs[path]]
         )
-        if len(services) >= 2:
+        if not services:
+            print(f"❌ No services found in `{path}`.", file=sys.stderr)
+            raise SystemExit(1)
+        elif len(services) == 1:
+            single_services = list(services)
+        else:
             print()
             print(f"☑ Found {len(services)} services!")
             single_services = utils.interactive_select(services, multiple=False)
-        else:
-            single_services = list(services)
 
         inner_container_command = input(
             f"Please enter the rest of `docker compose exec {single_services[0]} ...`: "
