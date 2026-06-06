@@ -1,7 +1,7 @@
 ## v0.9.2 - 2026-06-06
  
 ### Breaking Change
-- Workspace config structure changed: each repository path now maps to `{"files": [...]}` instead of a flat list. Delete `~/.config/compose-lazy` and re-register your workspaces.
+- Workspace config structure changed: each repository path now maps to `{"files": [...]}` instead of a flat list. Existing configs are migrated automatically on first run.
 
 ### Internal
 - Removed `AttrDict` — all YAML config is now handled as plain `dict`

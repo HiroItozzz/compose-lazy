@@ -5,7 +5,9 @@ from typing import Any, Self
 
 import yaml
 from yaml.scanner import ScannerError
+
 from .cli_utils import handle_config
+
 logger = logging.getLogger(__name__)
 
 
@@ -58,7 +60,26 @@ class YamlHandler:
         logger.debug(f"{config=}")
         self._config = config
 
+        if self._migrate_workspace_schema():  # TODO: remove migration before 1.0.0
+            self.dump_and_write()
+
         return self
+
+    def _migrate_workspace_schema(self) -> bool:
+        # TODO: remove migration before 1.0.0
+        workspaces = self.config.get("workspaces")
+        if not isinstance(workspaces, dict):
+            return False
+
+        migrated = False
+        for ws_name, repos in workspaces.items():
+            for path, value in repos.items():
+                if isinstance(value, list):
+                    repos[path] = {"files": value}
+                    migrated = True
+                    logger.debug(f"Migrated workspace repo: {ws_name}/{path}")
+
+        return migrated
 
     def append_value(self, *args: str) -> bool:
         """Append value to the config.
