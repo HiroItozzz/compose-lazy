@@ -1,3 +1,8 @@
+## v0.9.1 - 2026-06-06
+
+### Fixed
+- Fixed an error message in which wrong path of the configuration file is indicated
+
 ## v0.9.0 - 2026-06-06
  
 ### Added
