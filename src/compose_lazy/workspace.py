@@ -198,7 +198,7 @@ class WorkspaceProcessor(AbstractWsExecutor):
     @call_safely
     def _switch(self, args: Namespace) -> int:
 
-        if (workdirs := self.get_target_workspace()) is None:
+        if (workspace := self.get_target_workspace()) is None:
             return 1
         match args.ws_subcmd:
             case "up" | "u":
@@ -215,14 +215,14 @@ class WorkspaceProcessor(AbstractWsExecutor):
                 # Unreachable branch
                 return 1  # pragma: no cover
 
-        return self._iterate_execution(subcommand, workdirs)
+        return self._iterate_execution(subcommand, workspace)
 
     def _iterate_execution(
-        self, subcommand: list[str], workdirs: dict[str, list[str]]
+        self, subcommand: list[str], workspace: dict[str, list[str]]
     ) -> int:
         try:
             codes = []
-            for workdir, yaml_names in workdirs.items():
+            for workdir, yaml_names in workspace.items():
                 if not Path(workdir).is_dir():
                     print(f"❌️ Workspace directory not found: {workdir}", file=sys.stderr)
                     codes.append(1)
@@ -255,11 +255,6 @@ class WorkspaceProcessor(AbstractWsExecutor):
         except FileNotFoundError:
             print("Docker is not found.", file=sys.stderr)
             return 1
-        except Exception:
-            logger.debug("An unexpected error occurred.", exc_info=True)
-            print("An unexpected error occurred.", file=sys.stderr)
-            return 1
-
         return next((c for c in codes if c != 0), 0)
 
     def _execute_command(self, cmd: list[str], workdir: str) -> int:

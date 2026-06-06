@@ -18,6 +18,10 @@ def call_safely(func: Callable[P, int]) -> Callable[P, int]:
             return 130
         except SystemExit as e:
             return int(e.code or 0)
+        except Exception:
+            logger.debug("An unexpected error occurred.", exc_info=True)
+            print("An unexpected error occurred.", file=sys.stderr)
+            return 1
 
     return wrapper
 
