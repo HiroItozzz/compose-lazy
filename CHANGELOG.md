@@ -1,3 +1,21 @@
+## v0.9.0 - 2026-06-06
+ 
+### Added
+- `dcp ws exec(e)` — new workspace subcommand to run `docker compose exec` interactively against a selected repo and service within a workspace
+- `dcp ws ps` — new workspace subcommand to run `docker compose ps` across all repos in a workspace
+- `readline` support on Linux/macOS for improved interactive input (line editing, history)
+
+### Changed
+- Workspace selection now handles empty workspaces gracefully across all operations — a clear message is shown instead of crashing
+- `_select_workspace_simply` now returns `None` when no workspaces are registered, allowing callers to handle early exit cleanly
+
+### Internal
+- Extracted `handle_config` as a standalone decorator (was inline `try/except` in both `WorkspaceRegistrar` and `WorkspaceProcessor`)
+- Moved `CONFIG_PATH` from `workspace.py` to `config.py` for centralized configuration
+- Introduced `TypeAlias` for `RepoPaths` and `WorkspaceConfig` to improve internal type clarity
+- Extracted `WorkspaceProcessor._iterate_execution` as a separate method
+- Renamed `inner_bash_cmd` → `inner_cmd` throughout for accuracy
+
 ## v0.8.1 - 2026-06-03
 
 ### Changed

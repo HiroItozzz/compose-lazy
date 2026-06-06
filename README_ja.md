@@ -1,10 +1,12 @@
 # Compose Lazy
-> 🚀 `docker compose` をインタラクティブに操作できるCLIラッパー
+> 🚀 `docker compose` のCLIラッパー — インタラクティブ選択 × マルチリポジトリワークスペース管理
+
+
 
 ## 概要
 
 `docker compose` コマンドの使用頻度の高い開発者の作業を補助するためのCLIツールです。  
-よく使われるコマンドの短縮エイリアスに加え、composeファイル・プロファイル・サービス名のインタラクティブ選択や、複数リポジトリを一括操作するワークスペース管理機能を実装しています。    
+よく使われるコマンドの短縮エイリアスに加え、composeファイル・プロファイル・サービス名のインタラクティブ選択や、複数リポジトリをどこからでも一括操作できるワークスペース管理機能を実装しています。    
 PyPIで公開しており、`pipx install compose-lazy`または`uv tool install compose-lazy`で即座に使用できます。
 
 ## 主な機能
@@ -24,7 +26,10 @@ PyPIで公開しており、`pipx install compose-lazy`または`uv tool install
 ### ワークスペース機能
  
 複数のリポジトリを「ワークスペース」としてまとめて登録し、一括で操作できます。
-リポジトリごとに使用する compose ファイルを登録時に指定できます。
+**カレントディレクトリを問わず、`cd` なしでどこからでも操作できる**のが特徴です。
+
+登録しておけば、各リポジトリのパスと compose ファイルを compose-lazy が記憶します。
+ファイルシステム上のどこにいても、任意のコンテナの起動・exec・状態確認が行えます。
  
 
 ```bash
@@ -52,7 +57,21 @@ $ dcp ws up
 Enter your choice or 'q' to quit: 1
 
 ───── 📂 myproject ────────────────────────────────────────────────────────────────────────────────────
-▷ Executing `docker compose -f docker-compose.yml up -d` in REPO.
+▷ Executing `docker compose -f docker-compose.yml up -d` in MYPROJECT.
+
+# ワークスペース内のリポジトリ・サービスを対話的に選択して exec する
+$ dcp ws exec
+☑ Found 2 repositories!
+    1. /path/to/repo-a
+    2. /path/to/repo-b
+Enter your choice or 'q' to quit: 1
+
+☑ Found 2 services!
+    1. app
+    2. db
+Enter your choice or 'q' to quit: 1
+Please enter the rest of `docker compose exec app ...`: bash
+▷ Executing `docker compose -f docker-compose.yml exec app bash` in REPO-A.
 ```
  
 設定は `~/.config/compose-lazy` に保存されます。
@@ -142,7 +161,7 @@ ArgBuilder(parser)
 単体テストのほか、`sys.argv`と`subprocess.run`をモックした結合テストを実装することで品質を担保しています。約470テスト、カバレッジ99%を維持しています。
 
 
-## 感想 (2026-05-18)
+## 経緯・所感 (2026-05-18)
 
 当初はbashエイリアスでdocker composeの短縮コマンドを利用していましたが、より高機能なものが欲しくなったのが構想のきっかけです。  
 インタラクティブ機能を思いついた時点で、他の開発者にも一定程度価値があるのではないかと感じ、PyPIにアップロードする前提で今回のプロジェクトを立ち上げました。  

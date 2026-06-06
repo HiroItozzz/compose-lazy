@@ -97,7 +97,7 @@ def interactive_select(
     print()
 
     if allow_zero:
-        print("Or '0' for a new entry.")
+        print(" ── Or enter 0 for a new entry.")
     # User input
     while True:
         args = []
