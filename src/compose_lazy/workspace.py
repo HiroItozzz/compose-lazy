@@ -5,20 +5,26 @@ import sys
 from abc import ABC, abstractmethod
 from argparse import Namespace
 from pathlib import Path
-from typing import Iterable, TypeAlias
+from typing import Iterable, TypeAlias, TypedDict
 
 from . import utils
 from .config import CONFIG_PATH
-from .utils import YamlHandler, call_safely, handle_config
+from .utils import YamlHandler, call_safely, handle_config, AttrDict
 
 logger = logging.getLogger(__name__)
 
-RepoPaths: TypeAlias = dict[str, list[str]]  # {path: [yaml_files]}
+
+class RepoConfig(TypedDict):
+    files: list[str]
+
+
+RepoPaths: TypeAlias = dict[str, AttrDict[str,list[str]]]  # {path: [yaml_files]}
 WorkspaceConfig: TypeAlias = dict[str, RepoPaths]  # {workspace_name: RepoPaths}
 
 
 class AbstractWsExecutor(ABC):
     _WORKSPACE_KEY = "workspaces"
+    _FILE_KEY = "files"
     YAML_KEYS = (_WORKSPACE_KEY,)
 
     def __init__(self) -> None:
@@ -47,12 +53,14 @@ class AbstractWsExecutor(ABC):
 
         return choices[0]
 
-    def _select_workspace_simply(self, candidates: Iterable[str]) -> str | None:
+    def _select_workspace_simply(
+        self, candidates: Iterable[str], skip: bool = True
+    ) -> str | None:
         candidates = list(candidates)
         if not candidates:
             print("☓ No workspaces registered yet.", file=sys.stderr)
             return None
-        elif len(candidates) == 1:
+        elif len(candidates) == 1 and skip:
             choices = candidates
         else:
             self._display_intro(candidates)
@@ -99,7 +107,7 @@ class WorkspaceRegistrar(AbstractWsExecutor):
                 print("☓ No repos registered yet.")
             for idx, repo_name in enumerate(repos_dict, start=1):
                 print(f"{'📁 PATH[' + str(idx) + ']':>9}: {repo_name}")
-                print(f"{'FILES':>10}: {', '.join(repos_dict[repo_name])}")
+                print(f"{'FILES':>10}: {', '.join(repos_dict[repo_name].files)}")
         return 0
 
     def register_repo(self) -> int:
@@ -118,7 +126,7 @@ class WorkspaceRegistrar(AbstractWsExecutor):
         workspace_name = self._select_workspace_or_create(workspaces)
         for yaml_name in selected_yamls:
             appended = self.handler.append_value(
-                self._WORKSPACE_KEY, workspace_name, str(new_repo), yaml_name
+                self._WORKSPACE_KEY, workspace_name, str(new_repo), "files", yaml_name
             )
             if appended:
                 self.handler.dump_and_write()
@@ -137,7 +145,9 @@ class WorkspaceRegistrar(AbstractWsExecutor):
         workspaces: WorkspaceConfig = self.handler.config[self._WORKSPACE_KEY]
 
         # User input
-        if (workspace_name := self._select_workspace_simply(workspaces)) is None:
+        if (
+            workspace_name := self._select_workspace_simply(workspaces, skip=False)
+        ) is None:
             return 1
         target_workspace: RepoPaths = workspaces[workspace_name]
 
@@ -219,7 +229,8 @@ class WorkspaceProcessor(AbstractWsExecutor):
     def _iterate_execution(self, subcommand: list[str], workspace: RepoPaths) -> int:
         try:
             codes = []
-            for workdir, yaml_names in workspace.items():
+            for workdir, v in workspace.items():
+                yaml_names = v.files
                 if not Path(workdir).is_dir():
                     print(f"❌️ Workspace directory not found: {workdir}", file=sys.stderr)
                     codes.append(1)
@@ -282,7 +293,7 @@ class WorkspaceProcessor(AbstractWsExecutor):
         new_workdirs: RepoPaths = {path: workspace[path]}
 
         services = utils.get_service_from_yamls(
-            [Path(path) / y for y in new_workdirs[path]]
+            [Path(path) / y for y in new_workdirs[path].files]
         )
         if not services:
             print(f"❌ No services found in `{path}`.", file=sys.stderr)
