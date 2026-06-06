@@ -225,8 +225,8 @@ class TestShowList(TestWsBase):
         self.registrar.handler._config = {
             "workspaces": {
                 "ws1": {
-                    "/path/to/repo1": ["compose1.yml"],
-                    "/path/to/repo2": ["compose2.yml"],
+                    "/path/to/repo1": {"files": ["compose1.yml"]},
+                    "/path/to/repo2": {"files": ["compose2.yml"]},
                 },
             }
         }
@@ -365,8 +365,8 @@ class TestDeleteRepo(TestWsBase):
     def test_DELETE(self, capsys, monkeypatch):
         workspaces = {
             "ws1": {
-                "/path/to/repo1": ["compose1.yml"],
-                "/path/to/repo2": ["compose2.yml"],
+                "/path/to/repo1": {"files": ["compose1.yml"]},
+                "/path/to/repo2": {"files": ["compose2.yml"]},
             },
         }
         self.registrar.handler._config = {"workspaces": workspaces}
@@ -388,7 +388,7 @@ class TestDeleteRepo(TestWsBase):
     def test_DELETE_ALL_REMOVES_WORKSPACE(self, monkeypatch):
         workspaces = {
             "ws1": {
-                "/path/to/repo1": ["compose1.yml"],
+                "/path/to/repo1": {"files": ["compose1.yml"]},
             }
         }
         self.registrar.handler._config = {"workspaces": workspaces}
@@ -408,8 +408,8 @@ class TestDeleteRepo(TestWsBase):
     def test_DELETE_OUT_OF_RANGE(self, commands, capsys, monkeypatch):
         workspaces = {
             "ws1": {
-                "/path/to/repo1": ["compose1.yml"],
-                "/path/to/repo2": ["compose2.yml"],
+                "/path/to/repo1": {"files": ["compose1.yml"]},
+                "/path/to/repo2": {"files": ["compose2.yml"]},
             },
         }
         self.registrar.handler._config = {"workspaces": workspaces}
@@ -436,7 +436,7 @@ class TestProcessorCall(TestWsBase):
     def setup_method(self):
         super().setup_method()
         self.compose_files = ["compose.test.yml", "compose.test2.yml"]
-        self.workspace = {"/path/to/repo": self.compose_files}
+        self.workspace = {"/path/to/repo": {"files": self.compose_files}}
         self.processor.get_target_workspace = MagicMock(return_value=self.workspace)
         self.processor._execute_command = MagicMock(return_value=0)
 
@@ -526,9 +526,9 @@ class TestProcessorCall(TestWsBase):
     def test_returns_nonzero_on_failure(self):
         self.processor._execute_command = MagicMock(side_effect=[0, 1, 0])
         workspace = {
-            "/repo1": ["compose1.yml"],
-            "/repo2": ["compose1.yml"],
-            "/repo3": ["compose1.yml"],
+            "/repo1": {"files": ["compose1.yml"]},
+            "/repo2": {"files": ["compose1.yml"]},
+            "/repo3": {"files": ["compose1.yml"]},
         }
         code = self.processor._iterate_execution(["up"], workspace)
 
@@ -536,7 +536,7 @@ class TestProcessorCall(TestWsBase):
 
     def test_Docker_NOT_FOUND(self, capsys, tmp_path):
         (tmp_path / "compose.yml").touch()
-        workspace = {str(tmp_path): ["compose.yml"]}
+        workspace = {str(tmp_path): {"files": ["compose.yml"]}}
         self.processor._execute_command = MagicMock(side_effect=FileNotFoundError)
 
         code = self.processor._iterate_execution(["up"], workspace)
@@ -618,7 +618,10 @@ class TestGetExecDetails(TestWsBase):
         content2 = "services:\n  db:\n  frontend:"
         (dir1 / "compose1.yml").write_text(content1)
         (dir2 / "compose2.yml").write_text(content2)
-        workspace = {str(dir1): ["compose1.yml"], str(dir2): ["compose2.yml"]}
+        workspace = {
+            str(dir1): {"files": ["compose1.yml"]},
+            str(dir2): {"files": ["compose2.yml"]},
+        }
         dir2_services = {"db", "frontend"}
 
         mock_select = MagicMock(side_effect=[[str(dir2)], ["db"]])
@@ -629,7 +632,7 @@ class TestGetExecDetails(TestWsBase):
         monkeypatch.setattr("builtins.input", mock_input)
 
         expected_cmd = ["exec", "db", "psql"]
-        expected_workspace = {str(dir2): ["compose2.yml"]}
+        expected_workspace = {str(dir2): {"files": ["compose2.yml"]}}
 
         result = self.processor._get_exec_details(workspace=workspace)
         out, _ = capsys.readouterr()
@@ -646,7 +649,7 @@ class TestGetExecDetails(TestWsBase):
         dir1 = tmp_path_factory.mktemp("dir1")
         content1 = "services:\n  app:"
         (dir1 / "compose1.yml").write_text(content1)
-        workspace = {str(dir1): ["compose1.yml"]}
+        workspace = {str(dir1): {"files": ["compose1.yml"]}}
         dir1_services = {"app"}
 
         mock_select = MagicMock()
@@ -657,7 +660,7 @@ class TestGetExecDetails(TestWsBase):
         monkeypatch.setattr("builtins.input", mock_input)
 
         expected_cmd = ["exec", "app", "bash"]
-        expected_workspace = {str(dir1): ["compose1.yml"]}
+        expected_workspace = {str(dir1): {"files": ["compose1.yml"]}}
 
         result = self.processor._get_exec_details(workspace=workspace)
         out, _ = capsys.readouterr()
@@ -673,7 +676,7 @@ class TestGetExecDetails(TestWsBase):
         dir1 = tmp_path_factory.mktemp("dir1")
         content1 = "services:"
         (dir1 / "compose1.yml").write_text(content1)
-        workspace = {str(dir1): ["compose1.yml"]}
+        workspace = {str(dir1): {"files": ["compose1.yml"]}}
 
         mock_get_service = MagicMock(return_value={})
         monkeypatch.setattr(utils, "get_service_from_yamls", mock_get_service)

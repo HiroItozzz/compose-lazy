@@ -6,45 +6,18 @@ from typing import Any, Self
 import yaml
 from yaml.scanner import ScannerError
 
+from .cli_utils import handle_config
+
 logger = logging.getLogger(__name__)
-
-
-class AttrDict(dict):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-    def __getattr__(self, key):
-        try:
-            return self[key]
-        except KeyError as e:
-            raise AttributeError(key) from e
-
-    def __setattr__(self, key, value):
-        self[key] = value
-
-    def __dir__(self):
-        return self.keys()
 
 
 class YamlHandler:
     def __init__(self, path: Path) -> None:
         """Initialize basic YAML setting, configuration path, and load YAML.
 
-        Set AttrDict should convert from/to dict object in YAML, path to configuration file.
-
         Args:
             path (Path): Path to the configuration file.
         """
-        yaml.add_representer(
-            AttrDict,
-            lambda dumper, data: dumper.represent_dict(data),
-            Dumper=yaml.SafeDumper,
-        )
-        yaml.add_constructor(
-            "tag:yaml.org,2002:map",
-            lambda loader, node: AttrDict(loader.construct_mapping(node, deep=True)),
-            Loader=yaml.SafeLoader,
-        )
         self.path = path
         self._config = None
 
@@ -52,9 +25,10 @@ class YamlHandler:
     def config(self) -> dict:
         if self._config is None:
             logger.debug("WARNING: YamlHandler is not initialized.")
-            self._config = AttrDict()
+            self._config = {}
         return self._config
 
+    @handle_config
     def setup_config(self, *keys) -> Self:
         """Load configuration and create basic structure in config variable.
 
@@ -70,7 +44,7 @@ class YamlHandler:
                 # Make parent directories.
                 self.path.parent.mkdir(parents=True, exist_ok=True)
                 self.path.touch()
-                config = AttrDict()
+                config = {}
         # For developers
         except ScannerError:
             print(f"❌ Couldn't load yaml: {self.path}", file=sys.stderr)
@@ -82,11 +56,30 @@ class YamlHandler:
         # Setup basic data structure
         for key in keys:
             if key not in config:
-                config[key] = AttrDict()
+                config[key] = {}
         logger.debug(f"{config=}")
         self._config = config
 
+        if self._migrate_workspace_schema():  # TODO: remove migration before 1.0.0
+            self.dump_and_write()
+
         return self
+
+    def _migrate_workspace_schema(self) -> bool:
+        # TODO: remove migration before 1.0.0
+        workspaces = self.config.get("workspaces")
+        if not isinstance(workspaces, dict):
+            return False
+
+        migrated = False
+        for ws_name, repos in workspaces.items():
+            for path, value in repos.items():
+                if isinstance(value, list):
+                    repos[path] = {"files": value}
+                    migrated = True
+                    logger.debug(f"Migrated workspace repo: {ws_name}/{path}")
+
+        return migrated
 
     def append_value(self, *args: str) -> bool:
         """Append value to the config.
@@ -104,7 +97,7 @@ class YamlHandler:
         current = self.config
         for key in keys[:-1]:
             if not current.get(key):
-                current[key] = AttrDict()
+                current[key] = {}
             current = current[key]
         last_key = keys[-1]
         if not current.get(last_key):
@@ -126,9 +119,7 @@ class YamlHandler:
         return current
 
     def _read_and_load(self) -> dict:
-        return yaml.safe_load(self.path.read_text(encoding="utf-8")) or AttrDict()
+        return yaml.safe_load(self.path.read_text(encoding="utf-8")) or {}
 
     def dump_and_write(self) -> None:
-        self.path.write_text(
-            yaml.dump(self._config, Dumper=yaml.SafeDumper), encoding="utf-8"
-        )
+        self.path.write_text(yaml.safe_dump(self._config), encoding="utf-8")
