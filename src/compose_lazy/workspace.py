@@ -8,11 +8,10 @@ from pathlib import Path
 from typing import Iterable
 
 from . import utils
+from .config import CONFIG_PATH
 from .utils import YamlHandler, call_safely
 
 logger = logging.getLogger(__name__)
-
-CONFIG_PATH = Path.home() / ".config" / "compose-lazy"
 
 
 class AbstractWsExecutor(ABC):

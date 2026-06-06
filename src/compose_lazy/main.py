@@ -8,6 +8,11 @@ from .args import ArgBuilder
 from .process import DockerCmdProcessor
 from .workspace import WorkspaceProcessor, WorkspaceRegistrar
 
+try:
+    import readline
+except ImportError:
+    pass  # Windows
+
 VERSION = version("compose_lazy")
 
 logger = logging.getLogger(__name__)

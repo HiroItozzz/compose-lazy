@@ -1,5 +1,6 @@
 import logging
 import os
+from pathlib import Path
 
 try:
     from dotenv import load_dotenv
@@ -10,6 +11,12 @@ except ImportError:
     pass
 
 DEBUG = os.environ.get("COMPOSE_LAZY_DEBUG", "False").lower() in ["true", "t"]
+
+if DEBUG:
+    CONFIG_PATH = Path.cwd() / "config.yaml"
+else:
+    CONFIG_PATH = Path.home() / ".config" / "compose-lazy"
+
 
 LOG_LEVEL = "DEBUG" if DEBUG else "INFO"
 
