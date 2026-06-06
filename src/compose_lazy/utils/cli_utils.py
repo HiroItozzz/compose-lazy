@@ -26,6 +26,23 @@ def call_safely(func: Callable[P, int]) -> Callable[P, int]:
     return wrapper
 
 
+def handle_config(func: Callable[P, int]) -> Callable[P, int]:
+    @wraps(func)
+    def wrapper(*args: P.args, **kwargs: P.kwargs) -> int:
+        try:
+            return func(*args, **kwargs)
+        except (TypeError, KeyError, AttributeError):
+            logger.debug("Workspace config has unexpected structure.", exc_info=True)
+            print(
+                "❌️ Workspace config is invalid or outdated.\n"
+                "💡 Delete ~/.config/compose-lazy/config.yml and re-register your workspaces.",
+                file=sys.stderr,
+            )
+            return 1
+
+    return wrapper
+
+
 @overload
 def interactive_select(
     candidates, flag=..., *, multiple=..., allow_zero: Literal[True]

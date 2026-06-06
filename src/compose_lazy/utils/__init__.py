@@ -1,4 +1,4 @@
-from .cli_utils import call_safely, interactive_select
+from .cli_utils import call_safely, handle_config, interactive_select
 from .compose_utils import (
     format_as_flag_args,
     get_compose_file_paths,
@@ -12,6 +12,7 @@ from .yaml_utils import AttrDict, YamlHandler
 
 __all__ = [
     "call_safely",
+    "handle_config",
     "interactive_select",
     "format_as_flag_args",
     "get_compose_file_paths",

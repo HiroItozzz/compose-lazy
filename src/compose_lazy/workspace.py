@@ -9,7 +9,7 @@ from typing import Iterable, TypeAlias
 
 from . import utils
 from .config import CONFIG_PATH
-from .utils import YamlHandler, call_safely
+from .utils import YamlHandler, call_safely, handle_config
 
 logger = logging.getLogger(__name__)
 
@@ -72,26 +72,18 @@ class AbstractWsExecutor(ABC):
 
 class WorkspaceRegistrar(AbstractWsExecutor):
     @call_safely
+    @handle_config
     def _switch(self, args: Namespace) -> int:
-        try:
-            match args.ws_subcmd:
-                case "register" | "reg":
-                    return self.register_repo()
-                case "delete" | "del":
-                    return self.delete_repo()
-                case "list" | "li":
-                    return self.show_list()
-                case _:  # pragma: no cover
-                    # Unreachable branch
-                    return 1  # pragma: no cover
-        except (TypeError, KeyError, AttributeError):
-            logger.debug("Workspace config has unexpected structure.", exc_info=True)
-            print(
-                "❌️ Workspace config is invalid or outdated.\n"
-                "💡 Delete ~/.config/compose-lazy/config.yml and re-register your workspaces.",
-                file=sys.stderr,
-            )
-            return 1
+        match args.ws_subcmd:
+            case "register" | "reg":
+                return self.register_repo()
+            case "delete" | "del":
+                return self.delete_repo()
+            case "list" | "li":
+                return self.show_list()
+            case _:  # pragma: no cover
+                # Unreachable branch
+                return 1  # pragma: no cover
 
     def show_list(self) -> int:
         workspaces: WorkspaceConfig = self.handler.config[self._WORKSPACE_KEY]
@@ -199,6 +191,7 @@ class WorkspaceProcessor(AbstractWsExecutor):
     BASE_COMMAND = ["docker", "compose"]
 
     @call_safely
+    @handle_config
     def _switch(self, args: Namespace) -> int:
 
         if (workspace := self.get_target_workspace()) is None:
@@ -249,14 +242,6 @@ class WorkspaceProcessor(AbstractWsExecutor):
                 code = self._execute_command(cmd, workdir)
                 codes.append(code)
 
-        except (TypeError, KeyError, AttributeError):
-            logger.debug("Workspace config has unexpected structure.", exc_info=True)
-            print(
-                "❌️ Workspace config is invalid or outdated.\n"
-                "💡 Delete ~/.config/compose-lazy/config.yml and re-register your workspaces.",
-                file=sys.stderr,
-            )
-            return 1
         except FileNotFoundError:
             print("Docker is not found.", file=sys.stderr)
             return 1
