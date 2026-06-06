@@ -248,6 +248,16 @@ def main() -> None:
         help="docker compose `build` for each repo.",
     ).set_defaults(func=ws_processor)
 
+    # dcp ws exec command
+    ws_subparsers.add_parser(
+        "exec",
+        aliases=["e"],
+        allow_abbrev=False,
+        usage="dcp ws exec(e)",
+        description="Run `docker compose exec` for specified service in a selected repo in a selected workspace.",
+        help="docker compose `exec` for a repo specified interactively.",
+    ).set_defaults(func=ws_processor)
+
     # dcp ws restart command
     ws_subparsers.add_parser(
         "restart",
@@ -256,6 +266,15 @@ def main() -> None:
         usage="dcp ws restart(re)",
         description="Run `docker compose restart` for all repos in a selected workspace.",
         help="docker compose `restart` for each repo.",
+    ).set_defaults(func=ws_processor)
+
+    # dcp ws ps command
+    ws_subparsers.add_parser(
+        "ps",
+        allow_abbrev=False,
+        usage="dcp ws ps",
+        description="Run `docker compose ps` for all repos in a selected workspace.",
+        help="docker compose `ps` for each repo.",
     ).set_defaults(func=ws_processor)
 
     # dcp ws stop command

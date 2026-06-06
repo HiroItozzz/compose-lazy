@@ -16,7 +16,7 @@ from compose_lazy.workspace import (
 class TestWsBase:
     def setup_method(self):
         self.registrar = WorkspaceRegistrar()
-        self.executor = WorkspaceProcessor()
+        self.processor = WorkspaceProcessor()
 
 
 # ─────────────────────────────────────────────
@@ -65,9 +65,7 @@ class TestCommonMethods(TestWsBase):
         )
         assert result == "ws2"
 
-    def test_select_or_create_WORKSPACE_EXISTS_AND_SELECT_0(
-        self, capsys, monkeypatch, tmp_path
-    ):
+    def test_select_or_create_WORKSPACE_EXISTS_AND_SELECT_0(self, monkeypatch):
         mock_input = MagicMock(return_value="ws99")
         monkeypatch.setattr("builtins.input", mock_input)
         monkeypatch.setattr(
@@ -106,10 +104,26 @@ class TestCommonMethods(TestWsBase):
         result = self.registrar._select_workspace_simply(workspaces)
 
         WorkspaceRegistrar._display_intro.assert_called_once()
-        getattr(utils, "interactive_select").assert_called_once_with(
-            list(workspaces), multiple=False
-        )
+        utils.interactive_select.assert_called_once_with(list(workspaces), multiple=False)
         assert result == "ws2"
+
+    def test_select_simply_no_interaction(self, monkeypatch):
+        monkeypatch.setattr(WorkspaceRegistrar, "_display_intro", MagicMock())
+        monkeypatch.setattr(utils, "interactive_select", MagicMock())
+        result = self.registrar._select_workspace_simply({"ws1": {}})
+
+        WorkspaceRegistrar._display_intro.assert_not_called()
+        utils.interactive_select.assert_not_called()
+        assert result == "ws1"
+
+    def test_select_simply_returns_None(self, monkeypatch):
+        monkeypatch.setattr(WorkspaceRegistrar, "_display_intro", MagicMock())
+        monkeypatch.setattr(utils, "interactive_select", MagicMock())
+        result = self.registrar._select_workspace_simply({})
+
+        WorkspaceRegistrar._display_intro.assert_not_called()
+        utils.interactive_select.assert_not_called()
+        assert result is None
 
     def test_display_intro_LENGTH_IS_1(self, capsys):
         workspaces = {"ws1": []}
@@ -155,25 +169,47 @@ class TestRegistrarCall(TestWsBase):
 
         getattr(WorkspaceRegistrar, expected_method).assert_called_once()
 
-    def test_call_KEYBOARD_INTERRUPT(self, capsys, monkeypatch):
+    def test_switch_TYPEERROR(self, capsys, monkeypatch):
+        monkeypatch.setattr(
+            WorkspaceRegistrar, "register_repo", MagicMock(side_effect=TypeError)
+        )
+        args = Namespace(ws_subcmd="register")
+        code = self.registrar._switch(args)
+
+        _, err = capsys.readouterr()
+        assert "invalid or outdated" in err
+        assert code == 1
+
+    def test_switch_KEYBOARD_INTERRUPT(self, capsys, monkeypatch):
         monkeypatch.setattr(
             WorkspaceRegistrar, "register_repo", MagicMock(side_effect=KeyboardInterrupt)
         )
         args = Namespace(ws_subcmd="register")
-        code = self.registrar(args)
+        code = self.registrar._switch(args)
 
         out, _ = capsys.readouterr()
         assert "\nCancelled." in out
         assert code == 130
 
-    def test_call_SYSTEM_EXIT(self, monkeypatch):
+    def test_switch_SYSTEM_EXIT(self, monkeypatch):
         monkeypatch.setattr(
             WorkspaceRegistrar, "register_repo", MagicMock(side_effect=SystemExit)
         )
         args = Namespace(ws_subcmd="register")
-        code = self.registrar(args)
+        code = self.registrar._switch(args)
 
         assert code == 0
+
+    def test_switch_EXCEPTION(self, capsys, monkeypatch):
+        monkeypatch.setattr(
+            WorkspaceRegistrar, "register_repo", MagicMock(side_effect=Exception)
+        )
+        args = Namespace(ws_subcmd="register")
+        code = self.registrar._switch(args)
+
+        _, err = capsys.readouterr()
+        assert "unexpected error " in err
+        assert code == 1
 
 
 class TestShowList(TestWsBase):
@@ -396,20 +432,19 @@ class TestDeleteRepo(TestWsBase):
 # ─────────────────────────────────────────────
 
 
-class TestExecutorCall(TestWsBase):
+class TestProcessorCall(TestWsBase):
     def setup_method(self):
         super().setup_method()
         self.compose_files = ["compose.test.yml", "compose.test2.yml"]
-        self.executor.get_target_workspace = MagicMock(
-            return_value={"/path/to/repo": self.compose_files}
-        )
-        self.executor._execute_command = MagicMock(return_value=0)
+        self.workspace = {"/path/to/repo": self.compose_files}
+        self.processor.get_target_workspace = MagicMock(return_value=self.workspace)
+        self.processor._execute_command = MagicMock(return_value=0)
 
     def test_call(self, monkeypatch):
         monkeypatch.setattr(YamlHandler, "setup_config", MagicMock())
         monkeypatch.setattr(WorkspaceProcessor, "_switch", MagicMock(return_value=0))
         args = Namespace(subcmd="ws", ws_subcmd="test")
-        code = self.executor(args)
+        code = self.processor(args)
 
         getattr(YamlHandler, "setup_config").assert_called_once_with("workspaces")
         getattr(WorkspaceProcessor, "_switch").assert_called_once_with(args)
@@ -430,55 +465,69 @@ class TestExecutorCall(TestWsBase):
         ],
     )
     def test_switch(self, ws_subcmd, executed_subcommand, monkeypatch):
+        monkeypatch.setattr(WorkspaceProcessor, "_iterate_execution", MagicMock())
+        args = Namespace(ws_subcmd=ws_subcmd)
+        self.processor._switch(args)
+
+        self.processor._iterate_execution.assert_called_once_with(
+            executed_subcommand, self.workspace
+        )
+
+    def test_switch_returns_1(self, monkeypatch):
+        self.processor.get_target_workspace = MagicMock(return_value=None)
+        monkeypatch.setattr(WorkspaceProcessor, "_iterate_execution", MagicMock())
+        args = Namespace(ws_subcmd="up")
+        code = self.processor._switch(args)
+
+        assert code == 1
+        self.processor._iterate_execution.assert_not_called()
+
+    def test_iterate_execution(self, monkeypatch):
+        subcommand = ["up", "-d"]
         base_command = ["docker", "compose"]
         file_args = ["-f", "compose.test.yml", "-f", "compose.test2.yml"]
-        expected = base_command + file_args + executed_subcommand
+        expected_command = base_command + file_args + subcommand
 
         monkeypatch.setattr(Path, "is_dir", MagicMock(return_value=True))
         monkeypatch.setattr(Path, "exists", MagicMock(return_value=True))
         mock_formatter = MagicMock(return_value=file_args)
         monkeypatch.setattr(utils, "format_as_flag_args", mock_formatter)
 
-        args = Namespace(ws_subcmd=ws_subcmd)
-        code = self.executor._switch(args)
+        code = self.processor._iterate_execution(subcommand, self.workspace)
 
         utils.format_as_flag_args.assert_called_once_with(self.compose_files, "-f")
-        self.executor._execute_command.assert_called_once_with(expected, "/path/to/repo")
+        self.processor._execute_command.assert_called_once_with(
+            expected_command, "/path/to/repo"
+        )
         assert code == 0
 
-    def test_switch_path_NOT_exists(self, capsys, monkeypatch):
+    def test_iterate_execution_path_NOT_exists(self, capsys, monkeypatch):
         monkeypatch.setattr(Path, "is_dir", MagicMock(return_value=False))
-        args = Namespace(ws_subcmd="up")
-        code = self.executor._switch(args)
+
+        code = self.processor._iterate_execution(["up"], self.workspace)
         _, err = capsys.readouterr()
 
-        self.executor._execute_command.assert_not_called()
+        self.processor._execute_command.assert_not_called()
         assert "directory not found" in err
         assert code == 1
 
-    def test_call_KEYBOARD_INTERRUPT(self, capsys):
-        self.executor.get_target_workspace = MagicMock(side_effect=KeyboardInterrupt)
-        args = Namespace(ws_subcmd="up")
-        code = self.executor(args)
-
-        out, _ = capsys.readouterr()
-        assert "\nCancelled." in out
-        assert code == 130
-
     def test_returns_nonzero_on_failure(self):
-        self.executor._execute_command = MagicMock(side_effect=[0, 1, 0])
-        self.executor.get_target_workspace = MagicMock(
-            return_value={"/repo1": ["compose1.yml"], "/repo2": ["compose1.yml"], "/repo3": ["compose1.yml"]}
-        )
-        args = Namespace(ws_subcmd="up")
-        code = self.executor(args)
+        self.processor._execute_command = MagicMock(side_effect=[0, 1, 0])
+        workspace = {
+            "/repo1": ["compose1.yml"],
+            "/repo2": ["compose1.yml"],
+            "/repo3": ["compose1.yml"],
+        }
+        code = self.processor._iterate_execution(["up"], workspace)
 
         assert code == 1
 
-    def test_FILE_NOT_FOUND(self, capsys):
-        self.executor.get_target_workspace = MagicMock(side_effect=FileNotFoundError)
-        args = Namespace(ws_subcmd="up")
-        code = self.executor(args)
+    def test_Docker_NOT_FOUND(self, capsys, tmp_path):
+        (tmp_path / "compose.yml").touch()
+        workspace = {str(tmp_path): ["compose.yml"]}
+        self.processor._execute_command = MagicMock(side_effect=FileNotFoundError)
+
+        code = self.processor._iterate_execution(["up"], workspace)
 
         _, err = capsys.readouterr()
         assert "Docker is not found." in err
@@ -488,17 +537,17 @@ class TestExecutorCall(TestWsBase):
         monkeypatch.setattr(Path, "is_dir", MagicMock(return_value=True))
         monkeypatch.setattr(Path, "exists", MagicMock(return_value=False))
         args = Namespace(ws_subcmd="up")
-        code = self.executor._switch(args)
+        code = self.processor._switch(args)
 
         _, err = capsys.readouterr()
         assert "❌️ Compose file not found" in err
         assert code == 1
-        self.executor._execute_command.assert_not_called()
+        self.processor._execute_command.assert_not_called()
 
     def test_UNEXPECTED_ERROR(self, capsys):
-        self.executor.get_target_workspace = MagicMock(side_effect=RuntimeError)
+        self.processor.get_target_workspace = MagicMock(side_effect=RuntimeError)
         args = Namespace(ws_subcmd="up")
-        code = self.executor(args)
+        code = self.processor(args)
 
         _, err = capsys.readouterr()
         assert "An unexpected error occurred." in err
@@ -511,7 +560,7 @@ class TestExecuteCommand(TestWsBase):
         result.returncode = 0
         subprocess.run = MagicMock(return_value=result)
 
-        code = self.executor._execute_command(
+        code = self.processor._execute_command(
             ["docker", "compose", "up", "-d"], "/path/to/repo"
         )
 
@@ -524,13 +573,26 @@ class TestExecuteCommand(TestWsBase):
 class TestGetTargetWorkspace(TestWsBase):
     def test_get_target_workspace(self, monkeypatch):
         workspaces = {"ws1": ["/repo1", "/repo2"]}
-        self.executor.handler._config = {"workspaces": workspaces}
+        self.processor.handler._config = {"workspaces": workspaces}
         monkeypatch.setattr(
             WorkspaceProcessor,
             "_select_workspace_simply",
             MagicMock(return_value="ws1"),
         )
 
-        result = self.executor.get_target_workspace()
+        result = self.processor.get_target_workspace()
 
         assert result == ["/repo1", "/repo2"]
+
+    def test_returns_None(self, monkeypatch):
+        workspaces = {"ws1": ["/repo1", "/repo2"]}
+        self.processor.handler._config = {"workspaces": workspaces}
+        monkeypatch.setattr(
+            WorkspaceProcessor,
+            "_select_workspace_simply",
+            MagicMock(return_value=None),
+        )
+
+        result = self.processor.get_target_workspace()
+
+        assert result is None

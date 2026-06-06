@@ -18,6 +18,27 @@ def call_safely(func: Callable[P, int]) -> Callable[P, int]:
             return 130
         except SystemExit as e:
             return int(e.code or 0)
+        except Exception:
+            logger.debug("An unexpected error occurred.", exc_info=True)
+            print("An unexpected error occurred.", file=sys.stderr)
+            return 1
+
+    return wrapper
+
+
+def handle_config(func: Callable[P, int]) -> Callable[P, int]:
+    @wraps(func)
+    def wrapper(*args: P.args, **kwargs: P.kwargs) -> int:
+        try:
+            return func(*args, **kwargs)
+        except (TypeError, KeyError, AttributeError):
+            logger.debug("Workspace config has unexpected structure.", exc_info=True)
+            print(
+                "❌️ Workspace config is invalid or outdated.\n"
+                "💡 Delete ~/.config/compose-lazy/config.yml and re-register your workspaces.",
+                file=sys.stderr,
+            )
+            return 1
 
     return wrapper
 

@@ -5,13 +5,16 @@ import sys
 from abc import ABC, abstractmethod
 from argparse import Namespace
 from pathlib import Path
-from typing import Iterable
+from typing import Iterable, TypeAlias
 
 from . import utils
 from .config import CONFIG_PATH
-from .utils import YamlHandler, call_safely
+from .utils import YamlHandler, call_safely, handle_config
 
 logger = logging.getLogger(__name__)
+
+RepoPaths: TypeAlias = dict[str, list[str]]  # {path: [yaml_files]}
+WorkspaceConfig: TypeAlias = dict[str, RepoPaths]  # {workspace_name: RepoPaths}
 
 
 class AbstractWsExecutor(ABC):
@@ -38,15 +41,22 @@ class AbstractWsExecutor(ABC):
         choices: list[str] | None = utils.interactive_select(
             candidates, multiple=False, allow_zero=True
         )
+
         if choices is None:
             return input("Please enter a new workspace name: ").strip()
 
         return choices[0]
 
-    def _select_workspace_simply(self, candidates: Iterable[str]) -> str:
+    def _select_workspace_simply(self, candidates: Iterable[str]) -> str | None:
         candidates = list(candidates)
-        self._display_intro(candidates)
-        choices: list[str] = utils.interactive_select(candidates, multiple=False)
+        if not candidates:
+            print("☓ No workspaces registered yet.", file=sys.stderr)
+            return None
+        elif len(candidates) == 1:
+            choices = candidates
+        else:
+            self._display_intro(candidates)
+            choices: list[str] = utils.interactive_select(candidates, multiple=False)
         return choices[0]
 
     def _display_intro(self, candidates: list[str]) -> None:
@@ -62,36 +72,29 @@ class AbstractWsExecutor(ABC):
 
 class WorkspaceRegistrar(AbstractWsExecutor):
     @call_safely
+    @handle_config
     def _switch(self, args: Namespace) -> int:
-        try:
-            match args.ws_subcmd:
-                case "register" | "reg":
-                    return self.register_repo()
-                case "delete" | "del":
-                    return self.delete_repo()
-                case "list" | "li":
-                    return self.show_list()
-                case _:  # pragma: no cover
-                    # Unreachable branch
-                    return 1  # pragma: no cover
-        except (TypeError, KeyError, AttributeError):
-            logger.debug("Workspace config has unexpected structure.", exc_info=True)
-            print(
-                "❌️ Workspace config is invalid or outdated.\n"
-                "💡 Delete ~/.config/compose-lazy/config.yml and re-register your workspaces.",
-                file=sys.stderr,
-            )
-            return 1
+        match args.ws_subcmd:
+            case "register" | "reg":
+                return self.register_repo()
+            case "delete" | "del":
+                return self.delete_repo()
+            case "list" | "li":
+                return self.show_list()
+            case _:  # pragma: no cover
+                # Unreachable branch
+                return 1  # pragma: no cover
 
     def show_list(self) -> int:
-        config = self.handler.config
-        if not (workspaces := config[self._WORKSPACE_KEY]):
+        workspaces: WorkspaceConfig = self.handler.config[self._WORKSPACE_KEY]
+
+        if not workspaces:
             print("☓ No workspaces registered yet.")
             return 1
         width, _ = shutil.get_terminal_size()
         for ws_key in workspaces:
             print(f"───── {ws_key} ".ljust(min(width, 100), "─"))
-            repos_dict: dict[str, list[str]] = workspaces[ws_key]
+            repos_dict: RepoPaths = workspaces[ws_key]
             if not repos_dict:
                 print("☓ No repos registered yet.")
             for idx, repo_name in enumerate(repos_dict, start=1):
@@ -111,8 +114,8 @@ class WorkspaceRegistrar(AbstractWsExecutor):
 
         selected_yamls = utils.get_file_choices(new_repo)
 
-        workspace_dict = self.handler.config[self._WORKSPACE_KEY]
-        workspace_name = self._select_workspace_or_create(workspace_dict)
+        workspaces: WorkspaceConfig = self.handler.config[self._WORKSPACE_KEY]
+        workspace_name = self._select_workspace_or_create(workspaces)
         for yaml_name in selected_yamls:
             appended = self.handler.append_value(
                 self._WORKSPACE_KEY, workspace_name, str(new_repo), yaml_name
@@ -131,18 +134,16 @@ class WorkspaceRegistrar(AbstractWsExecutor):
         return 0
 
     def delete_repo(self) -> int:
-        config = self.handler.config
-        workspace_dict = config[self._WORKSPACE_KEY]
-        if not workspace_dict:
-            print("☓ No workspaces registered yet.", file=sys.stderr)
-            return 1
+        workspaces: WorkspaceConfig = self.handler.config[self._WORKSPACE_KEY]
 
         # User input
-        target_workspace_name = self._select_workspace_simply(workspace_dict)
-        target_workspace = workspace_dict[target_workspace_name]
+        target_workspace_name = self._select_workspace_simply(workspaces)
+        if target_workspace_name is None:
+            return 1
+        target_workspace: RepoPaths = workspaces[target_workspace_name]
 
         print()
-        msg = "☑ Found {} director{}!"
+        msg = "☑ Found {} repositor{}!"
         if (length := len(target_workspace)) == 1:
             print(msg.format(length, "y"))
         elif length >= 2:
@@ -180,7 +181,7 @@ class WorkspaceRegistrar(AbstractWsExecutor):
             print(f"☑ Deleted: {name}")
 
         if not target_workspace:
-            del workspace_dict[target_workspace_name]
+            del workspaces[target_workspace_name]
 
         self.handler.dump_and_write()
         return 0
@@ -190,14 +191,22 @@ class WorkspaceProcessor(AbstractWsExecutor):
     BASE_COMMAND = ["docker", "compose"]
 
     @call_safely
+    @handle_config
     def _switch(self, args: Namespace) -> int:
+
+        if (workspace := self.get_target_workspace()) is None:
+            return 1
         match args.ws_subcmd:
+            case "exec" | "e":
+                subcommand, workspace = self._get_exec_details(workspace)
             case "up" | "u":
                 subcommand = ["up", "-d"]
             case "build" | "b":
                 subcommand = ["build"]
             case "restart" | "re":
                 subcommand = ["restart"]
+            case "ps":
+                subcommand = ["ps"]
             case "stop" | "s":
                 subcommand = ["stop"]
             case "down":
@@ -206,10 +215,12 @@ class WorkspaceProcessor(AbstractWsExecutor):
                 # Unreachable branch
                 return 1  # pragma: no cover
 
+        return self._iterate_execution(subcommand, workspace)
+
+    def _iterate_execution(self, subcommand: list[str], workspace: RepoPaths) -> int:
         try:
             codes = []
-            workdirs = self.get_target_workspace().items()
-            for workdir, yaml_names in workdirs:
+            for workdir, yaml_names in workspace.items():
                 if not Path(workdir).is_dir():
                     print(f"❌️ Workspace directory not found: {workdir}", file=sys.stderr)
                     codes.append(1)
@@ -228,46 +239,65 @@ class WorkspaceProcessor(AbstractWsExecutor):
                 optional_args = utils.format_as_flag_args(yaml_names, "-f")
                 cmd = self.BASE_COMMAND + optional_args + subcommand
 
-                logger.debug(
-                    f"\n---------workdir---------\n{workdir}\n----output docker cmd---- \n{cmd}"
-                )
                 code = self._execute_command(cmd, workdir)
                 codes.append(code)
 
-        except (TypeError, KeyError, AttributeError):
-            logger.debug("Workspace config has unexpected structure.", exc_info=True)
-            print(
-                "❌️ Workspace config is invalid or outdated.\n"
-                "💡 Delete ~/.config/compose-lazy/config.yml and re-register your workspaces.",
-                file=sys.stderr,
-            )
-            return 1
         except FileNotFoundError:
             print("Docker is not found.", file=sys.stderr)
             return 1
-        except Exception:
-            logger.debug("An unexpected error occurred.", exc_info=True)
-            print("An unexpected error occurred.", file=sys.stderr)
-            return 1
-
         return next((c for c in codes if c != 0), 0)
-
-    def get_target_workspace(self) -> dict[str, list[str]]:
-        """Let the user select workspace and returns all paths in it.
-
-        Returns:
-            list[str]: All paths in a workspace user selected.
-        """
-        workspaces: dict = self.handler.config[self._WORKSPACE_KEY]
-        workspace_name: str = self._select_workspace_simply(workspaces)
-        return workspaces[workspace_name]
 
     def _execute_command(self, cmd: list[str], workdir: str) -> int:
         repo_name = Path(workdir).name
         width, _ = shutil.get_terminal_size()
+        logger.debug(
+            f"\n---------workdir---------\n{workdir}\n----output docker cmd---- \n{cmd}"
+        )
         print(
             f"───── 📂 {repo_name} ".ljust(min(width, 100) - 1, "─")
         )  # Subtract the count of full width chars
         print(f"▷ Executing `{' '.join(cmd)}` in {repo_name.upper()}.")
         result = subprocess.run(cmd, cwd=workdir)
         return result.returncode
+
+    def get_target_workspace(self) -> RepoPaths | None:
+        """Let the user select workspace and returns all paths in it.
+
+        Returns:
+            list[str]: All paths in a workspace user selected.
+        """
+        workspaces: WorkspaceConfig = self.handler.config[self._WORKSPACE_KEY]
+        workspace_name = self._select_workspace_simply(workspaces)
+        if workspace_name is None:
+            return None
+        return workspaces[workspace_name]
+
+    def _get_exec_details(self, workspace: RepoPaths) -> tuple[list[str], RepoPaths]:
+        if len(workspace) == 1:
+            single_paths = list(workspace)
+        else:
+            print()
+            print(f"☑ Found {len(workspace)} repositories!")
+            single_paths = utils.interactive_select(workspace, multiple=False)
+        path = single_paths[0]
+        new_workdirs: RepoPaths = {path: workspace[path]}
+
+        services = utils.get_service_from_yamls(
+            [Path(path) / y for y in new_workdirs[path]]
+        )
+        if not services:
+            print(f"❌ No services found in `{path}`.", file=sys.stderr)
+            raise SystemExit(1)
+        elif len(services) == 1:
+            single_services = list(services)
+        else:
+            print()
+            print(f"☑ Found {len(services)} services!")
+            single_services = utils.interactive_select(services, multiple=False)
+
+        inner_container_command = input(
+            f"Please enter the rest of `docker compose exec {single_services[0]} ...`: "
+        ).split()
+
+        subcommand = ["exec"] + single_services + (inner_container_command or ["bash"])
+        return subcommand, new_workdirs
