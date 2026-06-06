@@ -5,7 +5,7 @@ from typing import Any, Self
 
 import yaml
 from yaml.scanner import ScannerError
-
+from .cli_utils import handle_config
 logger = logging.getLogger(__name__)
 
 
@@ -26,6 +26,7 @@ class YamlHandler:
             self._config = {}
         return self._config
 
+    @handle_config
     def setup_config(self, *keys) -> Self:
         """Load configuration and create basic structure in config variable.
 
