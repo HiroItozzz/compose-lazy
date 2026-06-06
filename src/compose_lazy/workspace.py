@@ -5,13 +5,16 @@ import sys
 from abc import ABC, abstractmethod
 from argparse import Namespace
 from pathlib import Path
-from typing import Iterable
+from typing import Iterable, TypeAlias
 
 from . import utils
 from .config import CONFIG_PATH
 from .utils import YamlHandler, call_safely
 
 logger = logging.getLogger(__name__)
+
+RepoPaths: TypeAlias = dict[str, list[str]]  # {path: [yaml_files]}
+WorkspaceConfig: TypeAlias = dict[str, RepoPaths]  # {workspace_name: RepoPaths}
 
 
 class AbstractWsExecutor(ABC):
@@ -91,14 +94,15 @@ class WorkspaceRegistrar(AbstractWsExecutor):
             return 1
 
     def show_list(self) -> int:
-        config = self.handler.config
-        if not (workspaces := config[self._WORKSPACE_KEY]):
+        workspaces: WorkspaceConfig = self.handler.config[self._WORKSPACE_KEY]
+
+        if not workspaces:
             print("☓ No workspaces registered yet.")
             return 1
         width, _ = shutil.get_terminal_size()
         for ws_key in workspaces:
             print(f"───── {ws_key} ".ljust(min(width, 100), "─"))
-            repos_dict: dict[str, list[str]] = workspaces[ws_key]
+            repos_dict: RepoPaths = workspaces[ws_key]
             if not repos_dict:
                 print("☓ No repos registered yet.")
             for idx, repo_name in enumerate(repos_dict, start=1):
@@ -118,8 +122,8 @@ class WorkspaceRegistrar(AbstractWsExecutor):
 
         selected_yamls = utils.get_file_choices(new_repo)
 
-        workspace_dict = self.handler.config[self._WORKSPACE_KEY]
-        workspace_name = self._select_workspace_or_create(workspace_dict)
+        workspaces: WorkspaceConfig = self.handler.config[self._WORKSPACE_KEY]
+        workspace_name = self._select_workspace_or_create(workspaces)
         for yaml_name in selected_yamls:
             appended = self.handler.append_value(
                 self._WORKSPACE_KEY, workspace_name, str(new_repo), yaml_name
@@ -138,14 +142,13 @@ class WorkspaceRegistrar(AbstractWsExecutor):
         return 0
 
     def delete_repo(self) -> int:
-        config = self.handler.config
-        workspace_dict = config[self._WORKSPACE_KEY]
+        workspaces: WorkspaceConfig = self.handler.config[self._WORKSPACE_KEY]
 
         # User input
-        target_workspace_name = self._select_workspace_simply(workspace_dict)
+        target_workspace_name = self._select_workspace_simply(workspaces)
         if target_workspace_name is None:
             return 1
-        target_workspace = workspace_dict[target_workspace_name]
+        target_workspace: RepoPaths = workspaces[target_workspace_name]
 
         print()
         msg = "☑ Found {} repositor{}!"
@@ -186,7 +189,7 @@ class WorkspaceRegistrar(AbstractWsExecutor):
             print(f"☑ Deleted: {name}")
 
         if not target_workspace:
-            del workspace_dict[target_workspace_name]
+            del workspaces[target_workspace_name]
 
         self.handler.dump_and_write()
         return 0
@@ -201,12 +204,16 @@ class WorkspaceProcessor(AbstractWsExecutor):
         if (workspace := self.get_target_workspace()) is None:
             return 1
         match args.ws_subcmd:
+            case "exec" | "e":
+                subcommand, workspace = self._get_exec_details(workspace)
             case "up" | "u":
                 subcommand = ["up", "-d"]
             case "build" | "b":
                 subcommand = ["build"]
             case "restart" | "re":
                 subcommand = ["restart"]
+            case "ps":
+                subcommand = ["ps"]
             case "stop" | "s":
                 subcommand = ["stop"]
             case "down":
@@ -217,9 +224,7 @@ class WorkspaceProcessor(AbstractWsExecutor):
 
         return self._iterate_execution(subcommand, workspace)
 
-    def _iterate_execution(
-        self, subcommand: list[str], workspace: dict[str, list[str]]
-    ) -> int:
+    def _iterate_execution(self, subcommand: list[str], workspace: RepoPaths) -> int:
         try:
             codes = []
             for workdir, yaml_names in workspace.items():
@@ -270,14 +275,41 @@ class WorkspaceProcessor(AbstractWsExecutor):
         result = subprocess.run(cmd, cwd=workdir)
         return result.returncode
 
-    def get_target_workspace(self) -> dict[str, list[str]] | None:
+    def get_target_workspace(self) -> RepoPaths | None:
         """Let the user select workspace and returns all paths in it.
 
         Returns:
             list[str]: All paths in a workspace user selected.
         """
-        workspaces: dict = self.handler.config[self._WORKSPACE_KEY]
+        workspaces: WorkspaceConfig = self.handler.config[self._WORKSPACE_KEY]
         workspace_name = self._select_workspace_simply(workspaces)
         if workspace_name is None:
             return None
         return workspaces[workspace_name]
+
+    def _get_exec_details(self, workspace: RepoPaths) -> tuple[list[str], RepoPaths]:
+        if len(workspace) >= 2:
+            print()
+            print(f"☑ Found {len(workspace)} repositories!")
+            single_paths = utils.interactive_select(workspace, multiple=False)
+        else:
+            single_paths = list(workspace)
+        path = single_paths[0]
+        new_workdirs: RepoPaths = {k: v for k, v in workspace.items() if k == path}
+
+        services = utils.get_service_from_yamls(
+            [Path(path) / y for y in new_workdirs[path]]
+        )
+        if len(services) >= 2:
+            print()
+            print(f"☑ Found {len(services)} services!")
+            single_services = utils.interactive_select(services, multiple=False)
+        else:
+            single_services = list(services)
+
+        inner_container_command = input(
+            f"Please enter the rest of `docker compose exec {single_services[0]} ...`: "
+        ).split()
+
+        subcommand = ["exec"] + single_services + (inner_container_command or ["bash"])
+        return subcommand, new_workdirs
