@@ -222,6 +222,8 @@ class WorkspaceProcessor(AbstractWsExecutor):
         match args.ws_subcmd:
             case "exec" | "e":
                 subcommand, workspace = self._get_exec_details(workspace)
+            case "logs" | "lo":
+                subcommand, workspace = self._get_logs_details(workspace)
             case "up" | "u":
                 subcommand = ["up", "-d"]
             case "build" | "b":
@@ -330,4 +332,33 @@ class WorkspaceProcessor(AbstractWsExecutor):
         ).split()
 
         subcommand = ["exec"] + single_services + (inner_container_command or ["bash"])
+        return subcommand, new_workdirs
+
+    def _get_logs_details(
+        self, workspace: WorkspaceConfig
+    ) -> tuple[list[str], WorkspaceConfig]:
+        workspace_repos = workspace["repos"]
+        if len(workspace_repos) == 1:
+            single_paths = list(workspace_repos)
+        else:
+            print()
+            print(f"✅️ Found {len(workspace_repos)} repositories!")
+            single_paths = utils.interactive_select(workspace_repos, multiple=False)
+        path = single_paths[0]
+        new_workdirs: WorkspaceConfig = {"repos": {path: workspace_repos[path]}}
+
+        services = utils.get_service_from_yamls(
+            [Path(path) / y for y in workspace_repos[path]["files"]]
+        )
+        if not services:
+            print(f"❌ No services found in `{path}`.", file=sys.stderr)
+            raise SystemExit(1)
+        elif len(services) == 1:
+            services = list(services)
+        else:
+            print()
+            print(f"✅️ Found {len(services)} services!")
+            services = utils.interactive_select(services)
+
+        subcommand = ["logs"] + services + ["-f"]
         return subcommand, new_workdirs
