@@ -96,7 +96,7 @@ class YamlHandler:
         *keys, value = args
         current = self.config
         for key in keys[:-1]:
-            if not current.get(key):
+            if current.get(key) is None:
                 current[key] = {}
             current = current[key]
         last_key = keys[-1]
