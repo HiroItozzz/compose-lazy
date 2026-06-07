@@ -9,7 +9,7 @@ from typing import Iterable, cast
 
 from . import utils
 from .config import CONFIG_PATH
-from .types import ComposeLazyConfig, RepoPaths
+from .types import ComposeLazyConfig, RepoPaths, WorkspaceConfig
 from .utils import YamlHandler, call_safely, handle_config
 
 logger = logging.getLogger(__name__)
@@ -92,8 +92,8 @@ class WorkspaceRegistrar(AbstractWsExecutor):
                 # Unreachable branch
                 return 1  # pragma: no cover
 
-    def show_list(self) -> int:
-        workspaces = self.config["workspaces"]
+    def show_list(self, workspaces: WorkspaceConfig | None = None) -> int:
+        workspaces = workspaces or self.config["workspaces"]
 
         if not workspaces:
             print("☓ No workspaces registered yet.")
@@ -137,7 +137,9 @@ class WorkspaceRegistrar(AbstractWsExecutor):
                     f"Oops, `{str(new_repo)} ({yaml_name})` is already in `{workspace_name}`.",
                     file=sys.stderr,
                 )
-        print("💡 Hint: To get workspace lists, run `dcp ws list(li)`.")
+        if input("Enter 'l' to see the workspace or quit... : ") == "l":
+            self.show_list(workspaces={workspace_name: workspaces[workspace_name]})
+        print("💡 To get all workspace lists, run `dcp ws list(li)`.")
         return 0
 
     def delete_repo(self) -> int:

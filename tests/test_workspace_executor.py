@@ -1,7 +1,7 @@
 import subprocess
 from argparse import Namespace
 from pathlib import Path
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, PropertyMock
 
 import pytest
 
@@ -309,11 +309,21 @@ class TestRegisterRepo(TestWsBase):
         self.registrar.handler.dump_and_write.assert_not_called()
         assert code == 0
 
-    def test_VALID_PATH_SELECT_ZERO(self, capsys, monkeypatch, tmp_path):
-        self.registrar.handler._config = {"workspaces": {"ws1": []}}
+    def test_VALID_PATH_SELECT_ZERO_SHOW_LIST(self, capsys, monkeypatch, tmp_path):
+        ws_1 = {"ws1": {"path": {"files": ["compose.yml"]}}}
+        ws_2 = {"ws_new": {str(tmp_path): {"files": ["compose.test.yml"]}}}
+        config_before = {"workspaces": ws_1}
+        config_after = {"workspaces": ws_1 | ws_2}
+
+        monkeypatch.setattr(
+            WorkspaceRegistrar,
+            "config",
+            PropertyMock(side_effect=[config_after, config_after]),
+        )
+
         self.registrar.handler.append_value = MagicMock(return_value=True)
-        self.registrar.handler.dump_and_write = MagicMock()
-        mock_input = MagicMock(side_effect=[str(tmp_path), "ws_new"])
+        monkeypatch.setattr(YamlHandler, "dump_and_write", mock_dump := MagicMock())
+        mock_input = MagicMock(side_effect=[str(tmp_path), "ws_new", "l"])
         monkeypatch.setattr("builtins.input", mock_input)
         monkeypatch.setattr(
             utils,
@@ -323,13 +333,17 @@ class TestRegisterRepo(TestWsBase):
         monkeypatch.setattr(
             utils, "get_file_choices", MagicMock(return_value=["compose.test.yml"])
         )
+        monkeypatch.setattr(
+            WorkspaceRegistrar, "show_list", mock_show_list := MagicMock()
+        )
 
         code = self.registrar.register_repo()
 
         out, _ = capsys.readouterr()
-        assert "☑ Registered new path to ws_new" in out
+        assert "Registered" in out
         assert "compose.test.yml" in out
-        self.registrar.handler.dump_and_write.assert_called_once()
+        mock_dump.assert_called_once()
+        mock_show_list.assert_called_once()
         assert code == 0
 
     def test_HINT_ALWAYS_PRINTED(self, capsys, monkeypatch, tmp_path):
@@ -350,7 +364,7 @@ class TestRegisterRepo(TestWsBase):
         self.registrar.register_repo()
 
         out, _ = capsys.readouterr()
-        assert "💡 Hint" in out
+        assert "dcp ws list(li)" in out
 
 
 class TestDeleteRepo(TestWsBase):
