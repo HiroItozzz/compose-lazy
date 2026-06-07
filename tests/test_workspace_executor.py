@@ -396,7 +396,7 @@ class TestDeleteRepo(TestWsBase):
         code = self.registrar.delete_repo()
 
         out, _ = capsys.readouterr()
-        assert "☑ Deleted" in out
+        assert "✅️ Deleted" in out
         self.registrar.handler.dump_and_write.assert_called_once()
         assert code == 0
 

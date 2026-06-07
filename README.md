@@ -34,22 +34,22 @@ You can launch, exec into, or check the status of any container regardless of wh
 # Register a repository with specific compose files
 $ dcp ws register
 Please enter a new directory path: /path/to/repo
-☑ Found 2 docker-compose files!
+✅️ Found 2 docker-compose files!
     1. docker-compose.yml
     2. docker-compose.prod.yml
 Enter your choices (e.g., 1,3,4) or 'q' to quit: 1
 
-☑ Found 1 registered workspace!
+✅️ Found 1 registered workspace!
     1. myproject
 Or '0' for a new entry.
 Enter your choice or 'q' to quit: 0
 Please enter a new workspace name: myproject
 
-☑ Registered new path to myproject: /path/to/repo (docker-compose.yml)
+✅️ Registered new path to myproject: /path/to/repo (docker-compose.yml)
 
 # Launch all repos in a workspace with their registered compose files
 $ dcp ws up
-☑ Found 1 registered workspace!
+✅️ Found 1 registered workspace!
     1. myproject
 Enter your choice or 'q' to quit: 1
 
@@ -58,12 +58,12 @@ Enter your choice or 'q' to quit: 1
 
 # Exec into a service in a selected repo interactively
 $ dcp ws exec
-☑ Found 2 repositories!
+✅️ Found 2 repositories!
     1. /path/to/repo-a
     2. /path/to/repo-b
 Enter your choice or 'q' to quit: 1
 
-☑ Found 2 services!
+✅️ Found 2 services!
     1. app
     2. db
 Enter your choice or 'q' to quit: 1
@@ -78,21 +78,21 @@ Running `-f`, `-pf`, or `-s` without arguments auto-detects compose files, profi
 
 ```bash
 $ dcpu -f
-☑ Found 2 compose files!
+✅️ Found 2 compose files!
     1. docker-compose.yml
     2. docker-compose.prod.yml
 Enter your choices (e.g., 1,3,4) or 'q' to quit: 2
 ▷ Executing `docker compose -f docker-compose.prod.yml up`.
 
 $ dcp re -pf   # `re`start
-☑ Found 2 profiles!
+✅️ Found 2 profiles!
     1. dev
     2. prod
 Enter your choices (e.g., 1,3,4) or 'q' to quit: 1
 ▷ Executing `docker compose --profile dev restart`.
 
 $ dcp l -s   # `l`ogs
-☑ Found 3 services!
+✅️ Found 3 services!
     1. app
     2. db
     3. frontend
@@ -104,7 +104,7 @@ For `exec`/`run`, interactive selection starts automatically when no service nam
 
 ```bash
 $ dcpe   # `e`xec
-☑ Found 3 services!
+✅️ Found 3 services!
     1. app
     2. db
     3. frontend

@@ -340,7 +340,7 @@ class TestMain:
                 assert exc_info.value.code == 0
 
                 std, _ = capsys.readouterr()
-                assert "\n☑ Found 2 services!" in std
+                assert "\n✅️ Found 2 services!" in std
 
     # fmt:off
     testcases_INTERACTION_GENERAL = (
@@ -382,7 +382,7 @@ class TestMain:
                 assert exc_info.value.code == 0
 
                 std, _ = capsys.readouterr()
-                assert "\n☑ Found " in std
+                assert "\n✅️ Found " in std
 
     @pytest.mark.parametrize(
         "input_cmd,expected_ws_subcmd",

@@ -64,11 +64,11 @@ def get_file_choices(path: Path | None = None) -> list[str]:
         raise SystemExit(1)
 
     if (file_count := len(file_names)) == 1:
-        print(f"☑ Compose file found: {file_names[0]}")
+        print(f"✅️ Compose file found: {file_names[0]}")
         return file_names
 
     print()
-    print(f"☑ Found {file_count} docker-compose files!")
+    print(f"✅️ Found {file_count} docker-compose files!")
     return cli_utils.interactive_select(file_names)
 
 
@@ -86,11 +86,11 @@ def get_profile_choices(path: Path | None = None) -> list[str]:
 
     if len(profiles) == 1:
         p = profiles.pop()
-        print(f"☑ Profile found: {p}")
+        print(f"✅️ Profile found: {p}")
         return [p]
 
     print()
-    print(f"☑ Found {len(profiles)} profiles!")
+    print(f"✅️ Found {len(profiles)} profiles!")
 
     return cli_utils.interactive_select(profiles)
 
@@ -110,10 +110,10 @@ def get_service_choices(path: Path | None = None, *, multiple: bool = True) -> l
 
     if len(services) == 1:
         s = services.pop()
-        print(f"☑ Service found: {s}")
+        print(f"✅️ Service found: {s}")
         return [s]
 
     print()
-    print(f"☑ Found {len(services)} services!")
+    print(f"✅️ Found {len(services)} services!")
 
     return cli_utils.interactive_select(services, multiple=multiple)

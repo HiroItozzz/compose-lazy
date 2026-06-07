@@ -74,7 +74,7 @@ services:
             result = utils.get_service_choices()
 
         captured = capsys.readouterr()
-        assert f"☑ Service found: {service_name}" in captured.out
+        assert f"✅️ Service found: {service_name}" in captured.out
         assert result == [service_name]
 
     def test_get_service_choices_MULTIPLE(self, capsys, tmp_path, monkeypatch):
@@ -96,7 +96,7 @@ services:
                 utils.get_service_choices()
 
         captured = capsys.readouterr()
-        assert f"☑ Found {len(services)} services!" in captured.out
+        assert f"✅️ Found {len(services)} services!" in captured.out
         mock_select.assert_called_once_with(services, multiple=True)
 
 
@@ -191,7 +191,7 @@ services:
             result = utils.get_profile_choices()
 
         captured = capsys.readouterr()
-        assert f"☑ Profile found: {profile_name}" in captured.out
+        assert f"✅️ Profile found: {profile_name}" in captured.out
         assert result == [profile_name]
 
     def test_get_profile_choices_MULTIPLE(self, capsys, tmp_path, monkeypatch):
@@ -218,5 +218,5 @@ services:
                 utils.get_profile_choices()
 
         captured = capsys.readouterr()
-        assert f"☑ Found {len(profiles)} profiles!" in captured.out
+        assert f"✅️ Found {len(profiles)} profiles!" in captured.out
         mock_select.assert_called_once_with(profiles)

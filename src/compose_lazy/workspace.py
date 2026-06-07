@@ -68,7 +68,7 @@ class AbstractWsExecutor(ABC):
         return choices[0]
 
     def _display_intro(self, candidates: list[str]) -> None:
-        msg = "☑ Found {} registered workspace{}!"
+        msg = "✅️ Found {} registered workspace{}!"
         length = len(candidates)
 
         print()
@@ -123,7 +123,6 @@ class WorkspaceRegistrar(AbstractWsExecutor):
 
         selected_yamls = utils.get_file_choices(new_repo)
 
-
         workspaces = self.config["workspaces"]
         workspace_name = self._select_workspace_or_create(workspaces)
         address = ("workspaces", workspace_name, str(new_repo), "files")
@@ -155,7 +154,7 @@ class WorkspaceRegistrar(AbstractWsExecutor):
         target_workspace: RepoPaths = workspaces[workspace_name]
 
         print()
-        msg = "☑ Found {} repositor{}!"
+        msg = "✅️ Found {} repositor{}!"
         if (length := len(target_workspace)) == 1:
             print(msg.format(length, "y"))
         elif length >= 2:
@@ -190,7 +189,7 @@ class WorkspaceRegistrar(AbstractWsExecutor):
         for i in choices:
             name = keys[i]
             del target_workspace[name]
-            print(f"☑ Deleted: {name}")
+            print(f"✅️ Deleted: {name}")
 
         if not target_workspace:
             del workspaces[workspace_name]
@@ -291,7 +290,7 @@ class WorkspaceProcessor(AbstractWsExecutor):
             single_paths = list(workspace)
         else:
             print()
-            print(f"☑ Found {len(workspace)} repositories!")
+            print(f"✅️ Found {len(workspace)} repositories!")
             single_paths = utils.interactive_select(workspace, multiple=False)
         path = single_paths[0]
         new_workdirs: RepoPaths = {path: workspace[path]}
@@ -306,7 +305,7 @@ class WorkspaceProcessor(AbstractWsExecutor):
             single_services = list(services)
         else:
             print()
-            print(f"☑ Found {len(services)} services!")
+            print(f"✅️ Found {len(services)} services!")
             single_services = utils.interactive_select(services, multiple=False)
 
         inner_container_command = input(
