@@ -57,7 +57,8 @@ class AbstractWsExecutor(ABC):
     ) -> str | None:
         candidates = list(candidates)
         if not candidates:
-            print("☓ No workspaces registered yet.", file=sys.stderr)
+            print("❌️ No workspaces registered yet.", file=sys.stderr)
+            print("💡 To register a new workspace, run `dcp ws register(reg)`.")
             return None
         elif len(candidates) == 1 and skip:
             choices = candidates
@@ -96,14 +97,15 @@ class WorkspaceRegistrar(AbstractWsExecutor):
         workspaces = workspaces or self.config["workspaces"]
 
         if not workspaces:
-            print("☓ No workspaces registered yet.")
+            print("❌️ No workspaces registered yet.", file=sys.stderr)
+            print("💡 Hint: To register a new workspace, run `dcp ws register(reg)`.")
             return 1
         width, _ = shutil.get_terminal_size()
         for ws_key in workspaces:
-            print(f"───── {ws_key} ".ljust(min(width, 100), "─"))
+            print(f"───── 📝 {ws_key} ".ljust(min(width, 100), "─"))
             repos_dict: RepoPaths = workspaces[ws_key]
             if not repos_dict:
-                print("☓ No repos registered yet.")
+                print("❌️ No repos registered yet.")
             for idx, repo_name in enumerate(repos_dict, start=1):
                 print(f"{'📁 PATH[' + str(idx) + ']':>9}: {repo_name}")
                 print(f"{'FILES':>10}: {', '.join(repos_dict[repo_name]['files'])}")
@@ -121,24 +123,25 @@ class WorkspaceRegistrar(AbstractWsExecutor):
 
         selected_yamls = utils.get_file_choices(new_repo)
 
+
         workspaces = self.config["workspaces"]
         workspace_name = self._select_workspace_or_create(workspaces)
+        address = ("workspaces", workspace_name, str(new_repo), "files")
         for yaml_name in selected_yamls:
-            appended = self.handler.append_value(
-                "workspaces", workspace_name, str(new_repo), "files", yaml_name
-            )
+            appended = self.handler.append_value(*address, yaml_name)
             if appended:
                 self.handler.dump_and_write()
                 print(
-                    f"☑ Registered new path to {workspace_name}: {str(new_repo)} ({yaml_name})"
+                    f"✅️ Registered a new repo to {workspace_name}: {str(new_repo)} ({yaml_name})"
                 )
             else:
                 print(
-                    f"Oops, `{str(new_repo)} ({yaml_name})` is already in `{workspace_name}`.",
+                    f"✅️ `{str(new_repo)} ({yaml_name})` is already in `{workspace_name}`.",
                     file=sys.stderr,
                 )
         if input("Enter 'l' to see the workspace or quit... : ") == "l":
             self.show_list(workspaces={workspace_name: workspaces[workspace_name]})
+        print()
         print("💡 To get all workspace lists, run `dcp ws list(li)`.")
         return 0
 

@@ -217,8 +217,9 @@ class TestShowList(TestWsBase):
         self.registrar.handler._config = {"workspaces": {}}
         code = self.registrar.show_list()
 
-        out, _ = capsys.readouterr()
-        assert "No workspaces registered yet." in out
+        out, err = capsys.readouterr()
+        assert "No workspaces" in err
+        assert "dcp ws register(reg)" in out
         assert code == 1
 
     def test_WITH_WORKSPACES(self, capsys):
@@ -279,7 +280,7 @@ class TestRegisterRepo(TestWsBase):
         code = self.registrar.register_repo()
 
         out, _ = capsys.readouterr()
-        assert "☑ Registered new path" in out
+        assert "Registered" in out
         assert str(tmp_path) in out
         assert all((f in out for f in selected_yamls))
         self.registrar.handler.dump_and_write.assert_called()
