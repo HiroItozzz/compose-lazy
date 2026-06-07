@@ -12,6 +12,9 @@ from .config import CONFIG_PATH
 from .types import ComposeLazyConfig, RepoPaths, WorkspaceConfig
 from .utils import YamlHandler, call_safely, handle_config
 
+from wcwidth import wcswidth
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -93,22 +96,47 @@ class WorkspaceRegistrar(AbstractWsExecutor):
                 # Unreachable branch
                 return 1  # pragma: no cover
 
-    def show_list(self, workspaces: WorkspaceConfig | None = None) -> int:
-        workspaces = workspaces or self.config["workspaces"]
+    def pad_to(self, line: str, total_width: int) -> str:
+        """右端の │ に合わせてスペースパディングして返す"""
+        display_width = wcswidth(line)
+        pad = total_width - display_width - 1  # 右の │ 分
+        return line + " " * max(pad, 0) + "│"
 
+    def show_list(self, workspaces: WorkspaceConfig | None = None, max_width: int | None = 100) -> int:
+        workspaces = workspaces or self.config["workspaces"]
         if not workspaces:
             print("❌️ No workspaces registered yet.", file=sys.stderr)
             print("💡 To register a new workspace, run `dcp ws register(reg)`.")
             return 1
-        width, _ = shutil.get_terminal_size()
+
+        term_width, _ = shutil.get_terminal_size()
+        width = min(term_width, max_width) if max_width is not None else term_width
+        inner = width - 2
+
+        print("╭" + "─" * inner + "╮")
+
+        label = "│   Workspaces "
+        fill = inner - wcswidth(label) + 1
+        print(label + " " * max(fill, 0) + "│")
+
         for ws_key in workspaces:
-            print(f"───── {ws_key} ".ljust(min(width, 100), "─"))
+            label = f"├──── {ws_key} "
+            fill = inner - wcswidth(label) + 1
+            print(label + "─" * max(fill, 0) + "┤")
+
             repos_dict: RepoPaths = workspaces[ws_key]
             if not repos_dict:
-                print("❌️ No repos registered yet.")
+                print(self.pad_to("│ ❌️ No repos registered yet.", width))
+                continue
+
             for idx, repo_name in enumerate(repos_dict, start=1):
-                print(f"📁 PATH[{str(idx)}]:".rjust(11), repo_name)
-                print("FILES:".rjust(12), ", ".join(repos_dict[repo_name]["files"]))
+                print(self.pad_to(f"│ 📁 PATH[{idx}]: {repo_name}", width))
+                print(
+                    self.pad_to(
+                        f"│      FILES: {', '.join(repos_dict[repo_name]['files'])}", width
+                    )
+                )
+        print("╰" + "─" * inner + "╯")
         return 0
 
     def register_repo(self) -> int:
