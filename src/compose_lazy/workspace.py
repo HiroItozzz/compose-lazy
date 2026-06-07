@@ -98,17 +98,17 @@ class WorkspaceRegistrar(AbstractWsExecutor):
 
         if not workspaces:
             print("❌️ No workspaces registered yet.", file=sys.stderr)
-            print("💡 Hint: To register a new workspace, run `dcp ws register(reg)`.")
+            print("💡 To register a new workspace, run `dcp ws register(reg)`.")
             return 1
         width, _ = shutil.get_terminal_size()
         for ws_key in workspaces:
-            print(f"───── 📝 {ws_key} ".ljust(min(width, 100), "─"))
+            print(f"───── {ws_key} ".ljust(min(width, 100), "─"))
             repos_dict: RepoPaths = workspaces[ws_key]
             if not repos_dict:
                 print("❌️ No repos registered yet.")
             for idx, repo_name in enumerate(repos_dict, start=1):
-                print(f"{'📁 PATH[' + str(idx) + ']':>9}: {repo_name}")
-                print(f"{'FILES':>10}: {', '.join(repos_dict[repo_name]['files'])}")
+                print(f"📁 PATH[{str(idx)}]:".rjust(11), repo_name)
+                print("FILES:".rjust(12), ", ".join(repos_dict[repo_name]["files"]))
         return 0
 
     def register_repo(self) -> int:
@@ -195,6 +195,9 @@ class WorkspaceRegistrar(AbstractWsExecutor):
             del workspaces[workspace_name]
 
         self.handler.dump_and_write()
+
+        print()
+        print("💡 To get all workspace lists, run `dcp ws list(li)`.")
         return 0
 
 
