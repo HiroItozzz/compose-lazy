@@ -46,6 +46,7 @@ dev = [
     "pytest-cov>=7.1.0",
     "python-dotenv>=1.2.2",
     "ruff>=0.15.12",
+    "textual-dev>=1.8.0",
     "ty>=0.0.34",
 ]
 
