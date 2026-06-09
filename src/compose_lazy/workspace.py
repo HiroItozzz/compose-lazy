@@ -9,7 +9,7 @@ from typing import Iterable, cast
 
 from . import utils
 from .config import CONFIG_PATH
-from .types import ComposeLazyConfig, RepoPaths, WorkspaceConfig
+from .types import ComposeLazyConfig, RepoConfig, WorkspaceConfig
 from .utils import YamlHandler, call_safely, handle_config
 
 logger = logging.getLogger(__name__)
@@ -93,7 +93,7 @@ class WorkspaceRegistrar(AbstractWsExecutor):
                 # Unreachable branch
                 return 1  # pragma: no cover
 
-    def show_list(self, workspaces: WorkspaceConfig | None = None) -> int:
+    def show_list(self, workspaces: dict[str, WorkspaceConfig] | None = None) -> int:
         workspaces = workspaces or self.config["workspaces"]
 
         if not workspaces:
@@ -103,7 +103,7 @@ class WorkspaceRegistrar(AbstractWsExecutor):
         width, _ = shutil.get_terminal_size()
         for ws_key in workspaces:
             print(f"───── {ws_key} ".ljust(min(width, 100), "─"))
-            repos_dict: RepoPaths = workspaces[ws_key]
+            repos_dict = workspaces[ws_key]["repos"]
             if not repos_dict:
                 print("❌️ No repos registered yet.")
             for idx, repo_name in enumerate(repos_dict, start=1):
@@ -125,7 +125,7 @@ class WorkspaceRegistrar(AbstractWsExecutor):
 
         workspaces = self.config["workspaces"]
         workspace_name = self._select_workspace_or_create(workspaces)
-        address = ("workspaces", workspace_name, str(new_repo), "files")
+        address = ("workspaces", workspace_name, "repos", str(new_repo), "files")
         for yaml_name in selected_yamls:
             appended = self.handler.append_value(*address, yaml_name)
             if appended:
@@ -138,7 +138,7 @@ class WorkspaceRegistrar(AbstractWsExecutor):
                     f"✅️ `{str(new_repo)} ({yaml_name})` is already in `{workspace_name}`.",
                     file=sys.stderr,
                 )
-        if input("Enter 'l' to see the workspace or quit... : ") == "l":
+        if input("Enter 'l' to see the workspace or exit... : ") == "l":
             self.show_list(workspaces={workspace_name: workspaces[workspace_name]})
         print()
         print("💡 To get all workspace lists, run `dcp ws list(li)`.")
@@ -151,16 +151,16 @@ class WorkspaceRegistrar(AbstractWsExecutor):
             workspace_name := self._select_workspace_simply(workspaces, skip=False)
         ) is None:
             return 1
-        target_workspace: RepoPaths = workspaces[workspace_name]
+        target_workspace_repos: dict[str, RepoConfig] = workspaces[workspace_name]["repos"]
 
         print()
         msg = "✅️ Found {} repositor{}!"
-        if (length := len(target_workspace)) == 1:
+        if (length := len(target_workspace_repos)) == 1:
             print(msg.format(length, "y"))
         elif length >= 2:
             print(msg.format(length, "ies"))
 
-        for idx, choice in enumerate(target_workspace, start=1):
+        for idx, choice in enumerate(target_workspace_repos, start=1):
             print(f"{idx:>5}. {choice}")
 
         while True:
@@ -169,29 +169,29 @@ class WorkspaceRegistrar(AbstractWsExecutor):
                 user_input = input("\nEnter your choices to delete (e.g., 1,3,4): ")
 
                 # Sort in reverse order to avoid index error.
-                choices = sorted(
+                choices_reversed = sorted(
                     map(
                         lambda i: int(i) - 1,
                         (i.strip() for i in user_input.split(",") if i.strip()),
                     ),
                     reverse=True,
                 )
-                if any((i < 0 for i in choices)):
+                if any((i < 0 for i in choices_reversed)):
                     raise IndexError
-                if max(choices) >= length:
+                if max(choices_reversed) >= length:
                     raise IndexError
             except (IndexError, ValueError):
                 print("☓ Invalid selection. Please use a valid number.", file=sys.stderr)
             else:
                 break
 
-        keys = list(target_workspace)
-        for i in choices:
+        keys = list(target_workspace_repos)
+        for i in choices_reversed:
             name = keys[i]
-            del target_workspace[name]
+            del target_workspace_repos[name]
             print(f"✅️ Deleted: {name}")
 
-        if not target_workspace:
+        if not target_workspace_repos:
             del workspaces[workspace_name]
 
         self.handler.dump_and_write()
@@ -231,10 +231,12 @@ class WorkspaceProcessor(AbstractWsExecutor):
 
         return self._iterate_execution(subcommand, workspace)
 
-    def _iterate_execution(self, subcommand: list[str], workspace: RepoPaths) -> int:
+    def _iterate_execution(
+        self, subcommand: list[str], workspace: WorkspaceConfig
+    ) -> int:
         try:
             codes = []
-            for workdir, v in workspace.items():
+            for workdir, v in workspace["repos"].items():
                 yaml_names = v["files"]
                 if not Path(workdir).is_dir():
                     print(f"❌️ Workspace directory not found: {workdir}", file=sys.stderr)
@@ -275,7 +277,7 @@ class WorkspaceProcessor(AbstractWsExecutor):
         result = subprocess.run(cmd, cwd=workdir)
         return result.returncode
 
-    def get_target_workspace(self) -> RepoPaths | None:
+    def get_target_workspace(self) -> WorkspaceConfig | None:
         """Let the user select workspace and returns all paths in it.
 
         Returns:
@@ -288,18 +290,21 @@ class WorkspaceProcessor(AbstractWsExecutor):
             return None
         return workspaces[workspace_name]
 
-    def _get_exec_details(self, workspace: RepoPaths) -> tuple[list[str], RepoPaths]:
-        if len(workspace) == 1:
-            single_paths = list(workspace)
+    def _get_exec_details(
+        self, workspace: WorkspaceConfig
+    ) -> tuple[list[str], WorkspaceConfig]:
+        workspace_repos = workspace["repos"]
+        if len(workspace_repos) == 1:
+            single_paths = list(workspace_repos)
         else:
             print()
-            print(f"✅️ Found {len(workspace)} repositories!")
-            single_paths = utils.interactive_select(workspace, multiple=False)
+            print(f"✅️ Found {len(workspace_repos)} repositories!")
+            single_paths = utils.interactive_select(workspace_repos, multiple=False)
         path = single_paths[0]
-        new_workdirs: RepoPaths = {path: workspace[path]}
+        new_workdirs: WorkspaceConfig = {"repos":{path: workspace_repos[path]}}
 
         services = utils.get_service_from_yamls(
-            [Path(path) / y for y in new_workdirs[path]["files"]]
+            [Path(path) / y for y in workspace_repos[path]["files"]]
         )
         if not services:
             print(f"❌ No services found in `{path}`.", file=sys.stderr)
