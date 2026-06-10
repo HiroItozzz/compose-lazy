@@ -1,3 +1,19 @@
+## v0.9.3 - 2026-06-10
+
+### Breaking Change
+- Workspace config structure changed: each workspace entry now wraps its repos under a `"repos"` key. Existing configs are migrated automatically on first run.
+  - Before: `{workspace_name: {path: {"files": [...]}}}`
+  - After:  `{workspace_name: {"repos": {path: {"files": [...]}}}}`
+
+### Changed
+- `processor`, `ws_registrar`, `ws_processor` are now instantiated inside each entry-point function (`main`, `dcpu_main`, `dcpe_main`) rather than at module load time
+- Renamed local variable `choices` → `choices_reversed` in `delete_repo` to clarify reverse-index ordering
+
+### Internal
+- `WorkspaceConfig` promoted from `TypeAlias` to a `TypedDict` with an explicit `repos` field; `RepoPaths` alias removed
+- `test_workspace_executor.py` renamed to `test_workspace.py`
+- Added `tests/test_workspace_integration.py`: end-to-end round-trip test covering `ws reg` → `ws list` → `ws del`
+
 ## v0.9.2 - 2026-06-06
  
 ### Breaking Change
