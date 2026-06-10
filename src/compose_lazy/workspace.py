@@ -9,7 +9,7 @@ from typing import Iterable, cast
 
 from . import utils
 from .config import CONFIG_PATH
-from .types import ComposeLazyConfig, RepoConfig, WorkspaceConfig
+from .types import ComposeLazyConfig, WorkspaceConfig
 from .utils import YamlHandler, call_safely, handle_config
 
 logger = logging.getLogger(__name__)
@@ -151,7 +151,7 @@ class WorkspaceRegistrar(AbstractWsExecutor):
             workspace_name := self._select_workspace_simply(workspaces, skip=False)
         ) is None:
             return 1
-        target_workspace_repos: dict[str, RepoConfig] = workspaces[workspace_name]["repos"]
+        target_workspace_repos = workspaces[workspace_name]["repos"]
 
         print()
         msg = "✅️ Found {} repositor{}!"
@@ -301,7 +301,7 @@ class WorkspaceProcessor(AbstractWsExecutor):
             print(f"✅️ Found {len(workspace_repos)} repositories!")
             single_paths = utils.interactive_select(workspace_repos, multiple=False)
         path = single_paths[0]
-        new_workdirs: WorkspaceConfig = {"repos":{path: workspace_repos[path]}}
+        new_workdirs: WorkspaceConfig = {"repos": {path: workspace_repos[path]}}
 
         services = utils.get_service_from_yamls(
             [Path(path) / y for y in workspace_repos[path]["files"]]
