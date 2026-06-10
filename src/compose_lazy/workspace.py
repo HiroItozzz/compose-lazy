@@ -40,7 +40,7 @@ class AbstractWsExecutor(ABC):
     def _select_workspace_or_create(self, candidates: Iterable[str]) -> str:
         candidates = list(candidates)
         if not candidates:
-            return input("Please enter a new workspace name: ").strip()
+            return self._prompt_new_workspace_name()
 
         self._display_intro(candidates)
         choices: list[str] | None = utils.interactive_select(
@@ -48,7 +48,7 @@ class AbstractWsExecutor(ABC):
         )
 
         if choices is None:
-            return input("Please enter a new workspace name: ").strip()
+            return self._prompt_new_workspace_name()
 
         return choices[0]
 
@@ -76,6 +76,15 @@ class AbstractWsExecutor(ABC):
             print(msg.format(length, "s"))
         else:
             print(msg.format(length, ""))
+
+    def _prompt_new_workspace_name(self) -> str:
+        while True:
+            if new_name := input("Enter a new workspace name: ").strip():
+                return new_name
+            print(
+                "⚠️  Can't use empty string as a workspace name. Please try again.",
+                file=sys.stderr,
+            )
 
 
 class WorkspaceRegistrar(AbstractWsExecutor):

@@ -2,6 +2,7 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
+import yaml
 from yaml.scanner import ScannerError
 
 from compose_lazy.utils import YamlHandler
@@ -25,9 +26,7 @@ class TestYamlHandlerInit:
         monkeypatch.chdir(tmp_path)
         config_path = tmp_path / "test"
         config_path.touch()
-        monkeypatch.setattr(
-            YamlHandler, "_read_and_load", MagicMock(return_value={})
-        )
+        monkeypatch.setattr(YamlHandler, "_read_and_load", MagicMock(return_value={}))
         keys = "key1", "key2"
         h = YamlHandler(config_path)
         h.setup_config(*keys)
@@ -49,9 +48,7 @@ class TestYamlHandlerInit:
         config_path = tmp_path / "test"
         assert not config_path.exists()
 
-        monkeypatch.setattr(
-            YamlHandler, "_read_and_load", MagicMock(return_value={})
-        )
+        monkeypatch.setattr(YamlHandler, "_read_and_load", MagicMock(return_value={}))
         keys = "key1", "key2"
         h = YamlHandler(config_path)
         h.setup_config(*keys)
@@ -93,13 +90,83 @@ class TestYamlHandlerInit:
         config_path = tmp_path / "test"
         config_path.touch()
         handler = YamlHandler(config_path)
-        handler._config = {"key":"value"}
+        handler._config = {"key": "value"}
 
         handler.dump_and_write()
 
         content = config_path.read_text(encoding="utf-8")
         assert "key" in content
         assert "value" in content
+
+
+SAMPLE_CONFIG_v0_8_0 = """workspaces:
+  ws1:
+    /path/to/repo1:
+    - compose.test1.yml
+    - compose.test11.yml
+  ws2:
+    /path/to/repo2:
+    - compose.test2.yml"""
+
+SAMPLE_CONFIG_v0_9_2 = """workspaces:
+  ws1:
+    /path/to/repo1:
+      files:
+        - compose.test1.yml
+        - compose.test11.yml
+  ws2:
+    /path/to/repo2:
+      files:
+        - compose.test2.yml
+"""
+
+
+SAMPLE_CONFIG_v0_9_3 = """workspaces:
+  ws1:
+    repos:
+      /path/to/repo1:
+        files:
+        - compose.test1.yml
+        - compose.test11.yml
+  ws2:
+    repos:
+      /path/to/repo2:
+        files:
+        - compose.test2.yml
+"""
+
+
+class TestMigration:
+    @pytest.mark.parametrize(
+        "config,expected",
+        [
+            (SAMPLE_CONFIG_v0_8_0, True),
+            (SAMPLE_CONFIG_v0_9_2, True),
+            (SAMPLE_CONFIG_v0_9_3, False),
+        ],
+    )
+    def test_migration(self, config, expected, tmp_path):
+        config_path = tmp_path / "test_config"
+        config_path.write_text(config)
+        handler = YamlHandler(config_path)
+        handler._config = yaml.safe_load(config)
+        expected_config = {
+            "workspaces": {
+                "ws1": {
+                    "repos": {
+                        "/path/to/repo1": {
+                            "files": ["compose.test1.yml", "compose.test11.yml"]
+                        }
+                    }
+                },
+                "ws2": {"repos": {"/path/to/repo2": {"files": ["compose.test2.yml"]}}},
+            }
+        }
+
+        result = handler._migrate_workspace_schema()
+
+        assert result is expected
+        assert handler.config == expected_config
 
 
 class TestYamlHandlerGetValues:

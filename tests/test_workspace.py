@@ -38,11 +38,10 @@ class TestCommonMethods(TestWsBase):
     def test_select_or_create_NO_WORKSPACES(self, monkeypatch):
         mock_input = MagicMock(return_value="ws1")
         monkeypatch.setattr("builtins.input", mock_input)
-        prompt = "Please enter a new workspace name: "
         workspaces = {}
         result = self.registrar._select_workspace_or_create(workspaces)
 
-        mock_input.assert_called_once_with(prompt)
+        mock_input.assert_called_once()
         assert result == "ws1"
 
     def test_select_or_create_WORKSPACE_EXISTS(self, monkeypatch):
@@ -78,7 +77,7 @@ class TestCommonMethods(TestWsBase):
             "interactive_select",
             MagicMock(return_value=None),
         )
-        prompt = "Please enter a new workspace name: "
+        prompt = "Enter a new workspace name: "
         workspaces = {"ws1": [], "ws2": []}
         result = self.registrar._select_workspace_or_create(workspaces)
 

@@ -106,7 +106,6 @@ def interactive_select(
             if (choices_str := input(prompt)) in ["Q", "q"]:
                 print("Cancelled.")
                 raise SystemExit
-
             choices = list(
                 map(
                     lambda i: int(i) - 1,
@@ -118,11 +117,13 @@ def interactive_select(
                     return None
                 if len(choices) > 1 and -1 in choices:  # When multiple input includes "0"
                     raise ValueError
+
+            if choices == []:
+                raise ValueError
             if not multiple and len(choices) != 1:
                 raise ValueError
             if any((i < 0 for i in choices)):
                 raise IndexError
-
             for idx in choices:
                 chosen = candidates[idx]
                 if flag is None:
