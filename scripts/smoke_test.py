@@ -4,6 +4,7 @@ cases = (
     ["dcp", "--help"],
     ["dcpu", "--help"],
     ["dcpe", "--help"],
+    ["dcp", "ws", "--help"],
 )
 
 

@@ -399,13 +399,15 @@ class TestMain:
             ("dcp ws stop", "stop"),
             ("dcp ws s", "s"),
             ("dcp ws down", "down"),
+            ("dcp ws logs", "logs"),
+            ("dcp ws lo", "lo"),
             ("dcp workspace up", "up"),
             ("dcp workspace u", "u"),
             ("dcp workspace restart", "restart"),
             ("dcp workspace down", "down"),
         ],
     )
-    def test_run_dcp_WS_EXECUTOR(self, input_cmd, expected_ws_subcmd):
+    def test_run_dcp_WS_PROCESSOR(self, input_cmd, expected_ws_subcmd):
         with patch("compose_lazy.main.WorkspaceProcessor") as mock_class:
             mock_instance = MagicMock(return_value=0)
             mock_class.return_value = mock_instance
