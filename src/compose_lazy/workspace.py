@@ -9,7 +9,7 @@ from typing import Iterable, cast
 
 from . import utils
 from .config import CONFIG_PATH
-from .types import ComposeLazyConfig, WorkspaceConfig
+from .types import ComposeLazyConfig, RepoConfig, WorkspaceConfig
 from .utils import YamlHandler, call_safely, handle_config
 
 logger = logging.getLogger(__name__)
@@ -305,13 +305,7 @@ class WorkspaceProcessor(AbstractWsExecutor):
         self, workspace: WorkspaceConfig
     ) -> tuple[list[str], WorkspaceConfig]:
         workspace_repos = workspace["repos"]
-        if len(workspace_repos) == 1:
-            single_paths = list(workspace_repos)
-        else:
-            print()
-            print(f"✅️ Found {len(workspace_repos)} repositories!")
-            single_paths = utils.interactive_select(workspace_repos, multiple=False)
-        path = single_paths[0]
+        path = self._select_repo(workspace_repos)
         new_workdirs: WorkspaceConfig = {"repos": {path: workspace_repos[path]}}
 
         services = utils.get_service_from_yamls(
@@ -338,13 +332,7 @@ class WorkspaceProcessor(AbstractWsExecutor):
         self, workspace: WorkspaceConfig
     ) -> tuple[list[str], WorkspaceConfig]:
         workspace_repos = workspace["repos"]
-        if len(workspace_repos) == 1:
-            single_paths = list(workspace_repos)
-        else:
-            print()
-            print(f"✅️ Found {len(workspace_repos)} repositories!")
-            single_paths = utils.interactive_select(workspace_repos, multiple=False)
-        path = single_paths[0]
+        path = self._select_repo(workspace_repos)
         new_workdirs: WorkspaceConfig = {"repos": {path: workspace_repos[path]}}
 
         services = utils.get_service_from_yamls(
@@ -362,3 +350,14 @@ class WorkspaceProcessor(AbstractWsExecutor):
 
         subcommand = ["logs"] + services + ["-f"]
         return subcommand, new_workdirs
+
+    @staticmethod
+    def _select_repo(candidates: Iterable[str]) -> str:
+        candidates = list(candidates)
+        if len(candidates) == 1:
+            single_paths = candidates
+        else:
+            print()
+            print(f"✅️ Found {len(candidates)} repositories!")
+            single_paths = utils.interactive_select(candidates, multiple=False)
+        return single_paths[0]
