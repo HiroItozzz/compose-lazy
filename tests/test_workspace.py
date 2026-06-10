@@ -576,7 +576,7 @@ class TestProcessorCall(TestWsBase):
         code = self.processor._switch(args)
 
         _, err = capsys.readouterr()
-        assert "❌️ Compose file not found" in err
+        assert "❌ Compose file not found" in err
         assert code == 1
         self.processor._execute_command.assert_not_called()
 

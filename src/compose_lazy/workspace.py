@@ -57,7 +57,7 @@ class AbstractWsExecutor(ABC):
     ) -> str | None:
         candidates = list(candidates)
         if not candidates:
-            print("❌️ No workspaces registered yet.", file=sys.stderr)
+            print("❌ No workspaces registered yet.", file=sys.stderr)
             print("💡 To register a new workspace, run `dcp ws register(reg)`.")
             return None
         elif len(candidates) == 1 and skip:
@@ -106,7 +106,7 @@ class WorkspaceRegistrar(AbstractWsExecutor):
         workspaces = workspaces or self.config["workspaces"]
 
         if not workspaces:
-            print("❌️ No workspaces registered yet.", file=sys.stderr)
+            print("❌ No workspaces registered yet.", file=sys.stderr)
             print("💡 To register a new workspace, run `dcp ws register(reg)`.")
             return 1
         width, _ = shutil.get_terminal_size()
@@ -114,7 +114,7 @@ class WorkspaceRegistrar(AbstractWsExecutor):
             print(f"───── {ws_key} ".ljust(min(width, 100), "─"))
             repos_dict = workspaces[ws_key]["repos"]
             if not repos_dict:
-                print("❌️ No repos registered yet.")
+                print("❌ No repos registered yet.")
             for idx, repo_name in enumerate(repos_dict, start=1):
                 print(f"📁 PATH[{str(idx)}]:".rjust(11), repo_name)
                 print("FILES:".rjust(12), ", ".join(repos_dict[repo_name]["files"]))
@@ -248,7 +248,7 @@ class WorkspaceProcessor(AbstractWsExecutor):
             for workdir, v in workspace["repos"].items():
                 yaml_names = v["files"]
                 if not Path(workdir).is_dir():
-                    print(f"❌️ Workspace directory not found: {workdir}", file=sys.stderr)
+                    print(f"❌ Workspace directory not found: {workdir}", file=sys.stderr)
                     codes.append(1)
                     continue
 
@@ -256,7 +256,7 @@ class WorkspaceProcessor(AbstractWsExecutor):
                 if missing:
                     # fmt: off
                     for y in missing:
-                        print(f"❌️ Compose file not found: {Path(workdir) / y}", file=sys.stderr)
+                        print(f"❌ Compose file not found: {Path(workdir) / y}", file=sys.stderr)
                     print(f"⚠️  Skipping {Path(workdir).name} — re-register to fix.", file=sys.stderr)
                     codes.append(1)
                     continue

@@ -34,7 +34,7 @@ def handle_config(func: Callable[P, int]) -> Callable[P, int]:
         except (TypeError, KeyError, AttributeError):
             logger.debug("Workspace config has unexpected structure.", exc_info=True)
             print(
-                "❌️ Workspace config is invalid or outdated.\n"
+                "❌ Workspace config is invalid or outdated.\n"
                 "── Delete ~/.config/compose-lazy and re-register your workspaces.",
                 file=sys.stderr,
             )
