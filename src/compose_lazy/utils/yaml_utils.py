@@ -80,7 +80,7 @@ class YamlHandler:
                     migrated = True
                     logger.debug(f"Migrated workspace repo: {ws_name}/{key}")
 
-                if key != "repos":
+                if key != "repos" or (key == "repos" and "files" in value):
                     workspaces[ws_name] = {"repos": repos}
                     migrated = True
                     logger.debug(

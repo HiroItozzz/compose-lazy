@@ -11,7 +11,7 @@ from compose_lazy import main
 
 class TestWorkspaceRegistrar:
     def setup_method(self):
-        self.working_dir = Path(tempfile.mkdtemp())
+        self.working_dir = Path(tempfile.mkdtemp()).resolve()
         self.file = self.working_dir / "compose.test.yaml"
         self.file.write_text("services:\n  app:\n  db:")
 

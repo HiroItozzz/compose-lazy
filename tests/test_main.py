@@ -410,11 +410,12 @@ class TestMain:
             mock_instance = MagicMock(return_value=0)
             mock_class.return_value = mock_instance
             with patch("sys.argv", input_cmd.split()):
-                with pytest.raises(SystemExit):
+                with pytest.raises(SystemExit) as exc_info:
                     main()
             mock_instance.assert_called_once()
             args = mock_instance.call_args[0][0]
-            assert args.ws_subcmd == expected_ws_subcmd
+        assert args.ws_subcmd == expected_ws_subcmd
+        assert exc_info.value.code == 0
 
     @pytest.mark.parametrize(
         "input_cmd,expected_ws_subcmd",
@@ -435,12 +436,12 @@ class TestMain:
             mock_instance = MagicMock(return_value=0)
             mock_class.return_value = mock_instance
             with patch("sys.argv", input_cmd.split()):
-                with pytest.raises(SystemExit):
+                with pytest.raises(SystemExit) as exc_info:
                     main()
-            mock_instance.assert_called_once()
-            args = mock_instance.call_args[0][0]
-            assert args.ws_subcmd == expected_ws_subcmd
-
+        mock_instance.assert_called_once()
+        args = mock_instance.call_args[0][0]
+        assert args.ws_subcmd == expected_ws_subcmd
+        assert exc_info.value.code == 0
 
     @pytest.mark.parametrize(
         "input_cmd",
