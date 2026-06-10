@@ -1,3 +1,8 @@
+## v0.10.0 - 2026-06-10
+
+### Added
+- `dcp ws logs(lo)` — new workspace subcommand to run `docker compose logs` interactively against a selected repo and service within a workspace
+
 ## v0.9.3 - 2026-06-10
 
 ### Breaking Change

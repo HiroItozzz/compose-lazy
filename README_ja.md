@@ -81,21 +81,21 @@ Please enter the rest of `docker compose exec app ...`: bash
 `-f`、`-pf`、`-s` 各オプションを付与すると、カレントディレクトリのcomposeファイルが読み込まれ、対話的に実行対象を選択できます。
 
 ```bash
-$ dcpu -f
+$ dcpu -f   # ファイル選択フローを起動
 ✅️ Found 2 compose files!
     1. docker-compose.yml
     2. docker-compose.prod.yml
 Enter your choices (e.g., 1,3,4) or 'q' to quit: 2
 ▷ Executing `docker compose -f docker-compose.prod.yml up`.
 
-$ dcp re -pf   # `re`start
+$ dcp re -pf   # プロフィール選択
 ✅️ Found 2 profiles!
     1. dev
     2. prod
 Enter your choices (e.g., 1,3,4) or 'q' to quit: 1
 ▷ Executing `docker compose --profile dev restart`.
 
-$ dcp l -s   # `l`ogs
+$ dcp l -s   # サービス選択
 ✅️ Found 3 services!
     1. app
     2. db

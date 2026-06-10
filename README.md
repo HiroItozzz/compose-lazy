@@ -77,21 +77,21 @@ Workspace configuration is stored in `~/.config/compose-lazy`.
 Running `-f`, `-pf`, or `-s` without arguments auto-detects compose files, profiles, and services, letting you choose interactively.
 
 ```bash
-$ dcpu -f
+$ dcpu -f   # Run compose file selection
 ✅️ Found 2 compose files!
     1. docker-compose.yml
     2. docker-compose.prod.yml
 Enter your choices (e.g., 1,3,4) or 'q' to quit: 2
 ▷ Executing `docker compose -f docker-compose.prod.yml up`.
 
-$ dcp re -pf   # `re`start
+$ dcp re -pf   # Run profile selection
 ✅️ Found 2 profiles!
     1. dev
     2. prod
 Enter your choices (e.g., 1,3,4) or 'q' to quit: 1
 ▷ Executing `docker compose --profile dev restart`.
 
-$ dcp l -s   # `l`ogs
+$ dcp l -s   # Run `s`ervice selection
 ✅️ Found 3 services!
     1. app
     2. db
@@ -208,6 +208,7 @@ Both `pipx` and `uv tool` install CLI tools in isolated environments, so compose
 | dcp workspace(ws) up(u)              | docker compose up -d for each repo in a workspace        |
 | dcp workspace(ws) build(b)           | docker compose build for each repo in a workspace        |
 | dcp workspace(ws) exec(e)            | docker compose exec interactively for a selected repo    |
+| dcp workspace(ws) logs(lo)           | docker compose logs interactively for a selected repo    |
 | dcp workspace(ws) restart(re)        | docker compose restart for each repo in a workspace      |
 | dcp workspace(ws) ps                 | docker compose ps for each repo in a workspace           |
 | dcp workspace(ws) stop(s)            | docker compose stop for each repo in a workspace         |
