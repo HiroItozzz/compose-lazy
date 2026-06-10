@@ -277,6 +277,16 @@ def main() -> None:
         help="docker compose `ps` for each repo.",
     ).set_defaults(func=ws_processor)
 
+    # dcp ws logs command
+    ws_subparsers.add_parser(
+        "logs",
+        aliases=["lo"],
+        allow_abbrev=False,
+        usage="dcp ws logs",
+        description="Run `docker compose logs` in a selected repo.",
+        help="docker compose `logs` for a repo specified interactively.",
+    ).set_defaults(func=ws_processor)
+
     # dcp ws stop command
     ws_subparsers.add_parser(
         "stop",

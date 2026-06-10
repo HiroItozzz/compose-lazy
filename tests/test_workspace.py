@@ -497,15 +497,20 @@ class TestProcessorCall(TestWsBase):
         )
 
     @pytest.mark.parametrize(
-        "ws_subcmd",
-        ["exec", "e"],
+        "ws_subcmd,expected_method",
+        [
+            ("exec", "_get_exec_details"),
+            ("e", "_get_exec_details"),
+            ("logs", "_get_logs_details"),
+            ("lo", "_get_logs_details"),
+        ],
     )
-    def test_switch_exec(self, ws_subcmd, monkeypatch):
-        monkeypatch.setattr(WorkspaceProcessor, "_get_exec_details", MagicMock())
+    def test_switch_exec(self, ws_subcmd, expected_method, monkeypatch):
+        monkeypatch.setattr(WorkspaceProcessor, expected_method, MagicMock())
         args = Namespace(ws_subcmd=ws_subcmd)
         self.processor._switch(args)
 
-        self.processor._get_exec_details.assert_called_once_with(self.workspace)
+        getattr(self.processor, expected_method).assert_called_once_with(self.workspace)
 
     def test_switch_returns_1(self, monkeypatch):
         self.processor.get_target_workspace = MagicMock(return_value=None)
@@ -650,7 +655,9 @@ class TestGetExecDetails(TestWsBase):
         }
         dir2_services = {"db", "frontend"}
 
-        mock_select = MagicMock(side_effect=[[str(dir2)], ["db"]])
+        mock_repo = MagicMock(return_value=str(dir2))
+        monkeypatch.setattr(WorkspaceProcessor, "_select_repo", mock_repo)
+        mock_select = MagicMock(return_value=["db"])
         monkeypatch.setattr(utils, "interactive_select", mock_select)
         mock_get_service = MagicMock(return_value=dir2_services)
         monkeypatch.setattr(utils, "get_service_from_yamls", mock_get_service)
@@ -663,11 +670,10 @@ class TestGetExecDetails(TestWsBase):
         result = self.processor._get_exec_details(workspace=workspace)
         out, _ = capsys.readouterr()
 
-        assert "repositories!" in out
-        mock_select.assert_any_call(workspace["repos"], multiple=False)
+        mock_repo.assert_called_once_with(workspace["repos"])
         mock_get_service.assert_called_once_with([dir2 / "compose2.yml"])
         assert "services!" in out
-        mock_select.assert_any_call(dir2_services, multiple=False)
+        mock_select.assert_called_once_with(dir2_services, multiple=False)
 
         assert result == (expected_cmd, expected_workspace)
 
@@ -678,6 +684,8 @@ class TestGetExecDetails(TestWsBase):
         workspace = {"repos": {str(dir1): {"files": ["compose1.yml"]}}}
         dir1_services = {"app"}
 
+        mock_repo = MagicMock(return_value=str(dir1))
+        monkeypatch.setattr(WorkspaceProcessor, "_select_repo", mock_repo)
         mock_select = MagicMock()
         monkeypatch.setattr(utils, "interactive_select", mock_select)
         mock_get_service = MagicMock(return_value=dir1_services)
@@ -693,8 +701,10 @@ class TestGetExecDetails(TestWsBase):
 
         assert "services!" not in out
         assert "Found" not in out
-        mock_select.assert_not_called()
+        mock_repo.assert_called_once_with(workspace["repos"])
         mock_get_service.assert_called_once_with([dir1 / "compose1.yml"])
+
+        utils.interactive_select.assert_not_called()
 
         assert result == (expected_cmd, expected_workspace)
 
@@ -713,3 +723,113 @@ class TestGetExecDetails(TestWsBase):
         _, err = capsys.readouterr()
 
         assert "No services" in err
+
+
+class TestGetLogsDetails(TestWsBase):
+    def test_get_logs_details(self, capsys, tmp_path_factory, monkeypatch):
+        dir1 = tmp_path_factory.mktemp("dir1")
+        dir2 = tmp_path_factory.mktemp("dir2")
+        content1 = "services:\n  app:\n  db:"
+        content2 = "services:\n  db:\n  frontend:"
+        (dir1 / "compose1.yml").write_text(content1)
+        (dir2 / "compose2.yml").write_text(content2)
+        workspace = {
+            "repos": {
+                str(dir1): {"files": ["compose1.yml"]},
+                str(dir2): {"files": ["compose2.yml"]},
+            }
+        }
+        dir2_services = {"db", "frontend"}
+
+        mock_repo = MagicMock(return_value=str(dir2))
+        monkeypatch.setattr(WorkspaceProcessor, "_select_repo", mock_repo)
+        mock_select = MagicMock(return_value=["db", "frontend"])
+        monkeypatch.setattr(utils, "interactive_select", mock_select)
+        mock_get_service = MagicMock(return_value=dir2_services)
+        monkeypatch.setattr(utils, "get_service_from_yamls", mock_get_service)
+
+        expected_cmd = ["logs", "db", "frontend", "-f"]
+        expected_workspace = {"repos": {str(dir2): {"files": ["compose2.yml"]}}}
+
+        result = self.processor._get_logs_details(workspace=workspace)
+        out, _ = capsys.readouterr()
+
+        mock_repo.assert_called_once_with(workspace["repos"])
+        mock_get_service.assert_called_once_with([dir2 / "compose2.yml"])
+        assert "services!" in out
+        mock_select.assert_called_once_with(dir2_services)
+
+        assert result == (expected_cmd, expected_workspace)
+
+    def test_no_selection_empty_input(self, capsys, tmp_path_factory, monkeypatch):
+        dir1 = tmp_path_factory.mktemp("dir1")
+        content1 = "services:\n  app:"
+        (dir1 / "compose1.yml").write_text(content1)
+        workspace = {"repos": {str(dir1): {"files": ["compose1.yml"]}}}
+        dir1_services = {"app"}
+
+        mock_repo = MagicMock(return_value=str(dir1))
+        monkeypatch.setattr(WorkspaceProcessor, "_select_repo", mock_repo)
+        monkeypatch.setattr(utils, "interactive_select", MagicMock())
+        mock_get_service = MagicMock(return_value=dir1_services)
+        monkeypatch.setattr(utils, "get_service_from_yamls", mock_get_service)
+
+        expected_cmd = ["logs", "app", "-f"]
+        expected_workspace = {"repos": {str(dir1): {"files": ["compose1.yml"]}}}
+
+        result = self.processor._get_logs_details(workspace=workspace)
+        out, _ = capsys.readouterr()
+
+        assert "services!" not in out
+        assert "Found" not in out
+        mock_repo.assert_called_once_with(workspace["repos"])
+        mock_get_service.assert_called_once_with([dir1 / "compose1.yml"])
+
+        utils.interactive_select.assert_not_called()
+
+        assert result == (expected_cmd, expected_workspace)
+
+    def test_SystemExit(self, capsys, tmp_path_factory, monkeypatch):
+        dir1 = tmp_path_factory.mktemp("dir1")
+        content1 = "services:"
+        (dir1 / "compose1.yml").write_text(content1)
+        workspace = {"repos": {str(dir1): {"files": ["compose1.yml"]}}}
+
+        mock_get_service = MagicMock(return_value={})
+        monkeypatch.setattr(utils, "get_service_from_yamls", mock_get_service)
+
+        with pytest.raises(SystemExit):
+            self.processor._get_logs_details(workspace=workspace)
+
+        _, err = capsys.readouterr()
+
+        assert "No services" in err
+
+
+class TestSelectRepo(TestWsBase):
+    @pytest.mark.parametrize(
+        "candidates,expected",
+        [
+            (["repo1"], "repo1"),
+            ({"repo1": {"files": {}}}, "repo1"),
+        ],
+    )
+    def test_length_1(self, candidates, expected):
+        result = self.processor._select_repo(candidates)
+        assert result == expected
+
+    @pytest.mark.parametrize(
+        "candidates,expected",
+        [
+            (["repo1", "repo2"], "repo2"),
+            ({"repo1": {"files": {}}, "repo2": {"files": {}}}, "repo2"),
+        ],
+    )
+    def test_length_2(self, candidates, expected, monkeypatch):
+        monkeypatch.setattr(
+            utils, "interactive_select", MagicMock(return_value=["repo2"])
+        )
+        result = self.processor._select_repo(candidates)
+
+        utils.interactive_select.assert_called_once_with(list(candidates), multiple=False)
+        assert result == expected
