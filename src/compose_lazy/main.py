@@ -17,13 +17,13 @@ VERSION = version("compose_lazy")
 
 logger = logging.getLogger(__name__)
 
-processor = DockerCmdProcessor()
-ws_registrar = WorkspaceRegistrar()
-ws_processor = WorkspaceProcessor()
-
 
 def main() -> None:
     config.setup_logger("compose_lazy")
+
+    processor = DockerCmdProcessor()
+    ws_registrar = WorkspaceRegistrar()
+    ws_processor = WorkspaceProcessor()
 
     base_parser = ArgumentParser(
         allow_abbrev=False,
@@ -311,6 +311,7 @@ def main() -> None:
 def dcpu_main() -> None:
     config.setup_logger("compose_lazy")
 
+    processor = DockerCmdProcessor()
     parser = ArgumentParser(
         allow_abbrev=False,
         usage="dcpu [SERVICE_NAME] [options]",
@@ -341,6 +342,7 @@ def dcpu_main() -> None:
 def dcpe_main() -> None:
     config.setup_logger("compose_lazy")
 
+    processor = DockerCmdProcessor()
     parser = ArgumentParser(
         allow_abbrev=False,
         usage="dcpe <SERVICE_NAME> [BASH|commands] [options]",

@@ -60,7 +60,8 @@ class YamlHandler:
         logger.debug(f"{config=}")
         self._config = config
 
-        if self._migrate_workspace_schema():  # TODO: remove migration before 1.0.0
+        # TODO: remove migration before 1.0.0
+        if self._migrate_workspace_schema():
             self.dump_and_write()
 
         return self
@@ -73,11 +74,18 @@ class YamlHandler:
 
         migrated = False
         for ws_name, repos in workspaces.items():
-            for path, value in repos.items():
+            for key, value in repos.items():
                 if isinstance(value, list):
-                    repos[path] = {"files": value}
+                    repos[key] = {"files": value}
                     migrated = True
-                    logger.debug(f"Migrated workspace repo: {ws_name}/{path}")
+                    logger.debug(f"Migrated workspace repo: {ws_name}/{key}")
+
+                if key != "repos" or (key == "repos" and "files" in value):
+                    workspaces[ws_name] = {"repos": repos}
+                    migrated = True
+                    logger.debug(
+                        f"Migrated `repos` key: {ws_name}"
+                    )
 
         return migrated
 
