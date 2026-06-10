@@ -9,7 +9,7 @@ from typing import Iterable, cast
 
 from . import utils
 from .config import CONFIG_PATH
-from .types import ComposeLazyConfig, RepoConfig, WorkspaceConfig
+from .types import ComposeLazyConfig, WorkspaceConfig
 from .utils import YamlHandler, call_safely, handle_config
 
 logger = logging.getLogger(__name__)
@@ -354,7 +354,10 @@ class WorkspaceProcessor(AbstractWsExecutor):
     @staticmethod
     def _select_repo(candidates: Iterable[str]) -> str:
         candidates = list(candidates)
-        if len(candidates) == 1:
+        if not candidates:
+            print("❌ No repos found.", file=sys.stderr)
+            raise SystemExit(1)
+        elif len(candidates) == 1:
             single_paths = candidates
         else:
             print()
