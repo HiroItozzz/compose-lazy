@@ -1,4 +1,9 @@
 # Compose Lazy
+[![image](https://img.shields.io/pypi/v/compose-lazy.svg)](https://pypi.python.org/pypi/compose-lazy)
+[![image](https://img.shields.io/pypi/l/compose-lazy.svg)](https://pypi.python.org/pypi/compose-lazy)
+[![image](https://img.shields.io/pypi/pyversions/compose-lazy.svg)](https://pypi.python.org/pypi/compose-lazy)
+[![Test Status](https://github.com/HiroItozzz/compose-lazy/actions/workflows/test.yml/badge.svg)](https://github.com/HiroItozzz/compose-lazy/actions/workflows/test.yml)
+[![Coverage Status](https://coveralls.io/repos/github/HiroItozzz/compose-lazy/badge.svg?branch=test/coverall)](https://coveralls.io/github/HiroItozzz/compose-lazy?branch=main)
 > 🚀 A smart `docker compose` wrapper — interactive selection × multi-repository workspace management
 
 

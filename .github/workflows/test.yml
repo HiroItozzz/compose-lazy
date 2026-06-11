@@ -7,7 +7,23 @@ on:
     branches: [main]
 
 jobs:
+  type-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Setup package
+        run: uv sync --python 3.11
+
+      - name: Run ty
+        run: uv run ty check src --python-version 3.11 --output-format github
+
   test:
+    needs: type-check
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -25,4 +41,13 @@ jobs:
         run: uv sync --python ${{ matrix.python-version }}
 
       - name: Execute test
+        if: matrix.os != 'ubuntu-latest' || matrix.python-version != '3.11'
         run: uv run pytest
+
+      - name: Execute test
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+        run: uv run pytest --cov=src --cov-report=lcov
+
+      - name: Coveralls
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+        uses: coverallsapp/github-action@v2
