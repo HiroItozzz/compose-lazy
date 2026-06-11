@@ -5,6 +5,7 @@ from unittest.mock import MagicMock, PropertyMock
 
 import pytest
 
+import compose_lazy.workspace
 from compose_lazy import utils
 from compose_lazy.utils import YamlHandler
 from compose_lazy.workspace import (
@@ -27,11 +28,13 @@ class TestWsBase:
 class TestCommonMethods(TestWsBase):
     def test_call(self, monkeypatch):
         monkeypatch.setattr(YamlHandler, "setup_config", MagicMock())
+        monkeypatch.setattr(WorkspaceRegistrar, "_migrate_workspace_schema", MagicMock())
         monkeypatch.setattr(WorkspaceRegistrar, "_switch", MagicMock(return_value=0))
         args = Namespace(subcmd="ws", ws_subcmd="test")
         code = self.registrar(args)
 
         getattr(YamlHandler, "setup_config").assert_called_once_with("workspaces")
+        getattr(WorkspaceRegistrar, "_migrate_workspace_schema").assert_called_once()
         getattr(WorkspaceRegistrar, "_switch").assert_called_once_with(args)
         assert code == 0
 
@@ -137,6 +140,79 @@ class TestCommonMethods(TestWsBase):
 
         out, _ = capsys.readouterr()
         assert "Found 2 registered workspaces" in out
+
+
+SAMPLE_CONFIG_v0_8_0 = """workspaces:
+  ws1:
+    /path/to/repo1:
+    - compose.test1.yml
+    - compose.test11.yml
+  ws2:
+    /path/to/repo2:
+    - compose.test2.yml"""
+
+SAMPLE_CONFIG_v0_9_2 = """workspaces:
+  ws1:
+    /path/to/repo1:
+      files:
+        - compose.test1.yml
+        - compose.test11.yml
+  ws2:
+    /path/to/repo2:
+      files:
+        - compose.test2.yml
+"""
+
+
+SAMPLE_CONFIG_v0_9_3 = """workspaces:
+  ws1:
+    repos:
+      /path/to/repo1:
+        files:
+        - compose.test1.yml
+        - compose.test11.yml
+  ws2:
+    repos:
+      /path/to/repo2:
+        files:
+        - compose.test2.yml
+"""
+
+
+class TestMigration:
+    @pytest.mark.parametrize(
+        "config,expected",
+        [
+            (SAMPLE_CONFIG_v0_8_0, True),
+            (SAMPLE_CONFIG_v0_9_2, True),
+            (SAMPLE_CONFIG_v0_9_3, False),
+        ],
+    )
+    def test_migration(self, config, expected, tmp_path, monkeypatch):
+        test_config_path = tmp_path / "test_config"
+        test_config_path.write_text(config)
+        monkeypatch.setattr(compose_lazy.workspace, "CONFIG_PATH", test_config_path)
+        monkeypatch.setattr(YamlHandler, "dump_and_write", (mock_write := MagicMock()))
+        registrar = WorkspaceRegistrar()
+        registrar.handler._config = registrar.handler._read_and_load()
+        expected_config = {
+            "workspaces": {
+                "ws1": {
+                    "repos": {
+                        "/path/to/repo1": {
+                            "files": ["compose.test1.yml", "compose.test11.yml"]
+                        }
+                    }
+                },
+                "ws2": {"repos": {"/path/to/repo2": {"files": ["compose.test2.yml"]}}},
+            }
+        }
+
+        result = registrar._migrate_workspace_schema()
+
+        assert result is expected
+        assert mock_write.call_count == expected
+        assert registrar.handler.config == expected_config
 
 
 # ─────────────────────────────────────────────

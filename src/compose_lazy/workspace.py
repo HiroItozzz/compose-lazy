@@ -21,6 +21,7 @@ class AbstractWsExecutor(ABC):
 
     def __call__(self, args: Namespace) -> int:
         self.handler.setup_config("workspaces")
+        self._migrate_workspace_schema()
         code = self._switch(args)
         return code
 
@@ -85,6 +86,29 @@ class AbstractWsExecutor(ABC):
                 "⚠️  Can't use empty string as a workspace name. Please try again.",
                 file=sys.stderr,
             )
+
+    def _migrate_workspace_schema(self) -> bool:
+        workspaces = self.handler.config.get("workspaces")
+        if not isinstance(workspaces, dict):
+            return False
+
+        migrated = False
+        for ws_name, repos in workspaces.items():
+            for key, value in repos.items():
+                if isinstance(value, list):
+                    repos[key] = {"files": value}
+                    migrated = True
+                    logger.debug(f"Migrated workspace repo: {ws_name}/{key}")
+
+                if key != "repos" or (key == "repos" and "files" in value):
+                    workspaces[ws_name] = {"repos": repos}
+                    migrated = True
+                    logger.debug(f"Migrated `repos` key: {ws_name}")
+
+        if migrated:
+            self.handler.dump_and_write()
+        
+        return migrated
 
 
 class WorkspaceRegistrar(AbstractWsExecutor):

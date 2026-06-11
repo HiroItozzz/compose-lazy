@@ -1,4 +1,9 @@
 # Compose Lazy
+[![image](https://img.shields.io/pypi/v/compose-lazy.svg)](https://pypi.python.org/pypi/compose-lazy)
+[![image](https://img.shields.io/pypi/l/compose-lazy.svg)](https://pypi.python.org/pypi/compose-lazy)
+[![image](https://img.shields.io/pypi/pyversions/compose-lazy.svg)](https://pypi.python.org/pypi/compose-lazy)
+[![Test Status](https://github.com/HiroItozzz/compose-lazy/actions/workflows/test.yml/badge.svg)](https://github.com/HiroItozzz/compose-lazy/actions/workflows/test.yml)
+[![Coverage Status](https://coveralls.io/repos/github/HiroItozzz/compose-lazy/badge.svg?branch=test/coverall)](https://coveralls.io/github/HiroItozzz/compose-lazy?branch=main)
 > 🚀 `docker compose` のCLIラッパー — インタラクティブ選択 × マルチリポジトリワークスペース管理
 
 
@@ -156,15 +161,34 @@ ArgBuilder(parser)
 
 ビジネスロジック（インタラクティブ機能/コマンド組み立て）も別クラスに分離し、エントリーポイントのコードは引数の定義と処理の呼び出しに専念しています。
 
+
+**型注釈の充実**
+
+ty(Astral社製型チェッカー)による静的解析をパスしています。  
+YAMLによる設定ファイルの構造をTypedDictで定義しているほか、@overloadやデコレータに対するParamSpecの利用など、プロダクション品質の型注釈を目指しました。
+
+```python
+# cli_utils.py
+@overload
+def interactive_select(
+    candidates, flag=..., *, multiple=..., allow_zero: Literal[True]
+) -> None | list[str]: ...
+@overload
+def interactive_select(
+    candidates, flag=..., *, multiple=..., allow_zero: Literal[False] = False
+) -> list[str]: ...
+```
+
 **テスト**
 
-単体テストのほか、`sys.argv`と`subprocess.run`をモックした結合テストを実装することで品質を担保しています。約470テスト、カバレッジ99%を維持しています。
+単体テストのほか、`sys.argv`と`subprocess.run`をモックした結合テストを実装することで品質を担保しています。テストケース400超、カバレッジは99%を維持しています。
 
 
-## 経緯・所感 (2026-05-18)
+## 経緯・所感 (2026-06-13)
 
-当初はbashエイリアスでdocker composeの短縮コマンドを利用していましたが、より高機能なものが欲しくなったのが構想のきっかけです。  
-インタラクティブ機能を思いついた時点で、他の開発者にも一定程度価値があるのではないかと感じ、PyPIにアップロードする前提で今回のプロジェクトを立ち上げました。  
-PyPIでの配布についてですが、その手続き自体はそこまで煩雑ではありませんでした。
-他方で、修正時や機能追加の際の意図せぬ破壊的変更が起こらないよう、テストコードの網羅性に対しては大きな労力を割くことになりました。  
-設計は簡明で拡張性は高いため、今後もアイデアを思いついた際には機能拡張を行っていく予定です。
+Dockerについては同様の便利なOSSアプリケーションがある一方で、docker composeを扱うアプリケーションはネット上でも見当たらなかったことが開発の動機です。  
+PyPIでの配布にあたっては、業務での使用にも耐えられる品質を目指しました。  
+テストの網羅性に大きな労力を払った結果、修正時の意図せぬ破壊的変更を自覚できる状態となっており、プロダクション品質のソフトウェアを安定的に運用する方法がどのようなものかを体得できたことがこのプロジェクトでの大きな収穫です。
+
+またv1.0.0では、依存ライブラリをPyYAMLのみに留めています。これはユーザーの環境への影響を最小化する目的に加え、Pythonの基本的仕様への理解を深める意図によるものでした。  
+結果、argparseやsubprocessといった重要な標準ライブラリの実装のあり方を知ることができ、サードパーティのOSSライブラリが存在する理由や、今後外部依存を利用する際の判断基準を自分の中で築くことが出来ました。
