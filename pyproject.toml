@@ -4,7 +4,7 @@ build-backend = "flit_core.buildapi"
 
 [project]
 name = "compose-lazy"
-version = "0.10.0"
+version = "1.0.0"
 authors = [{ name = "Hiro Ito", email = "mobiiii24@gmail.com" }]
 keywords = ["docker", "docker compose", "alias", "command line tool", "productivity"]
 readme = "README.md"
@@ -13,11 +13,12 @@ dynamic = ["description"]
 license = "MIT"
 license-files = ["LICENSE"]
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Typing :: Typed",
+    "Topic :: Utilities",
     "Intended Audience :: Developers",
     "Natural Language :: English",
-    "Topic :: Utilities",
-    "Environment :: Console",
     "Operating System :: Microsoft :: Windows :: Windows 11",
     "Operating System :: MacOS",
     "Operating System :: POSIX :: Linux",

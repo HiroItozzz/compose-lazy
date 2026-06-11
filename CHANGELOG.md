@@ -1,3 +1,9 @@
+## v1.0.0 - 2026-06-12
+
+First stable release. No changes from v0.10.0.
+
+The workspace config structure is finalized, and core commands and workspace bulk actions are complete. 
+
 ## v0.10.0 - 2026-06-10
 
 ### Added
