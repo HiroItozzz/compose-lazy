@@ -28,7 +28,6 @@ class YamlHandler:
             self._config = {}
         return self._config
 
-    @handle_config
     def setup_config(self, *keys) -> Self:
         """Load configuration and create basic structure in config variable.
 
@@ -77,17 +76,14 @@ class YamlHandler:
         *keys, value = args
         current = self.config
         for key in keys[:-1]:
-            if current.get(key) is None:
-                current[key] = {}
-            current = current[key]
+            current = current.setdefault(key, {})
+            
         last_key = keys[-1]
-        if not current.get(last_key):
-            current[last_key] = []
-
-        if value in current[last_key]:
+        lst = current.setdefault(last_key, [])
+        if value in lst:
             return False
-        current[last_key].append(value)
-        current[last_key].sort()
+        lst.append(value)
+        lst.sort()
         return True
 
     def get_values(self, *keys: str) -> Any:

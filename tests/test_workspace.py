@@ -244,48 +244,6 @@ class TestRegistrarCall(TestWsBase):
 
         getattr(WorkspaceRegistrar, expected_method).assert_called_once()
 
-    def test_switch_TYPEERROR(self, capsys, monkeypatch):
-        monkeypatch.setattr(
-            WorkspaceRegistrar, "register_repo", MagicMock(side_effect=TypeError)
-        )
-        args = Namespace(ws_subcmd="register")
-        code = self.registrar._switch(args)
-
-        _, err = capsys.readouterr()
-        assert "invalid or outdated" in err
-        assert code == 1
-
-    def test_switch_KEYBOARD_INTERRUPT(self, capsys, monkeypatch):
-        monkeypatch.setattr(
-            WorkspaceRegistrar, "register_repo", MagicMock(side_effect=KeyboardInterrupt)
-        )
-        args = Namespace(ws_subcmd="register")
-        code = self.registrar._switch(args)
-
-        out, _ = capsys.readouterr()
-        assert "\nCancelled." in out
-        assert code == 130
-
-    def test_switch_SYSTEM_EXIT(self, monkeypatch):
-        monkeypatch.setattr(
-            WorkspaceRegistrar, "register_repo", MagicMock(side_effect=SystemExit)
-        )
-        args = Namespace(ws_subcmd="register")
-        code = self.registrar._switch(args)
-
-        assert code == 0
-
-    def test_switch_EXCEPTION(self, capsys, monkeypatch):
-        monkeypatch.setattr(
-            WorkspaceRegistrar, "register_repo", MagicMock(side_effect=Exception)
-        )
-        args = Namespace(ws_subcmd="register")
-        code = self.registrar._switch(args)
-
-        _, err = capsys.readouterr()
-        assert "unexpected error " in err
-        assert code == 1
-
 
 class TestShowList(TestWsBase):
     def test_NO_WORKSPACES(self, capsys):
@@ -582,11 +540,19 @@ class TestProcessorCall(TestWsBase):
         ],
     )
     def test_switch_exec(self, ws_subcmd, expected_method, monkeypatch):
-        monkeypatch.setattr(WorkspaceProcessor, expected_method, MagicMock())
+        monkeypatch.setattr(
+            WorkspaceProcessor,
+            expected_method,
+            MagicMock(return_value=(["test"], {"repos": {"ws1": {}}})),
+        )
+        monkeypatch.setattr(WorkspaceProcessor, "_iterate_execution", MagicMock())
         args = Namespace(ws_subcmd=ws_subcmd)
         self.processor._switch(args)
 
         getattr(self.processor, expected_method).assert_called_once_with(self.workspace)
+        self.processor._iterate_execution.assert_called_once_with(
+            ["test"], {"repos": {"ws1": {}}}
+        )
 
     def test_switch_returns_1(self, monkeypatch):
         self.processor.get_target_workspace = MagicMock(return_value=None)

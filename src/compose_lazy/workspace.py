@@ -19,6 +19,8 @@ class AbstractWsExecutor(ABC):
     def __init__(self) -> None:
         self.handler = YamlHandler(CONFIG_PATH)
 
+    @call_safely
+    @handle_config
     def __call__(self, args: Namespace) -> int:
         self.handler.setup_config("workspaces")
         self._migrate_workspace_schema()
@@ -107,13 +109,11 @@ class AbstractWsExecutor(ABC):
 
         if migrated:
             self.handler.dump_and_write()
-        
+
         return migrated
 
 
 class WorkspaceRegistrar(AbstractWsExecutor):
-    @call_safely
-    @handle_config
     def _switch(self, args: Namespace) -> int:
         match args.ws_subcmd:
             case "register" | "reg":
@@ -237,8 +237,6 @@ class WorkspaceRegistrar(AbstractWsExecutor):
 class WorkspaceProcessor(AbstractWsExecutor):
     BASE_COMMAND = ["docker", "compose"]
 
-    @call_safely
-    @handle_config
     def _switch(self, args: Namespace) -> int:
 
         if (workspace := self.get_target_workspace()) is None:
