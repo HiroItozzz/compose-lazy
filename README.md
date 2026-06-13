@@ -7,15 +7,100 @@
 > 🚀 A smart `docker compose` wrapper — interactive selection × multi-repository workspace management
 
 
-
 ## Overview
 A CLI tool designed to streamline workflows for developers who frequently use `docker compose`.  
-In addition to short aliases for common commands, it features interactive selection of compose files, profiles, and services, and a workspace system that lets you operate any registered repository from anywhere in the filesystem — no `cd` required.  
+In addition to short aliases for common commands, it features **interactive selection of compose files, profiles, and services**, and a workspace system that lets you **register multiple repositories as a group and operate all of them at once** from anywhere in the filesystem — no `cd` required.  
 Available on PyPI — install instantly with `pipx install compose-lazy` or `uv tool install compose-lazy`.
 
 [日本語版README](README_ja.md)もあります。
 
+<details>
+<summary>Table of Contents</summary>
+
+- [Highlights](#highlights)
+  - [1. Register a project and launch from anywhere](#1-register-a-project-and-launch-from-anywhere)
+  - [2. Bulk operations across multiple projects](#2-bulk-operations-across-multiple-projects)
+- [Features](#features)
+  - [Basic Commands](#basic-commands)
+  - [Interactive Selection](#interactive-selection)
+  - [Multi-Repo Workspace](#multi-repo-workspace)
+- [🔧 Install compose-lazy](#install-compose-lazy)
+  - [Quick Install](#quick-install)
+  - [Not familiar with Python tooling?](#not-familiar-with-python-tooling)
+- [FAQ](#faq)
+  - [Why use pipx or uv tool instead of pip?](#why-use-pipx-or-uv-tool-instead-of-pip)
+- [Requirements](#requirements)
+- [List of Commands](#list-of-commands)
+- [License](#license)
+
+</details>
+
 ## Highlights
+ 
+### 1. Register a project and launch from anywhere
+ 
+Normally, `docker compose` must be run from the directory where your compose file lives.
+ 
+```bash
+$ docker compose up   # Run from a different directory (e.g. home)
+no configuration file provided: not found   # You have to cd every time!
+```
+ 
+With *Compose Lazy*, you can register your projects once and launch containers interactively from any directory.  
+*Compose Lazy* also auto-detects compose files and presents them as options. Just enter a number — no need to type long arguments.
+ 
+```bash
+$ dcp ws reg    # or `dcp workspace register`
+Please enter a new directory path: ./myproject
+✅️ Compose file found: docker-compose.yml
+ 
+Enter a new workspace name: my workspace
+✅️ Registered a new repo to my workspace: /path/to/projects/myproject (docker-compose.yml)
+Enter 'l' to see the workspace or exit... : l
+───── my workspace ──────────────────────────────────────
+ 📁 PATH[1]: /path/to/projects/myproject
+      FILES: docker-compose.yml
+ 
+💡 To get all workspace lists, run `dcp ws list(li)`.
+ 
+$ dcp ws up   # Run docker compose `up`
+───── 📂 myproject ─────────────────────────────────────────────────────────────────────────────────
+▷ Executing `docker compose -f docker-compose.yml up -d` in MYPROJECT.
+```
+ 
+### 2. Bulk operations across multiple projects
+ 
+Register multiple projects to a workspace and run `docker compose` commands **across all of them at once**.
+ 
+```bash
+$ dcp ws reg
+Please enter a new directory path: ./otherproject
+✅️ Compose file found: docker-compose.yml
+ 
+✅️ Found 1 registered workspace!
+    1. my workspace
+ 
+ ── Or enter 0 for a new entry.
+Enter your choice or 'q' to quit: 1
+✅️ Registered a new repo to my workspace: /path/to/projects/otherproject (docker-compose.yml)
+Enter 'l' to see the workspace or exit... :
+ 
+💡 To get all workspace lists, run `dcp ws list(li)`.
+ 
+$ dcp ws up   # Bulk action across all registered repos
+ 
+───── 📂 myproject ─────────────────────────────────────────────────────────────────────────────────
+▷ Executing `docker compose -f docker-compose.yml up -d` in MYPROJECT.
+...
+───── 📂 otherproject ──────────────────────────────────────────────────────────────────────────────
+▷ Executing `docker compose -f docker-compose.yml up -d` in OTHERPROJECT.
+...
+```
+ 
+The `ws/workspace` command supports `up`, `build`, `exec`, `down`, `stop`, `ps`, `logs`, and more.
+ 
+
+## Features
 
 ### Basic Commands
 Installing compose-lazy adds three commands to your PATH automatically.
@@ -28,55 +113,6 @@ Installing compose-lazy adds three commands to your PATH automatically.
 
 Each command supports multiple options. See the [List of Commands](#list-of-commands) for details.
 
-### Multi-Repo Workspace
-Register named groups of repositories as a *workspace* and operate all of them at once —
-**from any directory, without `cd`**.
-
-Once registered, compose-lazy remembers each repository's path and compose files.
-You can launch, exec into, or check the status of any container regardless of where you currently are in the filesystem.
-
-```bash
-# Register a repository with specific compose files
-$ dcp ws register
-Please enter a new directory path: /path/to/repo
-✅️ Found 2 docker-compose files!
-    1. docker-compose.yml
-    2. docker-compose.prod.yml
-Enter your choices (e.g., 1,3,4) or 'q' to quit: 1
-
-✅️ Found 1 registered workspace!
-    1. myproject
-Or '0' for a new entry.
-Enter your choice or 'q' to quit: 0
-Please enter a new workspace name: myproject
-
-✅️ Registered new path to myproject: /path/to/repo (docker-compose.yml)
-
-# Launch all repos in a workspace with their registered compose files
-$ dcp ws up
-✅️ Found 1 registered workspace!
-    1. myproject
-Enter your choice or 'q' to quit: 1
-
-───── 📂 myproject ────────────────────────────────────────────────────────────────────────────────────
-▷ Executing `docker compose -f docker-compose.yml up -d` in MYPROJECT.
-
-# Exec into a service in a selected repo interactively
-$ dcp ws exec
-✅️ Found 2 repositories!
-    1. /path/to/repo-a
-    2. /path/to/repo-b
-Enter your choice or 'q' to quit: 1
-
-✅️ Found 2 services!
-    1. app
-    2. db
-Enter your choice or 'q' to quit: 1
-Please enter the rest of `docker compose exec app ...`: bash
-▷ Executing `docker compose -f docker-compose.yml exec app bash` in REPO-A.
-```
-
-Workspace configuration is stored in `~/.config/compose-lazy`.
 
 ### Interactive Selection
 Running `-f`, `-pf`, or `-s` without arguments auto-detects compose files, profiles, and services, letting you choose interactively.
@@ -116,6 +152,51 @@ $ dcpe   # `e`xec
 Enter your choice or 'q' to quit: 1
 ▷ Executing `docker compose exec app bash`.
 ```
+
+
+### Multi-Repo Workspace
+Register named groups of repositories as a *workspace* and operate all of them at once — from any directory, without `cd`.
+
+Once registered, compose-lazy remembers each repository's path and compose files.
+You can launch, exec into, or check the status of any container regardless of where you currently are in the filesystem.
+
+As shown in the [Highlights](#highlights) section, registering a project and running `dcp ws up` takes just a few steps. Here are some additional workspace commands:
+
+```bash
+# Exec into a service in a selected repo interactively
+$ dcp ws exec
+✅️ Found 2 repositories!
+    1. /path/to/repo-a
+    2. /path/to/repo-b
+Enter your choice or 'q' to quit: 1
+
+✅️ Found 2 services!
+    1. app
+    2. db
+Enter your choice or 'q' to quit: 1
+Please enter the rest of `docker compose exec app ...`: bash
+───── 📂 myproject ────────────────────────────────────────────────────────────────────────────────────
+▷ Executing `docker compose -f docker-compose.yml exec app bash` in REPO-A.
+
+
+# Check status across all repos in a workspace
+$ dcp ws ps
+
+✅️ Found 2 repositories!
+    1. /path/to/repo-a
+    2. /path/to/repo-b
+Enter your choice or 'q' to quit: 1
+───── 📂 myproject ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+▷ Executing `docker compose -f docker-compose.yml ps` in MYPROJECT.
+NAME      IMAGE     COMMAND   SERVICE   CREATED   STATUS    PORTS
+...
+───── 📂 otherproject ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+▷ Executing `docker compose -f docker-compose.yml ps` in OTHERPROJECT.
+NAME      IMAGE     COMMAND   SERVICE   CREATED   STATUS    PORTS
+...
+```
+
+Workspace configuration is stored in `~/.config/compose-lazy`.
 
 
 ## 🔧 Install compose-lazy
@@ -160,15 +241,6 @@ pipx ensurepath
 pipx install compose-lazy
 ```
 </details>
-
-## Features
-
-- **Interactive Selection**: auto-detect and interactively select compose files, profiles, and services
-- **Multi-Repo Workspace**: run docker compose commands across multiple repositories at once with `dcp ws`
-- **Location-Independent**: operate any registered repository from anywhere — no need to `cd` into the project directory
-- **Short Aliases**: `dcp u`, `dcp b`, `dcp e` — fewer keystrokes for common commands
-- **Dedicated Commands**: `dcpu` and `dcpe` for frequent up/exec workflows
-- **Cross-Platform**: Works on Windows, macOS, and Linux
 
 ## FAQ
 ### Why use pipx or uv tool instead of pip?

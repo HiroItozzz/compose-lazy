@@ -33,7 +33,7 @@ Please enter a new directory path: ./myproject   # プロジェクトのパス�
 Enter a new workspace name: my workspace    # 任意のワークスペース名を入力
 ✅️ Registered a new repo to my workspace: /path/to/projects/myproject (docker-compose.yml)
 Enter 'l' to see the workspace or exit... : l   # 登録したプロジェクトを確認
-───── my workspace ─────────────────────────────────────────────────────────────────────────────────
+───── my workspace ──────────────────────────────────────
  📁 PATH[1]: /path/to/projects/myproject
       FILES: docker-compose.yml
 
@@ -131,24 +131,14 @@ Enter your choice or 'q' to quit: 1
 
 
 ### ワークスペース機能
+複数のリポジトリを*ワークスペース*としてまとめて登録し、どのディレクトリからでも`cd`なしで一括操作できます。
+
+一度登録すれば、compose-lazyが各リポジトリのパスとcomposeファイルを記憶します。
+ファイルシステム上のどこにいても、コンテナの起動・exec・状態確認が行えます。
+
+[おすすめの使い方](#おすすめの使い方)セクションで示したとおり、プロジェクトの登録から`dcp ws up`の実行までは数ステップで完了します。以下はその他のワークスペースコマンドの例です。
 
 ```bash
-# リポジトリを compose ファイル指定付きで登録する（composeファイルは自動検出されます）
-$ dcp ws register
-Please enter a new directory path: /path/to/repo
-✅️ Found 2 docker-compose files!
-    1. docker-compose.yml
-    2. docker-compose.prod.yml
-Enter your choices (e.g., 1,3,4) or 'q' to quit: 1
-
-✅️ Found 1 registered workspace!
-    1. myproject
-Or '0' for a new entry.
-Enter your choice or 'q' to quit: 0
-Please enter a new workspace name: myproject
-
-✅️ Registered new path to myproject: /path/to/repo (docker-compose.yml)
-
 # ワークスペース内のリポジトリ・サービスを対話的に選択して exec する
 $ dcp ws exec
 ✅️ Found 2 repositories!
@@ -161,7 +151,24 @@ Enter your choice or 'q' to quit: 1
     2. db
 Enter your choice or 'q' to quit: 1
 Please enter the rest of `docker compose exec app ...`: bash
+───── 📂 myproject ────────────────────────────────────────────────────────────────────────────────────
 ▷ Executing `docker compose -f docker-compose.yml exec app bash` in REPO-A.
+
+
+# ワークスペース内のすべてのリポジトリのステータスを確認する
+$ dcp ws ps
+✅️ Found 2 repositories!
+    1. /path/to/repo-a
+    2. /path/to/repo-b
+Enter your choice or 'q' to quit: 1
+───── 📂 myproject ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+▷ Executing `docker compose -f docker-compose.yml ps` in MYPROJECT.
+NAME      IMAGE     COMMAND   SERVICE   CREATED   STATUS    PORTS
+...
+───── 📂 otherproject ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+▷ Executing `docker compose -f docker-compose.yml ps` in OTHERPROJECT.
+NAME      IMAGE     COMMAND   SERVICE   CREATED   STATUS    PORTS
+...
 ```
  
 設定は `~/.config/compose-lazy` に保存されます。
@@ -216,13 +223,9 @@ YAMLによる設定ファイルの構造をTypedDictで定義しているほか�
 ```python
 # cli_utils.py
 @overload
-def interactive_select(
-    candidates, flag=..., *, multiple=..., allow_zero: Literal[True]
-) -> None | list[str]: ...
+def interactive_select(candidates, flag=..., *, multiple=..., allow_zero: Literal[True]) -> None | list[str]: ...
 @overload
-def interactive_select(
-    candidates, flag=..., *, multiple=..., allow_zero: Literal[False] = False
-) -> list[str]: ...
+def interactive_select(candidates, flag=..., *, multiple=..., allow_zero: Literal[False] = False) -> list[str]: ...
 ```
 
 **テスト**
