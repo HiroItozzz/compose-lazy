@@ -14,72 +14,80 @@
 よく使われるコマンドの短縮エイリアスに加え、composeファイル・プロファイル・サービス名のインタラクティブ選択や、複数リポジトリをどこからでも一括操作できるワークスペース管理機能を実装しています。    
 PyPIで公開しており、`pipx install compose-lazy`または`uv tool install compose-lazy`で即座に使用できます。
 
-## 主な機能
+## おすすめの使い方
+
+### 1. プロジェクトを登録、どのディレクトリからでも起動
+通常docker composeはプロジェクトの存在するディレクトリからでなければ実行することができません。
+```bash
+$ docker compose up   # ユーザーHomeなど別のディレクトリで実行
+no configuration file provided: not found   # いちいちcdする必要がある！
+```
+
+*Compose Lazy*では既存のプロジェクトを簡単に登録でき、一度登録されたプロジェクトは**どのディレクトリからでもコンテナをインタラクティブに起動**することを可能にします！  
+また、*Compose Lazy*はあなたの代わりに**Composeファイルを自動検出し、起動オプションの選択肢を示します**。長い引数を入力する必要もなく、ユーザーは選択肢の番号を入力するだけで簡単に起動できます。
+```bash
+$ dcp ws reg    # または `dcp workspace register`
+Please enter a new directory path: ./myproject   # プロジェクトのパスを入力
+✅️ Compose file found: docker-compose.yml
+
+Enter a new workspace name: my workspace    # 任意のワークスペース名を入力
+✅️ Registered a new repo to my workspace: /path/to/projects/myproject (docker-compose.yml)
+Enter 'l' to see the workspace or exit... : l   # 登録したプロジェクトを確認
+───── my workspace ─────────────────────────────────────────────────────────────────────────────────
+ 📁 PATH[1]: /path/to/projects/myproject
+      FILES: docker-compose.yml
+
+💡 To get all workspace lists, run `dcp ws list(li)`.
+
+$ dcp ws up   # docker compose `up` を実行
+───── 📂 myproject ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+▷ Executing `docker compose -f docker-compose.yml up -d` in MYPROJECT.
+```
+
+### 2. 複数プロジェクトの一括実行
+さらにこのワークスペースに複数のプロジェクトを登録すれば、`docker compose xxx`コマンドを**登録済みプロジェクトに対して一括実行**できます。
+```bash
+$ dcp ws reg
+Please enter a new directory path: ./otherproject
+✅️ Compose file found: docker-compose.yml
+
+✅️ Found 4 registered workspaces!
+    1. my workspace
+
+ ── Or enter 0 for a new entry.
+Enter your choice or 'q' to quit: 1
+✅️ Registered a new repo to my workspace: /path/to/projects/otherproject (docker-compose.yml)
+Enter 'l' to see the workspace or exit... : 
+
+💡 To get all workspace lists, run `dcp ws list(li)`.
+
+$ dcp ws up   # 複数リポジトリに対するバルクアクション
+
+───── 📂 myproject ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+▷ Executing `docker compose -f docker-compose.yml up -d` in MYPROJECT.
+...
+───── 📂 otherproject ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+▷ Executing `docker compose -f docker-compose.yml up -d` in OTHERPROJECT.
+...
+
+```
+
+workspace(ws)コマンドは `up` 以外にも`build`, `exec`, `down`, `ps`, `logs`等、多くのコマンドに対応しています。
+依存はPyYAMLのみで軽量。テストコードも充実しているため、どの環境でも安心してインストールが可能です。
+
+
+## 🔧 主な機能
 
 ### 基本機能
 インストールすると`dcpu`, `dcpe`, `dcp`の3コマンドが自動的にパスに追加されます。
 
 | コマンド | 説明 |
 |---|---|
-| `dcpu` | `docker compose up` のエイリアス |
-| `dcpe` | `docker compose exec` のエイリアス |
-| `dcp` | その他サブコマンド (`build`, `logs`, `stop` など) のエイリアス |
+| `dcpu` | `docker compose up` のシンプルなエイリアス |
+| `dcpe` | `docker compose exec` のシンプルなエイリアス |
+| `dcp` | その他サブコマンド (`build`, `logs`, `stop` など) のエイリアスのほか、独自のワークスペース一括実行機能（`ws/workspace`） |
 
 各コマンドには複数のオプションを指定可能です。オプションの一覧は[こちら](README.md#list-of-commands)を参照してください。  
-
-
-### ワークスペース機能
- 
-複数のリポジトリを「ワークスペース」としてまとめて登録し、一括で操作できます。
-**カレントディレクトリを問わず、`cd` なしでどこからでも操作できる**のが特徴です。
-
-登録しておけば、各リポジトリのパスと compose ファイルを compose-lazy が記憶します。
-ファイルシステム上のどこにいても、任意のコンテナの起動・exec・状態確認が行えます。
- 
-
-```bash
-
-# リポジトリを compose ファイル指定付きで登録する
-$ dcp ws register
-Please enter a new directory path: /path/to/repo
-✅️ Found 2 docker-compose files!
-    1. docker-compose.yml
-    2. docker-compose.prod.yml
-Enter your choices (e.g., 1,3,4) or 'q' to quit: 1
-
-✅️ Found 1 registered workspace!
-    1. myproject
-Or '0' for a new entry.
-Enter your choice or 'q' to quit: 0
-Please enter a new workspace name: myproject
-
-✅️ Registered new path to myproject: /path/to/repo (docker-compose.yml)
-
-# ワークスペース内の全リポジトリを登録済み compose ファイルで起動する
-$ dcp ws up
-✅️ Found 1 registered workspace!
-    1. myproject
-Enter your choice or 'q' to quit: 1
-
-───── 📂 myproject ────────────────────────────────────────────────────────────────────────────────────
-▷ Executing `docker compose -f docker-compose.yml up -d` in MYPROJECT.
-
-# ワークスペース内のリポジトリ・サービスを対話的に選択して exec する
-$ dcp ws exec
-✅️ Found 2 repositories!
-    1. /path/to/repo-a
-    2. /path/to/repo-b
-Enter your choice or 'q' to quit: 1
-
-✅️ Found 2 services!
-    1. app
-    2. db
-Enter your choice or 'q' to quit: 1
-Please enter the rest of `docker compose exec app ...`: bash
-▷ Executing `docker compose -f docker-compose.yml exec app bash` in REPO-A.
-```
- 
-設定は `~/.config/compose-lazy` に保存されます。
 
 
 ### インタラクティブ機能
@@ -120,6 +128,44 @@ $ dcpe   # `e`xec
 Enter your choice or 'q' to quit: 1
 ▷ Executing `docker compose exec app bash`.
 ```
+
+
+### ワークスペース機能
+
+```bash
+# リポジトリを compose ファイル指定付きで登録する（composeファイルは自動検出されます）
+$ dcp ws register
+Please enter a new directory path: /path/to/repo
+✅️ Found 2 docker-compose files!
+    1. docker-compose.yml
+    2. docker-compose.prod.yml
+Enter your choices (e.g., 1,3,4) or 'q' to quit: 1
+
+✅️ Found 1 registered workspace!
+    1. myproject
+Or '0' for a new entry.
+Enter your choice or 'q' to quit: 0
+Please enter a new workspace name: myproject
+
+✅️ Registered new path to myproject: /path/to/repo (docker-compose.yml)
+
+# ワークスペース内のリポジトリ・サービスを対話的に選択して exec する
+$ dcp ws exec
+✅️ Found 2 repositories!
+    1. /path/to/repo-a
+    2. /path/to/repo-b
+Enter your choice or 'q' to quit: 1
+
+✅️ Found 2 services!
+    1. app
+    2. db
+Enter your choice or 'q' to quit: 1
+Please enter the rest of `docker compose exec app ...`: bash
+▷ Executing `docker compose -f docker-compose.yml exec app bash` in REPO-A.
+```
+ 
+設定は `~/.config/compose-lazy` に保存されます。
+
 
 ## 🔧 インストール
 
@@ -184,7 +230,7 @@ def interactive_select(
 単体テストのほか、`sys.argv`と`subprocess.run`をモックした結合テストを実装することで品質を担保しています。テストケース400超、カバレッジは99%を維持しています。
 
 
-## 経緯・所感 (2026-06-13)
+## 経緯・所感
 
 Dockerについては同様の便利なOSSアプリケーションがある一方で、docker composeを扱うアプリケーションはネット上でも見当たらなかったことが開発の動機です。  
 PyPIでの配布にあたっては、業務での使用にも耐えられる品質を目指しました。  
