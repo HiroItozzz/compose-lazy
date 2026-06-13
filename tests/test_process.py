@@ -78,22 +78,6 @@ class TestProcessorCall(TestDCPBase):
         getattr(self.processor, expected_method).assert_called_once()
         getattr(self.processor, "_execute_command").assert_called_once()
 
-    def test_call_dcpu(self):
-        args = Namespace()
-        self.processor.call_dcpu(args)
-
-        self.processor._setup.assert_called_once()
-        self.processor._create_up_cmd.assert_called_once()
-        self.processor._execute_command.assert_called_once()
-
-    def test_call_dcpe(self):
-        args = Namespace()
-        self.processor.call_dcpe(args)
-
-        self.processor._setup.assert_called_once()
-        self.processor._create_exec_cmd.assert_called_once()
-        self.processor._execute_command.assert_called_once()
-
 
 class TestExecuteCommand(TestDCPBase):
     def test_execute_command(self):

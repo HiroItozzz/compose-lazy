@@ -56,18 +56,6 @@ class DockerCmdProcessor:
                 return 1  # pragma: no cover
         return self._execute_command()
 
-    @call_safely
-    def call_dcpu(self, args: Namespace) -> int:
-        self._setup(args)
-        self._create_up_cmd()
-        return self._execute_command()
-
-    @call_safely
-    def call_dcpe(self, args: Namespace) -> int:
-        self._setup(args)
-        self._create_exec_cmd()
-        return self._execute_command()
-
     def _execute_command(self) -> int:
         logger.debug(f"\n----output docker cmd---- \n{self.cmd}")
         print(f"▷ Executing `{' '.join(self.cmd)}`.")

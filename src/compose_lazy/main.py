@@ -1,6 +1,6 @@
 import logging
 import sys
-from argparse import ArgumentParser
+from argparse import ArgumentParser, Namespace
 from importlib.metadata import version
 
 from . import config
@@ -337,14 +337,14 @@ def dcpu_main() -> None:
         .add_build_args()
         .add_wait_args()
         .add_common_compose_options()
-        .set_defaults(func=processor.call_dcpu)
+        .set_defaults(func=processor)
     )
 
     parser.add_argument(
         "-v", "--version", action="version", version=f"compose-lazy {VERSION}"
     )
 
-    args = parser.parse_args()
+    args = parser.parse_args(namespace=Namespace(subcmd="up"))
     code = args.func(args)
     sys.exit(code)
 
@@ -366,13 +366,13 @@ def dcpe_main() -> None:
         .add_service_name_subcmd(multiple=False)
         .add_inner_cmd_args()
         .add_common_compose_options()
-        .set_defaults(func=processor.call_dcpe)
+        .set_defaults(func=processor)
     )
 
     parser.add_argument(
         "-v", "--version", action="version", version=f"compose-lazy {VERSION}"
     )
 
-    args = parser.parse_args()
+    args = parser.parse_args(namespace=Namespace(subcmd="exec"))
     code = args.func(args)
     sys.exit(code)
