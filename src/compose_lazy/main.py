@@ -341,7 +341,7 @@ def dcpu_main() -> None:
     )
 
     parser.add_argument(
-        "-v", "--version", action="version", version=f"compose-lazy {VERSION}"
+        "--version", action="version", version=f"compose-lazy {VERSION}"
     )
 
     args = parser.parse_args(namespace=Namespace(subcmd="up"))
@@ -370,7 +370,7 @@ def dcpe_main() -> None:
     )
 
     parser.add_argument(
-        "-v", "--version", action="version", version=f"compose-lazy {VERSION}"
+     "--version", action="version", version=f"compose-lazy {VERSION}"
     )
 
     args = parser.parse_args(namespace=Namespace(subcmd="exec"))
